@@ -49,7 +49,11 @@ import {
 	isGitRepository,
 	updateReadmeWithBoard,
 } from "./index.ts";
-import { MilestoneHandlers, type MilestoneRemoveArgs } from "./mcp/tools/milestones/handlers.ts";
+import {
+	formatMilestoneDescription,
+	MilestoneHandlers,
+	type MilestoneRemoveArgs,
+} from "./mcp/tools/milestones/handlers.ts";
 import type { CallToolResult } from "./mcp/types.ts";
 import { applyMiniCommanderPolicy } from "./mini/commander-policy.ts";
 import { getActiveSurfaceMode, type SurfaceMode, setActiveSurfaceMode } from "./mini/runtime.ts";
@@ -533,7 +537,7 @@ function printDependencyDefectsReport(defects: DependencyDefects): void {
 async function runMilestoneMutation(action: (handlers: MilestoneHandlers) => Promise<CallToolResult>): Promise<void> {
 	const cwd = await requireProjectRoot();
 	const core = new Core(cwd);
-	const handlers = new MilestoneHandlers(core);
+	const handlers = new MilestoneHandlers(core, getActiveSurfaceMode());
 
 	try {
 		printToolResult(await action(handlers));
@@ -4361,15 +4365,17 @@ addHelpSchema(milestoneCmd.command("list"), {
 		const buckets = buildMilestoneBuckets(tasks, milestones, statuses, { archivedMilestoneIds, archivedMilestones });
 		const active = buckets.filter((bucket) => !bucket.isNoMilestone && !bucket.isCompleted);
 		const completed = buckets.filter((bucket) => !bucket.isNoMilestone && bucket.isCompleted);
+		const isMini = getActiveSurfaceMode() === "mini";
 
-		const formatBucket = (bucket: (typeof buckets)[number]) => {
+		const formatBucket = (bucket: (typeof buckets)[number], includeDescription = false) => {
 			const id = bucket.milestone ?? bucket.label;
 			const label = bucket.label;
 			const milestone = [...milestones, ...archivedMilestones].find(
 				(candidate) => milestoneKey(candidate.id) === milestoneKey(id),
 			);
-			const dueDate = milestone?.dueDate ? `, due ${formatUtcDateForDisplay(milestone.dueDate)}` : "";
-			return `  ${id}: ${label} (${bucket.doneCount}/${bucket.total} done${dueDate})`;
+			const dueDate = !isMini && milestone?.dueDate ? `, due ${formatUtcDateForDisplay(milestone.dueDate)}` : "";
+			const description = includeDescription && isMini ? formatMilestoneDescription(milestone?.description) : "";
+			return `  ${id}: ${label} (${bucket.doneCount}/${bucket.total} done${dueDate})${description}`;
 		};
 
 		console.log(`Active milestones (${active.length}):`);
@@ -4377,7 +4383,7 @@ addHelpSchema(milestoneCmd.command("list"), {
 			console.log("  (none)");
 		} else {
 			for (const bucket of active) {
-				console.log(formatBucket(bucket));
+				console.log(formatBucket(bucket, true));
 			}
 		}
 

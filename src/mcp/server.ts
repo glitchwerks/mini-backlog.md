@@ -20,6 +20,7 @@ import {
 	type ServerRequest,
 } from "@modelcontextprotocol/sdk/types.js";
 import { Core } from "../core/backlog.ts";
+import type { SurfaceMode } from "../mini/runtime.ts";
 import type { BacklogConfig } from "../types/index.ts";
 import { getPackageName } from "../utils/app-info.ts";
 import { resolveBacklogDirectory } from "../utils/backlog-directory.ts";
@@ -54,12 +55,28 @@ import type {
 const APP_NAME = getPackageName();
 const INSTRUCTIONS =
 	"At the beginning of each session, list the available resources and read the first one to understand how to use Backlog.md for task management. Additional detailed guides are available as resources when needed.";
+const MINI_INSTRUCTIONS =
+	"Use the available task, document, and milestone tools to manage work in this Backlog.md project.";
 
 type ServerInitOptions = {
 	debug?: boolean;
 	/** When true (from --cwd/BACKLOG_CWD), the root is fixed and client roots are never consulted. */
 	pinned?: boolean;
+	surface?: SurfaceMode;
 };
+
+function registerProjectSurface(server: McpServer, config: BacklogConfig, surface: SurfaceMode): void {
+	if (surface === "full") {
+		registerWorkflowResources(server);
+		registerWorkflowTools(server);
+	}
+	registerTaskTools(server, config, surface);
+	registerMilestoneTools(server, surface);
+	if (surface === "full") {
+		registerDefinitionOfDoneTools(server);
+	}
+	registerDocumentTools(server, config);
+}
 
 type ServerRequestExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
 
@@ -79,6 +96,7 @@ export class McpServer extends Core {
 
 	/** The projectRoot passed to createMcpServer, used to revert on downgrade. */
 	private readonly initialProjectRoot: string;
+	private readonly surface: SurfaceMode;
 
 	/** True when the server has been upgraded from fallback to a real project. */
 	private upgraded = false;
@@ -90,9 +108,10 @@ export class McpServer extends Core {
 	private readonly resources = new Map<string, McpResourceHandler>();
 	private readonly prompts = new Map<string, McpPromptHandler>();
 
-	constructor(projectRoot: string, instructions: string, version = "0.0.0") {
+	constructor(projectRoot: string, instructions: string, version = "0.0.0", surface: SurfaceMode = "full") {
 		super(projectRoot, { enableWatchers: true });
 		this.initialProjectRoot = projectRoot;
+		this.surface = surface;
 
 		this.server = new Server(
 			{
@@ -258,17 +277,12 @@ export class McpServer extends Core {
 			return false;
 		}
 
-		// Replace fallback registrations with the full toolset
+		// Replace fallback registrations with the selected project surface.
 		this.tools.clear();
 		this.resources.clear();
 		this.prompts.clear();
 
-		registerWorkflowResources(this);
-		registerWorkflowTools(this);
-		registerTaskTools(this, config);
-		registerMilestoneTools(this);
-		registerDefinitionOfDoneTools(this);
-		registerDocumentTools(this, config);
+		registerProjectSurface(this, config, this.surface);
 
 		// Notify client that available tools/resources/prompts changed
 		await this.server.sendToolListChanged();
@@ -292,7 +306,9 @@ export class McpServer extends Core {
 		this.resources.clear();
 		this.prompts.clear();
 
-		registerInitRequiredResource(this, this.initialProjectRoot);
+		if (this.surface === "full") {
+			registerInitRequiredResource(this, this.initialProjectRoot);
+		}
 
 		await this.server.sendToolListChanged();
 		await this.server.sendResourceListChanged();
@@ -521,12 +537,15 @@ export async function createMcpServer(projectRoot: string, options: ServerInitOp
 	await tempCore.ensureConfigLoaded();
 	const [config, version] = await Promise.all([tempCore.filesystem.loadConfig(), getVersion()]);
 
-	const server = new McpServer(projectRoot, INSTRUCTIONS, version);
+	const surface = options.surface ?? "full";
+	const server = new McpServer(projectRoot, surface === "mini" ? MINI_INSTRUCTIONS : INSTRUCTIONS, version, surface);
 
 	// Graceful fallback: if config doesn't exist, provide init-required resource
 	// and enable roots discovery so the server can find the project via MCP roots
 	if (!config) {
-		registerInitRequiredResource(server, projectRoot);
+		if (surface === "full") {
+			registerInitRequiredResource(server, projectRoot);
+		}
 		if (!options.pinned) {
 			server.enableRootsDiscovery({
 				debug: options.debug,
@@ -541,13 +560,7 @@ export async function createMcpServer(projectRoot: string, options: ServerInitOp
 		return server;
 	}
 
-	// Normal mode: full tools and resources
-	registerWorkflowResources(server);
-	registerWorkflowTools(server);
-	registerTaskTools(server, config);
-	registerMilestoneTools(server);
-	registerDefinitionOfDoneTools(server);
-	registerDocumentTools(server, config);
+	registerProjectSurface(server, config, surface);
 
 	// Follow the client workspace roots so a server launched in the main checkout
 	// (or a shared/user-scope server) targets the active project, not a frozen one.
