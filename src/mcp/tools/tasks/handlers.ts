@@ -4,6 +4,12 @@ import type { VacatedTaskResult } from "../../../core/backlog.ts";
 import { findLocalDuplicateTaskIds } from "../../../core/duplicate-task-repair.ts";
 import { loadTaskDetail, loadTaskListItems } from "../../../core/task-detail.ts";
 import { isCreateLockError, isTaskLockError } from "../../../file-system/operations.ts";
+import type { SurfaceMode } from "../../../mini/runtime.ts";
+import {
+	formatMiniDuplicateTaskIdWarning,
+	formatMiniTaskSummaryLine,
+	restoreMiniTaskHiddenFrontmatter,
+} from "../../../mini/task-output.ts";
 import {
 	isLocalEditableTask,
 	type SearchPriorityFilter,
@@ -76,7 +82,10 @@ export type TaskSearchArgs = {
 };
 
 export class TaskHandlers {
-	constructor(private readonly core: McpServer) {}
+	constructor(
+		private readonly core: McpServer,
+		private readonly surface: SurfaceMode = "full",
+	) {}
 
 	private async resolveMilestoneInput(milestone: string): Promise<string> {
 		const [activeMilestones, archivedMilestones] = await Promise.all([
@@ -104,6 +113,8 @@ export class TaskHandlers {
 	}
 
 	private formatTaskSummaryLine(task: Task, options: { includeStatus?: boolean } = {}): string {
+		if (this.surface === "mini") return formatMiniTaskSummaryLine(task, options);
+
 		const priorityIndicator = task.priority ? `[${task.priority.toUpperCase()}] ` : "";
 		const typeIndicator = task.type ? `[${task.type}] ` : "";
 		const projectIndicator = task.project ? `[${task.project}] ` : "";
@@ -161,7 +172,7 @@ export class TaskHandlers {
 				disableDefinitionOfDoneDefaults: args.disableDefinitionOfDoneDefaults,
 			});
 
-			return await formatTaskCallResult(await loadTaskDetail(this.core, createdTask));
+			return await formatTaskCallResult(await loadTaskDetail(this.core, createdTask), [], {}, this.surface);
 		} catch (error) {
 			if (isCreateLockError(error)) {
 				throw new BacklogToolError(error.message, "OPERATION_FAILED");
@@ -332,7 +343,10 @@ export class TaskHandlers {
 			if (duplicateGroups.length > 0) {
 				contentItems.unshift({
 					type: "text",
-					text: formatDuplicateTaskIdWarning(duplicateGroups),
+					text:
+						this.surface === "mini"
+							? formatMiniDuplicateTaskIdWarning(duplicateGroups)
+							: formatDuplicateTaskIdWarning(duplicateGroups),
 				});
 			}
 		} catch {
@@ -439,7 +453,7 @@ export class TaskHandlers {
 	async viewTask(args: { id: string }): Promise<CallToolResult> {
 		const draft = await this.core.filesystem.loadDraft(args.id);
 		if (draft) {
-			return await formatTaskCallResult(await loadTaskDetail(this.core, draft));
+			return await formatTaskCallResult(await loadTaskDetail(this.core, draft), [], {}, this.surface);
 		}
 
 		const task = await this.core.getTaskWithSubtasks(args.id);
@@ -448,7 +462,7 @@ export class TaskHandlers {
 		}
 		// Task detail is the only MCP result read through the detail path, so it is the only one that
 		// carries the graph. The edit and lifecycle confirmations stay as short as they were.
-		return await formatTaskCallResult(await loadTaskDetail(this.core, task));
+		return await formatTaskCallResult(await loadTaskDetail(this.core, task), [], {}, this.surface);
 	}
 
 	async archiveTask(args: { id: string }): Promise<CallToolResult> {
@@ -459,7 +473,12 @@ export class TaskHandlers {
 				throw new BacklogToolError(`Failed to archive task: ${args.id}`, "OPERATION_FAILED");
 			}
 
-			return await formatTaskCallResult(await loadTaskDetail(this.core, draft), [`Archived draft ${draft.id}.`]);
+			return await formatTaskCallResult(
+				await loadTaskDetail(this.core, draft),
+				[`Archived draft ${draft.id}.`],
+				{},
+				this.surface,
+			);
 		}
 
 		const task = await this.loadTaskOrThrow(args.id);
@@ -487,6 +506,8 @@ export class TaskHandlers {
 		return await formatTaskCallResult(
 			await loadTaskDetail(this.core, refreshed),
 			cleanupMessage ? [`${cleanupMessage}.`] : undefined,
+			{},
+			this.surface,
 		);
 	}
 
@@ -514,9 +535,12 @@ export class TaskHandlers {
 			throw new BacklogToolError(`Failed to complete task: ${args.id}`, "OPERATION_FAILED");
 		}
 
-		return await formatTaskCallResult(await loadTaskDetail(this.core, task), [`Completed task ${task.id}.`], {
-			filePathOverride: completedFilePath,
-		});
+		return await formatTaskCallResult(
+			await loadTaskDetail(this.core, task),
+			[`Completed task ${task.id}.`],
+			{ filePathOverride: completedFilePath },
+			this.surface,
+		);
 	}
 
 	async demoteTask(args: { id: string }): Promise<CallToolResult> {
@@ -539,6 +563,8 @@ export class TaskHandlers {
 		return await formatTaskCallResult(
 			await loadTaskDetail(this.core, refreshed),
 			cleanupMessage ? [`${cleanupMessage}.`] : undefined,
+			{},
+			this.surface,
 		);
 	}
 
@@ -549,15 +575,30 @@ export class TaskHandlers {
 				throw new BacklogToolError("Ordinal must be a non-negative number.", "VALIDATION_ERROR");
 			}
 
+			let previousContent: string | undefined;
+			if (this.surface === "mini") {
+				const existing = (await this.core.filesystem.loadDraft(args.id)) ?? (await this.core.getTask(args.id));
+				if (existing?.filePath) previousContent = await Bun.file(existing.filePath).text();
+			}
+
 			const updateInput = buildTaskUpdateInput(args);
 			if (typeof updateInput.milestone === "string") {
 				updateInput.milestone = await this.resolveMilestoneInput(updateInput.milestone);
 			}
 			const { task: updatedTask, cleanedTaskIds } = await this.core.editTaskOrDraft(args.id, updateInput);
+			if (previousContent) {
+				const current =
+					(await this.core.filesystem.loadDraft(updatedTask.id)) ??
+					(await this.core.filesystem.loadTask(updatedTask.id)) ??
+					updatedTask;
+				await restoreMiniTaskHiddenFrontmatter(previousContent, current.filePath);
+			}
 			const cleanupMessage = formatDependencyCleanupMessage(args.id, cleanedTaskIds);
 			return await formatTaskCallResult(
 				await loadTaskDetail(this.core, updatedTask),
 				cleanupMessage ? [`${cleanupMessage}.`] : undefined,
+				{},
+				this.surface,
 			);
 		} catch (error) {
 			if (isTaskLockError(error)) {

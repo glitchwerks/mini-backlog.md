@@ -1,5 +1,7 @@
 import { isAbsolute, join, relative } from "node:path";
 import type { TaskDetail, TaskListItem } from "../core/task-detail.ts";
+import type { SurfaceMode } from "../mini/runtime.ts";
+import { type MiniTaskSummaryJson, toMiniTaskDetailsJson, toMiniTaskSummaryJson } from "../mini/task-output.ts";
 import type {
 	Decision,
 	DecisionSearchResult,
@@ -98,10 +100,16 @@ type DecisionSummaryJson = {
 	date: string | null;
 };
 
-type SearchResultJson =
+type FullSearchResultJson =
 	| { type: "task"; data: TaskSummaryJson }
 	| { type: "document"; data: DocumentSummaryJson }
 	| { type: "decision"; data: DecisionSummaryJson };
+
+type MiniSearchResultJson =
+	| { type: "task"; data: MiniTaskSummaryJson }
+	| { type: "document"; data: DocumentSummaryJson };
+
+type SearchResultJson = FullSearchResultJson | MiniSearchResultJson;
 
 function nullable(value: string | undefined): string | null {
 	return value ?? null;
@@ -216,15 +224,46 @@ function toDecisionSummaryJson(decision: Decision): DecisionSummaryJson {
 	};
 }
 
-export function taskListJson(tasks: TaskListItem[]) {
-	return { schemaVersion: 1, kind: "task-list" as const, tasks: tasks.map(toTaskSummaryJson) };
+export function taskListJson(tasks: TaskListItem[]): {
+	schemaVersion: number;
+	kind: "task-list";
+	tasks: TaskSummaryJson[];
+};
+export function taskListJson(
+	tasks: TaskListItem[],
+	surface: "mini",
+): { schemaVersion: number; kind: "task-list"; tasks: MiniTaskSummaryJson[] };
+export function taskListJson(
+	tasks: TaskListItem[],
+	surface: SurfaceMode,
+): { schemaVersion: number; kind: "task-list"; tasks: Array<TaskSummaryJson | MiniTaskSummaryJson> };
+export function taskListJson(tasks: TaskListItem[], surface: SurfaceMode = "full") {
+	return {
+		schemaVersion: 1,
+		kind: "task-list" as const,
+		tasks: tasks.map(surface === "mini" ? toMiniTaskSummaryJson : toTaskSummaryJson),
+	};
 }
 
-export function taskViewJson(task: TaskDetail, projectRoot: string) {
+export function taskViewJson(
+	task: TaskDetail,
+	projectRoot: string,
+): { schemaVersion: number; kind: "task-view"; task: TaskDetailsJson };
+export function taskViewJson(
+	task: TaskDetail,
+	projectRoot: string,
+	surface: "mini",
+): { schemaVersion: number; kind: "task-view"; task: ReturnType<typeof toMiniTaskDetailsJson> };
+export function taskViewJson(
+	task: TaskDetail,
+	projectRoot: string,
+	surface: SurfaceMode,
+): { schemaVersion: number; kind: "task-view"; task: TaskDetailsJson | ReturnType<typeof toMiniTaskDetailsJson> };
+export function taskViewJson(task: TaskDetail, projectRoot: string, surface: SurfaceMode = "full") {
 	return {
 		schemaVersion: 1,
 		kind: "task-view" as const,
-		task: toTaskDetailsJson(task, projectRoot),
+		task: surface === "mini" ? toMiniTaskDetailsJson(task) : toTaskDetailsJson(task, projectRoot),
 	};
 }
 
@@ -245,12 +284,37 @@ export type SearchResultInput =
 			task: TaskListItem;
 	  });
 
-export function searchJson(results: SearchResultInput[], projectRoot: string, docsDir: string) {
+export function searchJson(
+	results: SearchResultInput[],
+	projectRoot: string,
+	docsDir: string,
+): { schemaVersion: number; kind: "search"; results: FullSearchResultJson[] };
+export function searchJson(
+	results: SearchResultInput[],
+	projectRoot: string,
+	docsDir: string,
+	surface: "mini",
+): { schemaVersion: number; kind: "search"; results: MiniSearchResultJson[] };
+export function searchJson(
+	results: SearchResultInput[],
+	projectRoot: string,
+	docsDir: string,
+	surface: SurfaceMode,
+): { schemaVersion: number; kind: "search"; results: SearchResultJson[] };
+export function searchJson(
+	results: SearchResultInput[],
+	projectRoot: string,
+	docsDir: string,
+	surface: SurfaceMode = "full",
+) {
 	const publicResults: SearchResultJson[] = [];
 	for (const result of results) {
 		if (result.type === "task") {
 			if (isLocalEditableTask(result.task)) {
-				publicResults.push({ type: "task", data: toTaskSummaryJson(result.task) });
+				publicResults.push({
+					type: "task",
+					data: surface === "mini" ? toMiniTaskSummaryJson(result.task) : toTaskSummaryJson(result.task),
+				});
 			}
 			continue;
 		}
@@ -258,7 +322,9 @@ export function searchJson(results: SearchResultInput[], projectRoot: string, do
 			publicResults.push({ type: "document", data: toDocumentSummaryJson(result.document, projectRoot, docsDir) });
 			continue;
 		}
-		publicResults.push({ type: "decision", data: toDecisionSummaryJson(result.decision) });
+		if (surface === "full") {
+			publicResults.push({ type: "decision", data: toDecisionSummaryJson(result.decision) });
+		}
 	}
 	return { schemaVersion: 1, kind: "search" as const, results: publicResults };
 }

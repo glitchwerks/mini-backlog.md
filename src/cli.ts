@@ -55,6 +55,11 @@ import { applyMiniCommanderPolicy } from "./mini/commander-policy.ts";
 import { getActiveSurfaceMode, type SurfaceMode, setActiveSurfaceMode } from "./mini/runtime.ts";
 import { MINI_TASK_SORT_FIELDS } from "./mini/surface-policy.ts";
 import {
+	formatMiniDuplicateTaskIdWarning,
+	formatMiniTaskSummaryLine,
+	restoreMiniTaskHiddenFrontmatter,
+} from "./mini/task-output.ts";
+import {
 	type BacklogConfig,
 	type Decision,
 	type DecisionSearchResult,
@@ -318,6 +323,8 @@ function formatTaskEditError(error: unknown, taskId: string, commandKind = "task
 }
 
 function formatPlainTaskListRow(task: Task, options: { includeStatus?: boolean } = {}): string {
+	if (getActiveSurfaceMode() === "mini") return formatMiniTaskSummaryLine(task, options);
+
 	const priorityIndicator = task.priority ? `[${task.priority.toUpperCase()}] ` : "";
 	const typeIndicator = task.type ? `[${task.type}] ` : "";
 	const statusIndicator = options.includeStatus && task.status ? ` (${task.status})` : "";
@@ -400,7 +407,9 @@ function printToolResult(result: CallToolResult): void {
 async function printDuplicateIntegrityWarning(core: Core): Promise<boolean> {
 	const groups = await findLocalDuplicateTaskIds(core);
 	if (groups.length === 0) return false;
-	console.error(formatDuplicateTaskIdWarning(groups));
+	console.error(
+		getActiveSurfaceMode() === "mini" ? formatMiniDuplicateTaskIdWarning(groups) : formatDuplicateTaskIdWarning(groups),
+	);
 	process.exitCode = 1;
 	return true;
 }
@@ -2055,7 +2064,9 @@ addHelpSchema(taskCmd.command("create [title]"), {
 			});
 
 			if (usePlainOutput) {
-				console.log(formatTaskPlainText(await loadTaskDetail(core, task), { filePathOverride: filePath }));
+				console.log(
+					formatTaskPlainText(await loadTaskDetail(core, task), { filePathOverride: filePath }, getActiveSurfaceMode()),
+				);
 				return;
 			}
 
@@ -2066,7 +2077,7 @@ addHelpSchema(taskCmd.command("create [title]"), {
 			}
 
 			console.log(`Created task ${task.id}`);
-			console.log(`File: ${filePath}`);
+			if (getActiveSurfaceMode() === "full") console.log(`File: ${filePath}`);
 		} catch (error) {
 			console.error(error instanceof Error ? error.message : String(error));
 			process.exitCode = 1;
@@ -2301,7 +2312,7 @@ addHelpSchema(program.command("search [query]"), {
 				if (projected.done) break;
 				projectedResults.push({ ...result, task: projected.value });
 			}
-			printJson(searchJson(projectedResults, cwd, core.filesystem.docsDir));
+			printJson(searchJson(projectedResults, cwd, core.filesystem.docsDir, getActiveSurfaceMode()));
 			cleanup();
 			return;
 		}
@@ -2436,6 +2447,10 @@ function printSearchResults(results: SearchResult[]): void {
 		console.log("Tasks:");
 		for (const taskResult of localTasks) {
 			const { task } = taskResult;
+			if (getActiveSurfaceMode() === "mini") {
+				console.log(formatMiniTaskSummaryLine(task, { includeStatus: true }));
+				continue;
+			}
 			const scoreText = formatScore(taskResult.score);
 			const statusText = task.status ? ` (${task.status})` : "";
 			const priorityText = task.priority ? ` [${task.priority.toUpperCase()}]` : "";
@@ -2457,7 +2472,7 @@ function printSearchResults(results: SearchResult[]): void {
 		printed = true;
 	}
 
-	if (decisions.length > 0) {
+	if (getActiveSurfaceMode() === "full" && decisions.length > 0) {
 		if (printed) {
 			console.log("");
 		}
@@ -2700,7 +2715,7 @@ async function runTaskList(
 			const rows = options.ready ? projected.filter((row) => row.isReady) : projected;
 			const narrowed = narrowForDisplay(rows);
 			if (outputMode === "json") {
-				emitJson(taskListJson(narrowed.display));
+				emitJson(taskListJson(narrowed.display, getActiveSurfaceMode()));
 				cleanup();
 				return;
 			}
@@ -3048,6 +3063,22 @@ const taskEditTarget: EditCommandTarget = {
 	notFoundMessage: (id) => `Task ${id} not found. ${LOCAL_TASK_LOOKUP_HINT}`,
 };
 
+async function updateEditTarget(
+	core: Core,
+	target: EditCommandTarget,
+	existing: Task,
+	input: TaskUpdateInput,
+): Promise<Task> {
+	if (getActiveSurfaceMode() === "full" || !existing.filePath) return await target.update(core, existing, input);
+
+	const previousContent = await Bun.file(existing.filePath).text();
+	const updated = await target.update(core, existing, input);
+	const current =
+		(await core.filesystem.loadDraft(updated.id)) ?? (await core.filesystem.loadTask(updated.id)) ?? updated;
+	await restoreMiniTaskHiddenFrontmatter(previousContent, current.filePath);
+	return updated;
+}
+
 const draftEditTarget: EditCommandTarget = {
 	label: "Draft",
 	pluralLabel: "drafts",
@@ -3173,7 +3204,7 @@ async function runEditCommand(target: EditCommandTarget, requestedIds: string[] 
 		}
 
 		try {
-			const updatedTask = await target.update(core, existingTaskForWizard, wizardInput);
+			const updatedTask = await updateEditTarget(core, target, existingTaskForWizard, wizardInput);
 			console.log(`Updated ${target.label.toLowerCase()} ${updatedTask.id}`);
 		} catch (error) {
 			console.error(formatTaskEditError(error, existingTaskForWizard.id, target.label.toLowerCase()));
@@ -3512,7 +3543,7 @@ async function runEditCommand(target: EditCommandTarget, requestedIds: string[] 
 	if (taskIds.length === 1) {
 		let updatedTask: Task;
 		try {
-			updatedTask = await target.update(core, existingTask, buildTaskUpdateInput(editArgs));
+			updatedTask = await updateEditTarget(core, target, existingTask, buildTaskUpdateInput(editArgs));
 		} catch (error) {
 			console.error(formatTaskEditError(error, existingTask.id, target.label.toLowerCase()));
 			process.exitCode = 1;
@@ -3520,7 +3551,7 @@ async function runEditCommand(target: EditCommandTarget, requestedIds: string[] 
 		}
 
 		if (isPlainRequested(options)) {
-			console.log(formatTaskPlainText(await loadTaskDetail(core, updatedTask)));
+			console.log(formatTaskPlainText(await loadTaskDetail(core, updatedTask), {}, getActiveSurfaceMode()));
 			return;
 		}
 
@@ -3533,7 +3564,7 @@ async function runEditCommand(target: EditCommandTarget, requestedIds: string[] 
 	// rather than repeating a full task body for every ID.
 	for (const task of resolvedTasks) {
 		try {
-			const updated = await target.update(core, task, buildTaskUpdateInput(editArgs));
+			const updated = await updateEditTarget(core, target, task, buildTaskUpdateInput(editArgs));
 			console.log(`Updated ${target.label.toLowerCase()} ${updated.id}`);
 		} catch (error) {
 			editFailures.push({ taskId: task.id, message: formatTaskEditError(error, task.id, target.label.toLowerCase()) });
@@ -3826,12 +3857,12 @@ addHelpSchema(taskCmd.command("view <taskId>"), {
 
 		// Plain text output for non-interactive environments
 		if (outputMode === "json") {
-			printJson(taskViewJson(await loadTaskDetail(core, task), cwd));
+			printJson(taskViewJson(await loadTaskDetail(core, task), cwd, getActiveSurfaceMode()));
 			return;
 		}
 
 		if (outputMode === "plain") {
-			console.log(formatTaskPlainText(await loadTaskDetail(core, task)));
+			console.log(formatTaskPlainText(await loadTaskDetail(core, task), {}, getActiveSurfaceMode()));
 			return;
 		}
 
@@ -3943,7 +3974,7 @@ addHelpSchema(taskCmd.command("complete <taskId>"), {
 		}
 
 		console.log(`Completed task ${task.id}.`);
-		if (completedFilePath) {
+		if (getActiveSurfaceMode() === "full" && completedFilePath) {
 			console.log(`File: ${completedFilePath}`);
 		}
 	});
