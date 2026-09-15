@@ -67,5 +67,7 @@ test-benchmark-report.json
 
 .conductor
 
+.worktrees/
+
 # TUI screenshot captures
 .tui-screenshots
