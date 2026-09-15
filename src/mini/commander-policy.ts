@@ -41,7 +41,7 @@ export function applyMiniCommanderPolicy(program: Command): void {
 		const allowed = new Set<string>(MINI_CLI_OPTIONS[path as keyof typeof MINI_CLI_OPTIONS] ?? []);
 		const options = command.options as NonNullable<Command["options"]> extends readonly (infer T)[] ? T[] : never;
 		options.splice(0, options.length, ...options.filter((option) => option.long && allowed.has(option.long)));
-		command.aliases([]);
+		(command as Command & { _aliases: string[] })._aliases.splice(0);
 		const eventEmitter = command as Command & { removeAllListeners(event: string): void };
 		for (const event of ["beforeHelp", "afterHelp", "beforeAllHelp", "afterAllHelp"])
 			eventEmitter.removeAllListeners(event);

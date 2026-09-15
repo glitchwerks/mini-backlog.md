@@ -25,8 +25,8 @@ describe("mini Commander policy", () => {
 		applyMiniCommanderPolicy(program);
 
 		expect(commandPaths(program)).toEqual(["task", "task create"]);
+		expect(program.commands[0]?.aliases()).toEqual([]);
 		const create = program.commands[0]?.commands[0];
-		expect(create?.aliases()).toEqual([]);
 		expect(create?.options.map((option) => option.long)).toEqual(["--description"]);
 		expect(create?.options[0]?.short).toBeUndefined();
 		expect(create?.registeredArguments[0]?.required).toBe(true);
