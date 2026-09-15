@@ -51,6 +51,9 @@ import {
 } from "./index.ts";
 import { MilestoneHandlers, type MilestoneRemoveArgs } from "./mcp/tools/milestones/handlers.ts";
 import type { CallToolResult } from "./mcp/types.ts";
+import { applyMiniCommanderPolicy } from "./mini/commander-policy.ts";
+import { getActiveSurfaceMode, type SurfaceMode, setActiveSurfaceMode } from "./mini/runtime.ts";
+import { MINI_TASK_SORT_FIELDS } from "./mini/surface-policy.ts";
 import {
 	type BacklogConfig,
 	type Decision,
@@ -837,27 +840,23 @@ async function requireProjectRoot(): Promise<string> {
 	return root;
 }
 
-// Windows color fix
-if (process.platform === "win32") {
-	const term = process.env.TERM;
-	if (!term || /^(xterm|dumb|ansi|vt100)$/i.test(term)) {
-		process.env.TERM = "xterm-256color";
-	}
-}
-
 // Auto-plain fallback for commands that otherwise launch interactive UIs.
 // Require both stdin and stdout to be TTY before attempting an interactive experience.
 const hasInteractiveTTY = Boolean(process.stdout.isTTY && process.stdin.isTTY);
 const shouldAutoPlain = !hasInteractiveTTY;
-const plainFlagInArgv = process.argv.includes("--plain");
+let activeArgv = process.argv;
+
+function canUseInteractiveUi(): boolean {
+	return getActiveSurfaceMode() === "full" && hasInteractiveTTY;
+}
 
 function isPlainRequested(options?: { plain?: boolean }): boolean {
-	return Boolean(options?.plain || plainFlagInArgv);
+	return getActiveSurfaceMode() === "mini" || Boolean(options?.plain || activeArgv.includes("--plain"));
 }
 
 function getReadOutputMode(options: { json?: boolean; plain?: boolean }): ReadOutputMode | null {
 	try {
-		return resolveReadOutputMode(options, hasInteractiveTTY);
+		return resolveReadOutputMode(options, canUseInteractiveUi());
 	} catch (error) {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exitCode = 1;
@@ -865,66 +864,8 @@ function getReadOutputMode(options: { json?: boolean; plain?: boolean }): ReadOu
 	}
 }
 
-// Temporarily isolate BUN_OPTIONS during CLI parsing to prevent conflicts
-// Save the original value so it's available for subsequent commands
-const originalBunOptions = process.env.BUN_OPTIONS;
-if (process.env.BUN_OPTIONS) {
-	delete process.env.BUN_OPTIONS;
-}
-
 // Get version from package.json
 const version = await getVersion();
-
-// Bare-run entry handling (before Commander parses commands)
-// Show a plain local help entry when invoked without subcommands, unless help/version requested.
-try {
-	let rawArgs = process.argv.slice(2);
-	// Some package managers (e.g., Bun global shims) may inject the resolved
-	// CLI executable path as the first non-node argument. Strip it if detected.
-	if (rawArgs.length > 0) {
-		const first = rawArgs[0];
-		if (
-			typeof first === "string" &&
-			/node_modules[\\/]+backlog\.md-(darwin|linux|windows)-[^\\/]+[\\/]+backlog(\.exe)?$/.test(first)
-		) {
-			rawArgs = rawArgs.slice(1);
-		}
-	}
-	const wantsHelp = rawArgs.includes("-h") || rawArgs.includes("--help");
-	const wantsVersion = rawArgs.includes("-v") || rawArgs.includes("--version");
-	const isBareRoot = rawArgs.length === 0 || (rawArgs.length === 1 && rawArgs[0] === "--plain");
-	if (isBareRoot && !wantsHelp && !wantsVersion) {
-		let initialized = false;
-		try {
-			const runtimeCwd = await resolveRuntimeCwd();
-			const projectRoot = await findBacklogRoot(runtimeCwd.cwd);
-			if (projectRoot) {
-				const core = new Core(projectRoot);
-				const cfg = await core.filesystem.loadConfig();
-				initialized = !!cfg;
-			}
-		} catch (error) {
-			// An initialized project whose config Backlog refuses to read must not be presented as an
-			// uninitialized directory: report the value and stop, as every other entry point does.
-			if (isConfigValueError(error)) {
-				console.error(error.message);
-				process.exit(1);
-			}
-			initialized = false;
-		}
-
-		const { printRootEntry } = await import("./ui/root-entry.ts");
-		await printRootEntry({
-			version,
-			initialized,
-			...(rawArgs.includes("--plain") ? { color: false } : {}),
-		});
-		// Ensure we don't enter Commander command parsing
-		process.exit(0);
-	}
-} catch {
-	// Fall through to normal CLI parsing on any root entry error.
-}
 
 function getMcpStartCwdOverrideFromArgv(argv = process.argv): string | undefined {
 	const args = argv.slice(2);
@@ -951,19 +892,19 @@ function getMcpStartCwdOverrideFromArgv(argv = process.argv): string | undefined
 	return undefined;
 }
 
-// Global config migration - run before any command processing
-// Only run if we're in a backlog project (skip for init, help, version)
-const shouldRunMigration =
-	!process.argv.includes("init") &&
-	!process.argv.includes("--help") &&
-	!process.argv.includes("-h") &&
-	!process.argv.includes("--version") &&
-	!process.argv.includes("-v") &&
-	process.argv.length > 2; // Ensure we have actual commands
+async function runConfigMigration(argv: string[]): Promise<void> {
+	// Only run if we're in a backlog project (skip for init, help, version).
+	const shouldRunMigration =
+		!argv.includes("init") &&
+		!argv.includes("--help") &&
+		!argv.includes("-h") &&
+		!argv.includes("--version") &&
+		!argv.includes("-v") &&
+		argv.length > 2;
+	if (!shouldRunMigration) return;
 
-if (shouldRunMigration) {
 	try {
-		const runtimeCwd = await resolveRuntimeCwd({ cwd: getMcpStartCwdOverrideFromArgv() });
+		const runtimeCwd = await resolveRuntimeCwd({ cwd: getMcpStartCwdOverrideFromArgv(argv) });
 		const projectRoot = await findBacklogRoot(runtimeCwd.cwd);
 		if (projectRoot) {
 			const core = new Core(projectRoot);
@@ -976,6 +917,66 @@ if (shouldRunMigration) {
 		}
 	} catch (_error) {
 		// Silently ignore migration errors - project might not be initialized yet
+	}
+}
+
+async function handleBareInvocation(
+	argv: string[],
+	surface: SurfaceMode,
+	command: Command,
+	cliVersion: string,
+): Promise<boolean> {
+	try {
+		let rawArgs = argv.slice(2);
+		// Some package managers (e.g., Bun global shims) may inject the resolved
+		// CLI executable path as the first non-node argument. Strip it if detected.
+		const first = rawArgs[0];
+		if (
+			typeof first === "string" &&
+			/node_modules[\\/]+backlog\.md-(darwin|linux|windows)-[^\\/]+[\\/]+backlog(\.exe)?$/.test(first)
+		) {
+			rawArgs = rawArgs.slice(1);
+		}
+
+		const wantsHelp = rawArgs.includes("-h") || rawArgs.includes("--help");
+		const wantsVersion = rawArgs.includes("-v") || rawArgs.includes("--version");
+		const isBareRoot = rawArgs.length === 0 || (rawArgs.length === 1 && rawArgs[0] === "--plain");
+		if (!isBareRoot || wantsHelp || wantsVersion) return false;
+
+		if (surface === "mini") {
+			command.outputHelp();
+			return true;
+		}
+
+		let initialized = false;
+		try {
+			const runtimeCwd = await resolveRuntimeCwd();
+			const projectRoot = await findBacklogRoot(runtimeCwd.cwd);
+			if (projectRoot) {
+				const core = new Core(projectRoot);
+				initialized = Boolean(await core.filesystem.loadConfig());
+			}
+		} catch (error) {
+			// An initialized project whose config Backlog refuses to read must not be presented as an
+			// uninitialized directory: report the value and stop, as every other entry point does.
+			if (isConfigValueError(error)) {
+				console.error(error.message);
+				process.exitCode = 1;
+				return true;
+			}
+			initialized = false;
+		}
+
+		const { printRootEntry } = await import("./ui/root-entry.ts");
+		await printRootEntry({
+			version: cliVersion,
+			initialized,
+			...(rawArgs.includes("--plain") ? { color: false } : {}),
+		});
+		return true;
+	} catch {
+		// Fall through to normal CLI parsing on any root entry error.
+		return false;
 	}
 }
 
@@ -1965,7 +1966,7 @@ addHelpSchema(taskCmd.command("create [title]"), {
 		},
 	)
 	.action(async (title: string | undefined, options) => {
-		const shouldUseWizard = hasInteractiveTTY && title === undefined && !hasCreateFieldFlags(options);
+		const shouldUseWizard = canUseInteractiveUi() && title === undefined && !hasCreateFieldFlags(options);
 		if (!shouldUseWizard && (title === undefined || title.trim().length === 0)) {
 			printMissingRequiredArgument("title");
 			return;
@@ -2172,13 +2173,16 @@ addHelpSchema(program.command("search [query]"), {
 		const rawTaskTypes = parseDelimitedStringList(options.taskType) ?? [];
 		const rawSearchProjects = parseDelimitedStringList(options.project) ?? [];
 		const rawTypes = options.type ? (Array.isArray(options.type) ? options.type : [options.type]) : undefined;
-		const allowedTypes: SearchResultType[] = ["task", "document", "decision"];
+		const miniSurface = getActiveSurfaceMode() === "mini";
+		const allowedTypes: SearchResultType[] = miniSurface ? ["task", "document"] : ["task", "document", "decision"];
+		let rejectedType: string | undefined;
 		const types = rawTypes
 			? rawTypes
 					.map((value: string) => value.toLowerCase())
 					.filter((value: string): value is SearchResultType => {
 						if (!allowedTypes.includes(value as SearchResultType)) {
-							console.warn(`Ignoring unsupported type '${value}'. Supported: task, document, decision`);
+							if (miniSurface) rejectedType ??= value;
+							else console.warn(`Ignoring unsupported type '${value}'. Supported: task, document, decision`);
 							return false;
 						}
 						return true;
@@ -2186,6 +2190,12 @@ addHelpSchema(program.command("search [query]"), {
 			: modifiedFileFilters?.length || rawTaskTypes.length > 0 || rawSearchProjects.length > 0
 				? ["task"]
 				: allowedTypes;
+		if (rejectedType) {
+			console.error(`Unsupported type '${rejectedType}'. Supported: task, document`);
+			cleanup();
+			process.exitCode = 1;
+			return;
+		}
 		if (rawTaskTypes.length > 0 && rawTypes && !types.includes("task")) {
 			console.error("--task-type filters task results. Include --type task or omit --type.");
 			cleanup();
@@ -2527,6 +2537,9 @@ async function runTaskList(
 ) {
 	const outputMode = getTaskReadOutputMode(options);
 	if (!outputMode) return;
+	const taskSortFields: readonly string[] =
+		getActiveSurfaceMode() === "mini" ? MINI_TASK_SORT_FIELDS : TASK_SORT_FIELDS;
+	const taskSortFieldList = taskSortFields.join(", ");
 	const cwd = await requireProjectRoot();
 	const core = new Core(cwd);
 	const hasDuplicateIds = await printDuplicateIntegrityWarning(core);
@@ -2630,8 +2643,8 @@ async function runTaskList(
 
 	if (options.sort) {
 		const sortField = options.sort.toLowerCase();
-		if (!TASK_SORT_FIELDS.includes(sortField)) {
-			console.error(`Invalid sort field: ${options.sort}. Valid values are: ${TASK_SORT_FIELD_LIST}`);
+		if (!taskSortFields.includes(sortField)) {
+			console.error(`Invalid sort field: ${options.sort}. Valid values are: ${taskSortFieldList}`);
 			process.exitCode = 1;
 			cleanup();
 			return;
@@ -2862,8 +2875,8 @@ async function runTaskList(
 			let sortedTasks = tasks;
 			if (options.sort) {
 				const sortField = options.sort.toLowerCase();
-				if (!TASK_SORT_FIELDS.includes(sortField)) {
-					throw new Error(`Invalid sort field: ${options.sort}. Valid values are: ${TASK_SORT_FIELD_LIST}`);
+				if (!taskSortFields.includes(sortField)) {
+					throw new Error(`Invalid sort field: ${options.sort}. Valid values are: ${taskSortFieldList}`);
 				}
 				sortedTasks = sortTasks(tasks, sortField, config?.priorities);
 			} else {
@@ -3089,7 +3102,7 @@ async function runEditCommand(target: EditCommandTarget, requestedIds: string[] 
 		taskIds.push(trimmed);
 	}
 	const taskId = taskIds[0];
-	const shouldUseWizard = hasInteractiveTTY && !hasEditFieldFlags(options);
+	const shouldUseWizard = canUseInteractiveUi() && !hasEditFieldFlags(options);
 	if (!shouldUseWizard && !taskId) {
 		printMissingRequiredArgument("taskId");
 		return;
@@ -3965,6 +3978,16 @@ taskCmd
 	.option("--plain", "use plain text output")
 	.option("--json", "print versioned machine-readable JSON output")
 	.action(async (taskId: string | undefined, options: { json?: boolean; plain?: boolean }) => {
+		if (getActiveSurfaceMode() === "mini") {
+			if (taskId) {
+				console.error(`Unknown command: ${taskId}`);
+				process.exitCode = 1;
+				return;
+			}
+			taskCmd.outputHelp();
+			return;
+		}
+
 		const outputMode = getReadOutputMode(options);
 		if (!outputMode) return;
 		const cwd = await requireProjectRoot();
@@ -5887,15 +5910,36 @@ registerInstructionsCommand(program);
 // MCP command group
 registerMcpCommand(program);
 
-program
-	.parseAsync(process.argv)
-	.catch((error) => {
+export async function runCli(argv: string[] = process.argv, surface: SurfaceMode = "mini"): Promise<void> {
+	activeArgv = argv;
+	setActiveSurfaceMode(surface);
+
+	// Windows color fix
+	if (process.platform === "win32") {
+		const term = process.env.TERM;
+		if (!term || /^(xterm|dumb|ansi|vt100)$/i.test(term)) {
+			process.env.TERM = "xterm-256color";
+		}
+	}
+
+	// Temporarily isolate BUN_OPTIONS during CLI parsing to prevent conflicts.
+	const originalBunOptions = process.env.BUN_OPTIONS;
+	if (originalBunOptions) delete process.env.BUN_OPTIONS;
+
+	try {
+		if (surface === "mini") applyMiniCommanderPolicy(program);
+		if (await handleBareInvocation(argv, surface, program, version)) return;
+		await runConfigMigration(argv);
+		await program.parseAsync(argv);
+	} catch (error) {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exitCode = 1;
-	})
-	.finally(() => {
+	} finally {
 		// Restore BUN_OPTIONS after CLI parsing completes so it's available for subsequent commands
-		if (originalBunOptions) {
-			process.env.BUN_OPTIONS = originalBunOptions;
-		}
-	});
+		if (originalBunOptions) process.env.BUN_OPTIONS = originalBunOptions;
+	}
+}
+
+if (import.meta.main) {
+	await runCli(process.argv, "mini");
+}

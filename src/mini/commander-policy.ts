@@ -1,6 +1,11 @@
 import type { Argument, Command } from "commander";
 import { MINI_CLI_DESCRIPTIONS, MINI_CLI_OPTIONS } from "./surface-policy.ts";
 
+const MINI_OPTION_DESCRIPTIONS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+	search: { "--type": "limit results to type (task, document)" },
+	"task list": { "--sort": "sort tasks by field (priority, id)" },
+};
+
 function commandPath(command: Command): string {
 	const parts: string[] = [];
 	let current: Command | null = command;
@@ -39,6 +44,7 @@ export function applyMiniCommanderPolicy(program: Command): void {
 	for (const command of walkCommands(program)) {
 		const path = commandPath(command);
 		const allowed = new Set<string>(MINI_CLI_OPTIONS[path as keyof typeof MINI_CLI_OPTIONS] ?? []);
+		const optionDescriptions = MINI_OPTION_DESCRIPTIONS[path];
 		const options = command.options as NonNullable<Command["options"]> extends readonly (infer T)[] ? T[] : never;
 		options.splice(0, options.length, ...options.filter((option) => option.long && allowed.has(option.long)));
 		(command as Command & { _aliases: string[] })._aliases.splice(0);
@@ -47,7 +53,13 @@ export function applyMiniCommanderPolicy(program: Command): void {
 			eventEmitter.removeAllListeners(event);
 		command.description(MINI_CLI_DESCRIPTIONS[path as keyof typeof MINI_CLI_DESCRIPTIONS]);
 		command.helpOption("--help", "display help for command");
-		for (const option of command.options) option.short = undefined;
+		for (const option of command.options) {
+			const longFlagIndex = option.flags.indexOf("--");
+			if (longFlagIndex >= 0) option.flags = option.flags.slice(longFlagIndex);
+			option.short = undefined;
+			const miniDescription = option.long ? optionDescriptions?.[option.long] : undefined;
+			if (miniDescription) option.description = miniDescription;
+		}
 	}
 	requireArgument(findCommand(program, "task create"), 0);
 	requireArgument(findCommand(program, "task edit"), 0);
