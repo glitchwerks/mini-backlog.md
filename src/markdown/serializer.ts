@@ -1,6 +1,6 @@
 import type { AcceptanceCriterion, Decision, Document, Task } from "../types/index.ts";
 import { normalizeAssignee } from "../utils/assignee.ts";
-import { stringifyFrontmatter } from "./frontmatter.ts";
+import { parseFrontmatter, stringifyFrontmatter } from "./frontmatter.ts";
 import {
 	AcceptanceCriteriaManager,
 	CommentsManager,
@@ -46,9 +46,37 @@ function commentItemsEqual(left: Task["comments"], right: Task["comments"]): boo
 	});
 }
 
-export function serializeTask(task: Task): string {
+export interface TaskSerializationOptions {
+	preserveUnknownFrontmatterFrom?: string;
+}
+
+const KNOWN_TASK_FRONTMATTER_FIELDS = new Set([
+	"id",
+	"title",
+	"status",
+	"assignee",
+	"reporter",
+	"created_date",
+	"updated_date",
+	"due_date",
+	"labels",
+	"milestone",
+	"dependencies",
+	"references",
+	"documentation",
+	"modified_files",
+	"parent_task_id",
+	"subtasks",
+	"priority",
+	"type",
+	"project",
+	"ordinal",
+	"onStatusChange",
+]);
+
+export function serializeTask(task: Task, options: TaskSerializationOptions = {}): string {
 	normalizeAssignee(task);
-	const frontmatter = {
+	const frontmatter: Record<string, unknown> = {
 		id: task.id,
 		title: task.title,
 		status: task.status,
@@ -71,6 +99,12 @@ export function serializeTask(task: Task): string {
 		...(task.ordinal !== undefined && { ordinal: task.ordinal }),
 		...(task.onStatusChange && { onStatusChange: task.onStatusChange }),
 	};
+	if (options.preserveUnknownFrontmatterFrom) {
+		const previousData = parseFrontmatter(options.preserveUnknownFrontmatterFrom).data;
+		for (const [name, value] of Object.entries(previousData)) {
+			if (!KNOWN_TASK_FRONTMATTER_FIELDS.has(name)) frontmatter[name] = value;
+		}
+	}
 
 	let contentBody = task.rawContent ?? "";
 	const rawContent = task.rawContent ?? "";

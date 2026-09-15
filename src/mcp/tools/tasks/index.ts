@@ -1,5 +1,8 @@
 import type { SurfaceMode } from "../../../mini/runtime.ts";
+import { formatMiniAmbiguousTaskIdError } from "../../../mini/task-output.ts";
 import type { BacklogConfig } from "../../../types/index.ts";
+import { isAmbiguousTaskIdError } from "../../../utils/task-path.ts";
+import { BacklogToolError } from "../../errors/mcp-errors.ts";
 import type { McpServer } from "../../server.ts";
 import type { McpToolHandler } from "../../types.ts";
 import {
@@ -16,6 +19,17 @@ import { createSimpleValidatedTool } from "../../validation/tool-wrapper.ts";
 import type { TaskCreateArgs, TaskEditRequest, TaskListArgs, TaskSearchArgs } from "./handlers.ts";
 import { TaskHandlers } from "./handlers.ts";
 import { taskArchiveSchema, taskCompleteSchema, taskViewSchema } from "./schemas.ts";
+
+async function projectMiniTaskError<T>(surface: SurfaceMode, operation: () => Promise<T>): Promise<T> {
+	try {
+		return await operation();
+	} catch (error) {
+		if (surface === "mini" && isAmbiguousTaskIdError(error)) {
+			throw new BacklogToolError(formatMiniAmbiguousTaskIdError(error.taskId), "AMBIGUOUS_TASK_ID");
+		}
+		throw error;
+	}
+}
 
 export function registerTaskTools(server: McpServer, config: BacklogConfig, surface: SurfaceMode = "full"): void {
 	const handlers = new TaskHandlers(server, surface);
@@ -75,7 +89,7 @@ export function registerTaskTools(server: McpServer, config: BacklogConfig, surf
 			annotations: { title: "Edit Task", destructiveHint: false },
 		},
 		taskEditSchema,
-		async (input) => handlers.editTask(input as unknown as TaskEditRequest),
+		async (input) => projectMiniTaskError(surface, async () => handlers.editTask(input as unknown as TaskEditRequest)),
 	);
 
 	const viewTaskTool: McpToolHandler = createSimpleValidatedTool(
@@ -86,7 +100,7 @@ export function registerTaskTools(server: McpServer, config: BacklogConfig, surf
 			annotations: { title: "View Task", readOnlyHint: true, destructiveHint: false },
 		},
 		taskViewSchema,
-		async (input) => handlers.viewTask(input as { id: string }),
+		async (input) => projectMiniTaskError(surface, async () => handlers.viewTask(input as { id: string })),
 	);
 
 	const archiveTaskTool: McpToolHandler = createSimpleValidatedTool(
@@ -108,7 +122,7 @@ export function registerTaskTools(server: McpServer, config: BacklogConfig, surf
 			annotations: { title: "Complete Task", destructiveHint: true },
 		},
 		taskCompleteSchema,
-		async (input) => handlers.completeTask(input as { id: string }),
+		async (input) => projectMiniTaskError(surface, async () => handlers.completeTask(input as { id: string })),
 	);
 
 	server.addTool(createTaskTool);

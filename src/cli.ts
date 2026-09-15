@@ -55,9 +55,9 @@ import { applyMiniCommanderPolicy } from "./mini/commander-policy.ts";
 import { getActiveSurfaceMode, type SurfaceMode, setActiveSurfaceMode } from "./mini/runtime.ts";
 import { MINI_TASK_SORT_FIELDS } from "./mini/surface-policy.ts";
 import {
+	formatMiniAmbiguousTaskIdError,
 	formatMiniDuplicateTaskIdWarning,
 	formatMiniTaskSummaryLine,
-	restoreMiniTaskHiddenFrontmatter,
 } from "./mini/task-output.ts";
 import {
 	type BacklogConfig,
@@ -303,6 +303,9 @@ function parsePositiveIntegerOption(value: unknown, optionName: string, helpComm
 }
 
 function formatTaskEditError(error: unknown, taskId: string, commandKind = "task"): string {
+	if (getActiveSurfaceMode() === "mini" && isAmbiguousTaskIdError(error)) {
+		return formatMiniAmbiguousTaskIdError(error.taskId || taskId);
+	}
 	const message = error instanceof Error ? error.message : String(error);
 	if (
 		message.startsWith("Malformed Acceptance Criteria markers:") ||
@@ -3048,7 +3051,12 @@ type EditCommandTarget = {
 	resolve: (core: Core, idOrSelectedPath: string) => Promise<Task | null>;
 	listCandidates: (core: Core) => Promise<Task[]>;
 	selectionValue: (candidate: Task) => string;
-	update: (core: Core, existing: Task, input: TaskUpdateInput) => Promise<Task>;
+	update: (
+		core: Core,
+		existing: Task,
+		input: TaskUpdateInput,
+		options?: { preserveUnknownFrontmatter?: boolean },
+	) => Promise<Task>;
 	notFoundMessage: (id: string) => string;
 };
 
@@ -3059,7 +3067,8 @@ const taskEditTarget: EditCommandTarget = {
 	resolve: (core, id) => core.loadTaskById(id, { includeCrossBranch: false }),
 	listCandidates: (core) => core.queryTasks({ includeCrossBranch: false }),
 	selectionValue: (candidate) => candidate.id,
-	update: (core, existing, input) => core.editTask(existing.id, input, undefined, { includeCrossBranch: false }),
+	update: (core, existing, input, options) =>
+		core.editTask(existing.id, input, undefined, { includeCrossBranch: false, ...options }),
 	notFoundMessage: (id) => `Task ${id} not found. ${LOCAL_TASK_LOOKUP_HINT}`,
 };
 
@@ -3069,14 +3078,8 @@ async function updateEditTarget(
 	existing: Task,
 	input: TaskUpdateInput,
 ): Promise<Task> {
-	if (getActiveSurfaceMode() === "full" || !existing.filePath) return await target.update(core, existing, input);
-
-	const previousContent = await Bun.file(existing.filePath).text();
-	const updated = await target.update(core, existing, input);
-	const current =
-		(await core.filesystem.loadDraft(updated.id)) ?? (await core.filesystem.loadTask(updated.id)) ?? updated;
-	await restoreMiniTaskHiddenFrontmatter(previousContent, current.filePath);
-	return updated;
+	const options = getActiveSurfaceMode() === "mini" ? { preserveUnknownFrontmatter: true } : undefined;
+	return await target.update(core, existing, input, options);
 }
 
 const draftEditTarget: EditCommandTarget = {
@@ -3112,11 +3115,16 @@ const draftEditTarget: EditCommandTarget = {
 	},
 	listCandidates: (core) => core.filesystem.listHealthyDrafts(),
 	selectionValue: (candidate) => candidate.filePath ?? candidate.id,
-	update: (core, existing, input) => {
+	update: (core, existing, input, options) => {
 		if (!existing.filePath) {
 			throw new Error(`Cannot update draft ${existing.id} without its file path.`);
 		}
-		return core.updateDraftFromInput({ filePath: existing.filePath, canonicalId: existing.id }, input);
+		return core.updateDraftFromInput(
+			{ filePath: existing.filePath, canonicalId: existing.id },
+			input,
+			undefined,
+			options,
+		);
 	},
 	notFoundMessage: (id) => `Draft ${id} not found.`,
 };

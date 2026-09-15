@@ -293,11 +293,23 @@ describe("mini MCP task routing", () => {
 			if (!serverConfig) throw new Error("Expected test config");
 			registerTaskTools(server, serverConfig, "mini");
 
-			const result = await server.testInterface.callTool({ params: { name: "task_list", arguments: {} } });
+			const listResult = await server.testInterface.callTool({ params: { name: "task_list", arguments: {} } });
+			const listText = (listResult.content ?? []).map((item) => ("text" in item ? item.text : "")).join("\n");
+			expect(listText).toContain("Duplicate task IDs detected: TASK-1");
+			expect(listText).not.toMatch(/secret-alpha|secret-beta|backlog[\\/]tasks|backlog doctor/);
 
-			const text = (result.content ?? []).map((item) => ("text" in item ? item.text : "")).join("\n");
-			expect(text).toContain("Duplicate task IDs detected: TASK-1");
-			expect(text).not.toMatch(/secret-alpha|secret-beta|backlog[\\/]tasks|backlog doctor/);
+			for (const request of [
+				{ name: "task_view", arguments: { id: "TASK-1" } },
+				{ name: "task_edit", arguments: { id: "TASK-1", description: "Changed" } },
+				{ name: "task_complete", arguments: { id: "TASK-1" } },
+			]) {
+				const result = await server.testInterface.callTool({ params: request });
+				const text = (result.content ?? []).map((item) => ("text" in item ? item.text : "")).join("\n");
+				expect(result.isError).toBe(true);
+				expect(text).toContain("Task ID TASK-1 is ambiguous");
+				expect(text).not.toMatch(/secret-alpha|secret-beta|backlog[\\/]tasks|backlog doctor/);
+				expect(result.structuredContent).toEqual({ code: "AMBIGUOUS_TASK_ID" });
+			}
 		} finally {
 			await server.stop();
 			await safeCleanup(testDir);
@@ -342,6 +354,113 @@ Original
 			const text = (result.content ?? []).map((item) => ("text" in item ? item.text : "")).join("\n");
 			expect(text).toContain("Changed");
 			expect(text).not.toContain("future-value");
+		} finally {
+			await server.stop();
+			await safeCleanup(testDir);
+		}
+	});
+
+	it("does not overwrite an edit that lands after the locked persistence operation", async () => {
+		const testDir = createUniqueTestDir("mini-mcp-task-edit-concurrency");
+		const server = new McpServer(testDir, "Mini task edit concurrency");
+		try {
+			await server.filesystem.ensureBacklogStructure();
+			await initializeFilesystemTestProject(server, "Mini task edit concurrency");
+			const taskPath = join(testDir, "backlog", "tasks", "task-1 - future-field.md");
+			await Bun.write(
+				taskPath,
+				`---
+id: task-1
+title: Future field
+status: To Do
+assignee: []
+created_date: '2026-09-14'
+labels: []
+dependencies: []
+future_upstream_field: future-value
+---
+
+## Description
+
+Original
+`,
+			);
+			const serverConfig = await server.filesystem.loadConfig();
+			if (!serverConfig) throw new Error("Expected test config");
+			registerTaskTools(server, serverConfig, "mini");
+
+			const originalEditTaskOrDraft = server.editTaskOrDraft.bind(server);
+			server.editTaskOrDraft = async (...args: Parameters<McpServer["editTaskOrDraft"]>) => {
+				const result = await originalEditTaskOrDraft(...args);
+				const saved = await Bun.file(taskPath).text();
+				await Bun.write(
+					taskPath,
+					saved.replace("future_upstream_field: future-value", "future_upstream_field: concurrent-value"),
+				);
+				return result;
+			};
+
+			const result = await server.testInterface.callTool({
+				params: { name: "task_edit", arguments: { id: "TASK-1", description: "Changed" } },
+			});
+
+			expect(result.isError).not.toBe(true);
+			const persisted = await Bun.file(taskPath).text();
+			expect(persisted).toContain("future_upstream_field: concurrent-value");
+			expect(persisted).toContain("Changed");
+		} finally {
+			await server.stop();
+			await safeCleanup(testDir);
+		}
+	});
+
+	it("commits preserved unknown frontmatter with an auto-committed mini edit", async () => {
+		const testDir = createUniqueTestDir("mini-mcp-task-edit-autocommit");
+		const server = new McpServer(testDir, "Mini task edit auto-commit");
+		try {
+			await server.filesystem.ensureBacklogStructure();
+			await $`git init`.cwd(testDir).quiet();
+			await initializeFilesystemTestProject(server, "Mini task edit auto-commit");
+			const config = await server.filesystem.loadConfig();
+			if (!config) throw new Error("Expected test config");
+			config.autoCommit = true;
+			config.filesystemOnly = false;
+			await server.filesystem.saveConfig(config);
+			const relativeTaskPath = "backlog/tasks/task-1 - future-field.md";
+			const taskPath = join(testDir, relativeTaskPath);
+			await Bun.write(
+				taskPath,
+				`---
+id: task-1
+title: Future field
+status: To Do
+assignee: []
+created_date: '2026-09-14'
+labels: []
+dependencies: []
+future_upstream_field: future-value
+---
+
+## Description
+
+Original
+`,
+			);
+			await $`git add .`.cwd(testDir).quiet();
+			await $`git commit -m baseline`.cwd(testDir).quiet();
+			registerTaskTools(server, config, "mini");
+
+			const result = await server.testInterface.callTool({
+				params: { name: "task_edit", arguments: { id: "TASK-1", description: "Changed" } },
+			});
+
+			expect(result.isError).not.toBe(true);
+			const workingContent = await Bun.file(taskPath).text();
+			const committedContent = (await $`git show ${`HEAD:${relativeTaskPath}`}`.cwd(testDir).quiet()).stdout.toString();
+			for (const content of [workingContent, committedContent]) {
+				expect(content).toContain("future_upstream_field: future-value");
+				expect(content).toContain("Changed");
+			}
 		} finally {
 			await server.stop();
 			await safeCleanup(testDir);
@@ -455,12 +574,20 @@ hidden summary
 				serializeTask({ ...first, id: "TASK-01", title: "Second duplicate" }),
 			);
 
-			const result = await $`bun ${MINI_CLI_PATH} task list --plain`.cwd(testDir).quiet().nothrow();
+			const listResult = await $`bun ${MINI_CLI_PATH} task list --plain`.cwd(testDir).quiet().nothrow();
+			const listStderr = listResult.stderr.toString();
+			expect(listResult.exitCode).toBe(1);
+			expect(listStderr).toContain("Duplicate task IDs detected: TASK-1");
+			expect(listStderr).not.toMatch(/secret-alpha|secret-beta|backlog[\\/]tasks|backlog doctor/);
 
-			const stderr = result.stderr.toString();
-			expect(result.exitCode).toBe(1);
-			expect(stderr).toContain("Duplicate task IDs detected: TASK-1");
-			expect(stderr).not.toMatch(/secret-alpha|secret-beta|backlog[\\/]tasks|backlog doctor/);
+			const editResult = await $`bun ${MINI_CLI_PATH} task edit TASK-1 --description Changed --plain`
+				.cwd(testDir)
+				.quiet()
+				.nothrow();
+			const editStderr = editResult.stderr.toString();
+			expect(editResult.exitCode).toBe(1);
+			expect(editStderr).toContain("Task ID TASK-1 is ambiguous");
+			expect(editStderr).not.toMatch(/secret-alpha|secret-beta|backlog[\\/]tasks|backlog doctor/);
 		} finally {
 			await safeCleanup(testDir);
 		}

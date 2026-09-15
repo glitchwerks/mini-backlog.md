@@ -4,7 +4,12 @@ import lockfile from "proper-lockfile";
 import { DEFAULT_DIRECTORIES, DEFAULT_FILES, DEFAULT_STATUSES, FALLBACK_STATUS } from "../constants/index.ts";
 import { parseFrontmatter } from "../markdown/frontmatter.ts";
 import { parseDecision, parseDocument, parseMilestone, parseTask } from "../markdown/parser.ts";
-import { serializeDecision, serializeDocument, serializeTask } from "../markdown/serializer.ts";
+import {
+	serializeDecision,
+	serializeDocument,
+	serializeTask,
+	type TaskSerializationOptions,
+} from "../markdown/serializer.ts";
 import type { BacklogConfig, Decision, Document, Milestone, Task, TaskListFilter } from "../types/index.ts";
 import type { BacklogConfigSource } from "../utils/backlog-directory.ts";
 import {
@@ -775,7 +780,7 @@ export class FileSystem {
 		return (await this.resolveTaskWriteTarget(task, isDraft)).filePath;
 	}
 
-	async saveTask(task: Task): Promise<string> {
+	async saveTask(task: Task, serializationOptions: TaskSerializationOptions = {}): Promise<string> {
 		const { id: taskId, filename, filePath: filepath } = await this.resolveTaskWriteTarget(task);
 		const prefix = extractAnyPrefix(taskId) ?? "task";
 		const tasksDir = await this.getTasksDir();
@@ -805,7 +810,7 @@ export class FileSystem {
 			id: persistedTaskId,
 			parentTaskId: persistedParentTaskId,
 		};
-		const content = serializeTask(normalizedTask);
+		const content = serializeTask(normalizedTask, serializationOptions);
 
 		if (!shouldPreservePath) {
 			// Delete any existing task files with the same ID but different filenames
@@ -1257,12 +1262,12 @@ export class FileSystem {
 	}
 
 	// Draft operations
-	async saveDraft(task: Task): Promise<string> {
+	async saveDraft(task: Task, serializationOptions: TaskSerializationOptions = {}): Promise<string> {
 		const { id: draftId, filename, filePath: filepath } = await this.resolveTaskWriteTarget(task, true);
 		const draftsDir = await this.getDraftsDir();
 		// Normalize the draft ID to uppercase before serialization
 		const normalizedTask = { ...task, id: draftId };
-		const content = serializeTask(normalizedTask);
+		const content = serializeTask(normalizedTask, serializationOptions);
 
 		// Remove every existing draft file whose numeric identity matches the saved id but
 		// whose filename differs (title change, zero-padding drift): a save must converge

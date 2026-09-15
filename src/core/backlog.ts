@@ -13,6 +13,7 @@ import {
 import { type GitBranchTip, type GitIndexEntry, GitOperations } from "../git/operations.ts";
 import { parseFrontmatter } from "../markdown/frontmatter.ts";
 import { parseTask } from "../markdown/parser.ts";
+import type { TaskSerializationOptions } from "../markdown/serializer.ts";
 import { assertSectionInputHasNoMarkerLines } from "../markdown/structured-sections.ts";
 import {
 	type AcceptanceCriterion,
@@ -183,6 +184,10 @@ interface TaskQueryOptions {
 interface TaskReadOptions {
 	includeCrossBranch?: boolean;
 	refreshCrossBranch?: boolean;
+}
+
+interface TaskEditOptions extends TaskReadOptions {
+	preserveUnknownFrontmatter?: boolean;
 }
 
 interface ActiveBranchSnapshot {
@@ -1930,7 +1935,11 @@ export class Core {
 		return filepath;
 	}
 
-	async updateTask(task: Task, autoCommit?: boolean): Promise<string> {
+	async updateTask(
+		task: Task,
+		autoCommit?: boolean,
+		serializationOptions: TaskSerializationOptions = {},
+	): Promise<string> {
 		normalizeAssignee(task);
 
 		// Load original task to detect status changes for callbacks
@@ -1950,7 +1959,7 @@ export class Core {
 			delete task.updatedDate;
 		}
 
-		const filePath = await this.fs.saveTask(task);
+		const filePath = await this.fs.saveTask(task, serializationOptions);
 		// Keep any in-process ContentStore in sync for immediate UI/search freshness.
 
 		if (await this.shouldAutoCommit(autoCommit)) {
@@ -1963,6 +1972,14 @@ export class Core {
 		}
 
 		return filePath;
+	}
+
+	private async getEditSerializationOptions(
+		filePath: string | undefined,
+		options: TaskEditOptions,
+	): Promise<TaskSerializationOptions> {
+		if (!options.preserveUnknownFrontmatter || !filePath) return {};
+		return { preserveUnknownFrontmatterFrom: await Bun.file(filePath).text() };
 	}
 
 	private async applyTaskUpdateInput(
@@ -2557,7 +2574,7 @@ export class Core {
 		taskId: string,
 		input: TaskUpdateInput,
 		autoCommit?: boolean,
-		options: TaskReadOptions = {},
+		options: TaskEditOptions = {},
 	): Promise<Task> {
 		const task = await this.loadTaskForMutation(taskId, options);
 		if (!task) {
@@ -2588,19 +2605,24 @@ export class Core {
 				return current;
 			}
 
-			await this.updateTask(current, autoCommit);
+			const serializationOptions = await this.getEditSerializationOptions(current.filePath, options);
+			await this.updateTask(current, autoCommit, serializationOptions);
 			return current;
 		});
 	}
 
-	async updateDraft(task: Task, autoCommit?: boolean): Promise<string> {
+	async updateDraft(
+		task: Task,
+		autoCommit?: boolean,
+		serializationOptions: TaskSerializationOptions = {},
+	): Promise<string> {
 		// Drafts always keep status Draft
 		task.status = "Draft";
 		normalizeAssignee(task);
 		task.updatedDate = new Date().toISOString().slice(0, 16).replace("T", " ");
 
 		const previousPath = task.filePath;
-		const filepath = await this.fs.saveDraft(task);
+		const filepath = await this.fs.saveDraft(task, serializationOptions);
 
 		if (await this.shouldAutoCommit(autoCommit)) {
 			if (previousPath && previousPath !== filepath) {
@@ -2621,6 +2643,7 @@ export class Core {
 		reference: DraftFileReference,
 		input: TaskUpdateInput,
 		autoCommit?: boolean,
+		options: TaskEditOptions = {},
 	): Promise<Task> {
 		// Same discipline as task edits: acquire the namespaced per-file lock before the
 		// read-modify-write and re-read inside it, so a concurrent editor fails fast instead of
@@ -2644,7 +2667,8 @@ export class Core {
 				return current.task;
 			}
 
-			const savedPath = await this.updateDraft(current.task, autoCommit);
+			const serializationOptions = await this.getEditSerializationOptions(current.filePath, options);
+			const savedPath = await this.updateDraft(current.task, autoCommit, serializationOptions);
 			const refreshed = await this.fs.draftReferenceFromPath(savedPath);
 			return refreshed.task;
 		});
@@ -2654,7 +2678,7 @@ export class Core {
 		taskId: string,
 		input: TaskUpdateInput,
 		autoCommit?: boolean,
-		options: TaskReadOptions = {},
+		options: TaskEditOptions = {},
 	): Promise<TaskEditResult> {
 		const resolvedDraft = await this.fs.resolveDraftReference(taskId);
 		if (resolvedDraft) {
@@ -2662,11 +2686,11 @@ export class Core {
 			const wantsDraft = requestedStatus?.toLowerCase() === "draft";
 			if (requestedStatus && !wantsDraft) {
 				return {
-					task: await this.promoteDraftWithUpdates(resolvedDraft, input, autoCommit),
+					task: await this.promoteDraftWithUpdates(resolvedDraft, input, autoCommit, options),
 					cleanedTaskIds: [],
 				};
 			}
-			return { task: await this.updateDraftFromInput(resolvedDraft, input, autoCommit), cleanedTaskIds: [] };
+			return { task: await this.updateDraftFromInput(resolvedDraft, input, autoCommit, options), cleanedTaskIds: [] };
 		}
 
 		if (input.status?.trim().toLowerCase() === "draft") {
@@ -2682,6 +2706,7 @@ export class Core {
 		reference: DraftFileReference,
 		input: TaskUpdateInput,
 		autoCommit?: boolean,
+		options: TaskEditOptions = {},
 	): Promise<Task> {
 		const targetStatus = input.status?.trim();
 		if (!targetStatus || targetStatus.toLowerCase() === "draft") {
@@ -2725,7 +2750,8 @@ export class Core {
 				};
 
 				normalizeAssignee(promotedTask);
-				const savedPath = await this.fs.saveTask(promotedTask);
+				const serializationOptions = await this.getEditSerializationOptions(current.filePath, options);
+				const savedPath = await this.fs.saveTask(promotedTask, serializationOptions);
 
 				if (draftPath) {
 					await unlink(draftPath);
@@ -2759,7 +2785,7 @@ export class Core {
 		task: Task,
 		input: TaskUpdateInput,
 		autoCommit?: boolean,
-		options: TaskReadOptions = {},
+		options: TaskEditOptions = {},
 	): Promise<TaskEditResult> {
 		// Editing a task into the Draft status vacates its ID just as `task demote` does, so it
 		// runs the same cleanup rather than leaving dependents pointing at the freed ID.
@@ -2798,7 +2824,8 @@ export class Core {
 				};
 
 				normalizeAssignee(demotedDraft);
-				const savedPath = await this.fs.saveDraft(demotedDraft);
+				const serializationOptions = await this.getEditSerializationOptions(current.filePath, options);
+				const savedPath = await this.fs.saveDraft(demotedDraft, serializationOptions);
 
 				if (taskPath) {
 					await unlink(taskPath);
@@ -2881,7 +2908,7 @@ export class Core {
 		taskId: string,
 		input: TaskUpdateInput,
 		autoCommit?: boolean,
-		options: TaskReadOptions = {},
+		options: TaskEditOptions = {},
 	): Promise<Task> {
 		return await this.updateTaskFromInput(taskId, input, autoCommit, options);
 	}

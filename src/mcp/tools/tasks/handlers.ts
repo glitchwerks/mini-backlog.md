@@ -5,11 +5,7 @@ import { findLocalDuplicateTaskIds } from "../../../core/duplicate-task-repair.t
 import { loadTaskDetail, loadTaskListItems } from "../../../core/task-detail.ts";
 import { isCreateLockError, isTaskLockError } from "../../../file-system/operations.ts";
 import type { SurfaceMode } from "../../../mini/runtime.ts";
-import {
-	formatMiniDuplicateTaskIdWarning,
-	formatMiniTaskSummaryLine,
-	restoreMiniTaskHiddenFrontmatter,
-} from "../../../mini/task-output.ts";
+import { formatMiniDuplicateTaskIdWarning, formatMiniTaskSummaryLine } from "../../../mini/task-output.ts";
 import {
 	isLocalEditableTask,
 	type SearchPriorityFilter,
@@ -26,6 +22,7 @@ import {
 } from "../../../utils/milestone-filter.ts";
 import { resolveMilestoneInputForStorage } from "../../../utils/milestone-storage.ts";
 import { buildTaskUpdateInput } from "../../../utils/task-edit-builder.ts";
+import { isAmbiguousTaskIdError } from "../../../utils/task-path.ts";
 import { applyTaskFilters, createTaskSearchIndex } from "../../../utils/task-search.ts";
 import { sortByOrdinalAndPriority } from "../../../utils/task-sorting.ts";
 import { getTerminalStatus, isTerminalStatus } from "../../../utils/terminal-status.ts";
@@ -575,24 +572,17 @@ export class TaskHandlers {
 				throw new BacklogToolError("Ordinal must be a non-negative number.", "VALIDATION_ERROR");
 			}
 
-			let previousContent: string | undefined;
-			if (this.surface === "mini") {
-				const existing = (await this.core.filesystem.loadDraft(args.id)) ?? (await this.core.getTask(args.id));
-				if (existing?.filePath) previousContent = await Bun.file(existing.filePath).text();
-			}
-
 			const updateInput = buildTaskUpdateInput(args);
 			if (typeof updateInput.milestone === "string") {
 				updateInput.milestone = await this.resolveMilestoneInput(updateInput.milestone);
 			}
-			const { task: updatedTask, cleanedTaskIds } = await this.core.editTaskOrDraft(args.id, updateInput);
-			if (previousContent) {
-				const current =
-					(await this.core.filesystem.loadDraft(updatedTask.id)) ??
-					(await this.core.filesystem.loadTask(updatedTask.id)) ??
-					updatedTask;
-				await restoreMiniTaskHiddenFrontmatter(previousContent, current.filePath);
-			}
+			const editOptions = this.surface === "mini" ? { preserveUnknownFrontmatter: true } : undefined;
+			const { task: updatedTask, cleanedTaskIds } = await this.core.editTaskOrDraft(
+				args.id,
+				updateInput,
+				undefined,
+				editOptions,
+			);
 			const cleanupMessage = formatDependencyCleanupMessage(args.id, cleanedTaskIds);
 			return await formatTaskCallResult(
 				await loadTaskDetail(this.core, updatedTask),
@@ -601,6 +591,7 @@ export class TaskHandlers {
 				this.surface,
 			);
 		} catch (error) {
+			if (this.surface === "mini" && isAmbiguousTaskIdError(error)) throw error;
 			if (isTaskLockError(error)) {
 				throw new BacklogToolError(error.message, "OPERATION_FAILED");
 			}

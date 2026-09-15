@@ -1,11 +1,11 @@
 import type { TaskDetail, TaskListItem } from "../core/task-detail.ts";
-import { parseFrontmatter, stringifyFrontmatter } from "../markdown/frontmatter.ts";
 import type { Task } from "../types/index.ts";
 import { formatAcceptanceCriteriaSummarySuffix } from "../ui/acceptance-criteria-progress.ts";
 import { transformCodePathsPlain } from "../ui/code-path.ts";
 import { formatStatusWithIcon } from "../ui/status-icon.ts";
 import type { DuplicateGroup } from "../utils/duplicate-detection.ts";
 import { formatPriorityLabel } from "../utils/priority-config.ts";
+import { canonicalTaskId } from "../utils/task-path.ts";
 import { formatUtcDateForDisplay, type UtcDateDisplayOptions } from "../utils/utc-date-display.ts";
 
 export type MiniTaskSummaryJson = {
@@ -44,30 +44,6 @@ export type MiniTaskDetailsJson = MiniTaskSummaryJson & {
 };
 
 const plainDateDisplayOptions: UtcDateDisplayOptions = { appendUtcLabel: true };
-
-const KNOWN_TASK_FRONTMATTER_FIELDS = new Set([
-	"id",
-	"title",
-	"status",
-	"assignee",
-	"reporter",
-	"created_date",
-	"updated_date",
-	"due_date",
-	"labels",
-	"milestone",
-	"dependencies",
-	"references",
-	"documentation",
-	"modified_files",
-	"parent_task_id",
-	"subtasks",
-	"priority",
-	"type",
-	"project",
-	"ordinal",
-	"onStatusChange",
-]);
 
 function nullable(value: string | undefined): string | null {
 	return value ?? null;
@@ -166,6 +142,10 @@ export function formatMiniDuplicateTaskIdWarning(groups: DuplicateGroup[]): stri
 	return `Duplicate task IDs detected: ${groups.map((group) => group.id).join(", ")}.`;
 }
 
+export function formatMiniAmbiguousTaskIdError(taskId: string): string {
+	return `Task ID ${canonicalTaskId(taskId)} is ambiguous.`;
+}
+
 export function formatMiniTaskPlainText(task: TaskDetail): string {
 	const details = toMiniTaskDetailsJson(task);
 	const lines = [
@@ -207,22 +187,4 @@ export function formatMiniTaskPlainText(task: TaskDetail): string {
 	}
 
 	return lines.join("\n");
-}
-
-/** Restore frontmatter fields the current task model does not know after a restricted edit. */
-export async function restoreMiniTaskHiddenFrontmatter(
-	previousContent: string,
-	currentFilePath: string | undefined,
-): Promise<void> {
-	if (!currentFilePath) return;
-	const previousData = parseFrontmatter(previousContent).data;
-	const hiddenEntries = Object.entries(previousData).filter(([name]) => !KNOWN_TASK_FRONTMATTER_FIELDS.has(name));
-	if (hiddenEntries.length === 0) return;
-
-	const currentContent = await Bun.file(currentFilePath).text();
-	const current = parseFrontmatter(currentContent);
-	const merged = { ...current.data };
-	for (const [name, value] of hiddenEntries) merged[name] = value;
-	const restored = stringifyFrontmatter(current.content, merged).replace(/^(---\n(?:.*\n)*?---)\n(?!$)/, "$1\n\n");
-	if (restored !== currentContent) await Bun.write(currentFilePath, restored);
 }
