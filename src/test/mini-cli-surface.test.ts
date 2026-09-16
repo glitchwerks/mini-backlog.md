@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
 import { $ } from "bun";
+import { MINI_CLI_OPTIONS } from "../mini/surface-policy.ts";
 
 const MINI_CLI_PATH = join(process.cwd(), "src", "cli.ts");
 
@@ -43,11 +44,23 @@ describe("shipped mini CLI surface", () => {
 
 	it.each([
 		"init",
+		"draft",
+		"board",
+		"decision",
+		"agents",
+		"config",
+		"doctor",
+		"cleanup",
+		"browser",
+		"overview",
+		"completion",
+		"instructions",
 		"task archive TASK-1",
 		"milestone archive m-1",
 		"task create X --due-date 2026-09-14",
 		"task edit TASK-1 --project Web",
 		"tasks list",
+		"milestones list",
 		"task 1",
 		"--plain",
 		"help",
@@ -119,6 +132,37 @@ describe("shipped mini CLI surface", () => {
 			expect(output).not.toContain(hidden);
 		}
 	});
+});
+
+it.each(
+	Object.entries(MINI_CLI_OPTIONS),
+)("publishes exact options and arguments for '%s'", async (path, allowedOptions) => {
+	const argsByPath: Record<string, string[]> = {
+		"task create": ["<title>"],
+		"task edit": ["<taskIds...>"],
+		"task view": ["<taskId>"],
+		"task complete": ["<taskId>"],
+		search: ["[query]"],
+		"doc create": ["<title>"],
+		"doc update": ["<docId>"],
+		"doc view": ["<docId>"],
+		"doc search": ["<query>"],
+		"milestone add": ["<name>"],
+		"milestone rename": ["<from>", "<to>"],
+		"milestone remove": ["<name>"],
+	};
+	const result = await runMini(...(path ? path.split(" ") : []), "--help");
+	const help = result.stdout.toString();
+	expect(result.exitCode).toBe(0);
+	expect([...help.matchAll(/^ {2}(--[\w-]+)/gm)].map((match) => match[1]).sort()).toEqual(
+		[...allowedOptions, "--help"].sort(),
+	);
+	const usage = help.split("\n")[0] ?? "";
+	expect(
+		[...usage.matchAll(/<[^>]+>|\[[^\]]+\]/g)]
+			.map((match) => match[0])
+			.filter((arg) => arg !== "[options]" && arg !== "[command]"),
+	).toEqual(argsByPath[path] ?? []);
 });
 
 it.each([

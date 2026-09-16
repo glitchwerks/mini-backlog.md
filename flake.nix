@@ -94,8 +94,6 @@
             '';
 
             doInstallCheck = true;
-            # The packaged browser smoke binds localhost inside the Darwin sandbox.
-            __darwinAllowLocalNetworking = pkgs.stdenv.hostPlatform.isDarwin;
             nativeInstallCheckInputs = pkgs.lib.optionals (system == "x86_64-linux") [
               pkgs.qemu-user
               pkgs.unzip

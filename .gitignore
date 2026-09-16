@@ -57,6 +57,7 @@ example-project/
 
 # Test temp directories created by bun tests
 tmp/
+.tmp/
 .tmp-test-*
 
 # Local files
