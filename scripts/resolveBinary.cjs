@@ -1,7 +1,9 @@
 const { execFileSync } = require("node:child_process");
+const { existsSync, readFileSync } = require("node:fs");
+const { basename, dirname, join } = require("node:path");
 
 function getPackageName(platform = process.platform, arch = process.arch) {
-	return `backlog.md-${platform === "win32" ? "windows" : platform}-${arch}`;
+	return `mini-backlog.md-${platform === "win32" ? "windows" : platform}-${arch}`;
 }
 
 /**
@@ -54,4 +56,28 @@ function resolveBinaryPath(platform = process.platform, arch = process.arch, res
 	throw firstError;
 }
 
-module.exports = { getPackageName, getCandidatePackageNames, isRosettaTranslated, resolveBinaryPath };
+/** Resolve this checkout's build or a platform artifact carrying the fork's repository identity. */
+function resolveMiniBinaryPath() {
+	const binary = `backlog${process.platform === "win32" ? ".exe" : ""}`;
+	const localBinary =
+		basename(__dirname) === "scripts" ? join(__dirname, "..", "dist", binary) : join(__dirname, binary);
+	if (existsSync(localBinary)) return localBinary;
+	return resolveBinaryPath(process.platform, process.arch, (specifier) => {
+		const path = require.resolve(specifier);
+		const manifest = JSON.parse(readFileSync(join(dirname(path), "package.json"), "utf8"));
+		if (
+			!/^(git\+)?https:\/\/github\.com\/glitchwerks\/mini-backlog\.md(\.git)?$/.test(manifest.repository?.url ?? "")
+		) {
+			throw new Error("Platform binary does not belong to mini-backlog.md.");
+		}
+		return path;
+	});
+}
+
+module.exports = {
+	getPackageName,
+	getCandidatePackageNames,
+	isRosettaTranslated,
+	resolveBinaryPath,
+	resolveMiniBinaryPath,
+};

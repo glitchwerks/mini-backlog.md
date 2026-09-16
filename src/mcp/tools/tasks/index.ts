@@ -1,7 +1,15 @@
+import type { SurfaceMode } from "../../../mini/runtime.ts";
+import { formatMiniAmbiguousTaskIdError } from "../../../mini/task-output.ts";
 import type { BacklogConfig } from "../../../types/index.ts";
+import { isAmbiguousTaskIdError } from "../../../utils/task-path.ts";
+import { BacklogToolError } from "../../errors/mcp-errors.ts";
 import type { McpServer } from "../../server.ts";
 import type { McpToolHandler } from "../../types.ts";
 import {
+	generateMiniTaskCreateSchema,
+	generateMiniTaskEditSchema,
+	generateMiniTaskListSchema,
+	generateMiniTaskSearchSchema,
 	generateTaskCreateSchema,
 	generateTaskEditSchema,
 	generateTaskListSchema,
@@ -12,13 +20,28 @@ import type { TaskCreateArgs, TaskEditRequest, TaskListArgs, TaskSearchArgs } fr
 import { TaskHandlers } from "./handlers.ts";
 import { taskArchiveSchema, taskCompleteSchema, taskViewSchema } from "./schemas.ts";
 
-export function registerTaskTools(server: McpServer, config: BacklogConfig): void {
-	const handlers = new TaskHandlers(server);
+async function projectMiniTaskError<T>(
+	surface: SurfaceMode,
+	taskPrefix: string | undefined,
+	operation: () => Promise<T>,
+): Promise<T> {
+	try {
+		return await operation();
+	} catch (error) {
+		if (surface === "mini" && isAmbiguousTaskIdError(error)) {
+			throw new BacklogToolError(formatMiniAmbiguousTaskIdError(error.taskId, taskPrefix), "AMBIGUOUS_TASK_ID");
+		}
+		throw error;
+	}
+}
 
-	const taskCreateSchema = generateTaskCreateSchema(config);
-	const taskEditSchema = generateTaskEditSchema(config);
-	const taskListSchema = generateTaskListSchema(config);
-	const taskSearchSchema = generateTaskSearchSchema(config);
+export function registerTaskTools(server: McpServer, config: BacklogConfig, surface: SurfaceMode = "full"): void {
+	const handlers = new TaskHandlers(server, surface);
+
+	const taskCreateSchema = surface === "mini" ? generateMiniTaskCreateSchema(config) : generateTaskCreateSchema(config);
+	const taskEditSchema = surface === "mini" ? generateMiniTaskEditSchema(config) : generateTaskEditSchema(config);
+	const taskListSchema = surface === "mini" ? generateMiniTaskListSchema(config) : generateTaskListSchema(config);
+	const taskSearchSchema = surface === "mini" ? generateMiniTaskSearchSchema(config) : generateTaskSearchSchema(config);
 
 	const createTaskTool: McpToolHandler = createSimpleValidatedTool(
 		{
@@ -35,7 +58,9 @@ export function registerTaskTools(server: McpServer, config: BacklogConfig): voi
 		{
 			name: "task_list",
 			description:
-				"List Backlog.md tasks with optional filtering by status, type, project, assignee (or unassigned: true for tasks with no assignee), milestone, labels, and search",
+				surface === "mini"
+					? "List tasks with optional status, type, assignee, unassigned, milestone, labels, search, ready, and limit filters"
+					: "List Backlog.md tasks with optional filtering by status, type, project, assignee (or unassigned: true for tasks with no assignee), milestone, labels, and search",
 			inputSchema: taskListSchema,
 			annotations: { title: "List Tasks", readOnlyHint: true, destructiveHint: false },
 		},
@@ -46,7 +71,10 @@ export function registerTaskTools(server: McpServer, config: BacklogConfig): voi
 	const searchTaskTool: McpToolHandler = createSimpleValidatedTool(
 		{
 			name: "task_search",
-			description: "Search Backlog.md tasks by title, description, task type, project, and modified file path filters",
+			description:
+				surface === "mini"
+					? "Search tasks by query, status, task type, and priority"
+					: "Search Backlog.md tasks by title, description, task type, project, and modified file path filters",
 			inputSchema: taskSearchSchema,
 			annotations: { title: "Search Tasks", readOnlyHint: true, destructiveHint: false },
 		},
@@ -58,12 +86,17 @@ export function registerTaskTools(server: McpServer, config: BacklogConfig): voi
 		{
 			name: "task_edit",
 			description:
-				"Edit a Backlog.md task, including metadata (status, priority, type, project), implementation plan/notes, dependencies, acceptance criteria, and task-specific Definition of Done items",
+				surface === "mini"
+					? "Edit task title, description, status, priority, type, milestone, labels, assignees, dependencies, comments, and acceptance criteria"
+					: "Edit a Backlog.md task, including metadata (status, priority, type, project), implementation plan/notes, dependencies, acceptance criteria, and task-specific Definition of Done items",
 			inputSchema: taskEditSchema,
 			annotations: { title: "Edit Task", destructiveHint: false },
 		},
 		taskEditSchema,
-		async (input) => handlers.editTask(input as unknown as TaskEditRequest),
+		async (input) =>
+			projectMiniTaskError(surface, config.prefixes?.task, async () =>
+				handlers.editTask(input as unknown as TaskEditRequest),
+			),
 	);
 
 	const viewTaskTool: McpToolHandler = createSimpleValidatedTool(
@@ -74,7 +107,8 @@ export function registerTaskTools(server: McpServer, config: BacklogConfig): voi
 			annotations: { title: "View Task", readOnlyHint: true, destructiveHint: false },
 		},
 		taskViewSchema,
-		async (input) => handlers.viewTask(input as { id: string }),
+		async (input) =>
+			projectMiniTaskError(surface, config.prefixes?.task, async () => handlers.viewTask(input as { id: string })),
 	);
 
 	const archiveTaskTool: McpToolHandler = createSimpleValidatedTool(
@@ -96,7 +130,8 @@ export function registerTaskTools(server: McpServer, config: BacklogConfig): voi
 			annotations: { title: "Complete Task", destructiveHint: true },
 		},
 		taskCompleteSchema,
-		async (input) => handlers.completeTask(input as { id: string }),
+		async (input) =>
+			projectMiniTaskError(surface, config.prefixes?.task, async () => handlers.completeTask(input as { id: string })),
 	);
 
 	server.addTool(createTaskTool);
@@ -104,7 +139,7 @@ export function registerTaskTools(server: McpServer, config: BacklogConfig): voi
 	server.addTool(searchTaskTool);
 	server.addTool(editTaskTool);
 	server.addTool(viewTaskTool);
-	server.addTool(archiveTaskTool);
+	if (surface === "full") server.addTool(archiveTaskTool);
 	server.addTool(completeTaskTool);
 }
 

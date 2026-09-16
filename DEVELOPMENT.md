@@ -35,7 +35,7 @@ The command pins the bun2nix generator version, so commit the resulting
 `bun.nix` change together with the lockfile change. Validate the package with:
 
 ```bash
-nix build .#backlog-md
+nix build .#mini-backlog-md
 ./result/bin/backlog --version
 ```
 
@@ -192,7 +192,7 @@ backlog.md/
 
 ## Release
 
-Backlog.md now relies on npm Trusted Publishing with GitHub Actions OIDC. The
+Mini Backlog.md relies on npm Trusted Publishing with GitHub Actions OIDC. The
 release workflow builds binaries, publishes all npm packages, and records
 provenance automatically. Follow the steps below to keep the setup healthy.
 
@@ -203,10 +203,10 @@ provenance automatically. Follow the steps below to keep the setup healthy.
   `package.json` files to match the tag, so you do **not** need to edit the
   version field manually.
 - In npm's **Trusted publishers** settings, link the
-  `MrLesk/Backlog.md` repository and the `Release multi-platform executables`
-  workflow for each package: `backlog.md`,
-  `backlog.md-linux-{x64,arm64}`, `backlog.md-darwin-{x64,arm64}`, and
-  `backlog.md-windows-x64`.
+  `glitchwerks/mini-backlog.md` repository and the `Release multi-platform executables`
+  workflow for each package: `mini-backlog.md`,
+  `mini-backlog.md-linux-{x64,arm64}`, `mini-backlog.md-darwin-{x64,arm64}`, and
+  `mini-backlog.md-windows-{x64,arm64}`.
 - Remove the legacy `NODE_AUTH_TOKEN` repository secret. Publishing now uses
   the GitHub-issued OIDC token, so no long-lived npm tokens should remain.
 - The workflow activates `npm@latest` (currently 11.6.0 as of 2025-09-18) via

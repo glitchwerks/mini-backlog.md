@@ -1,5 +1,6 @@
 import { rename as moveFile } from "node:fs/promises";
 import type { Core } from "../../../core/backlog.ts";
+import type { SurfaceMode } from "../../../mini/runtime.ts";
 import type { Milestone, Task } from "../../../types/index.ts";
 import { normalizeDueDate } from "../../../utils/due-date.ts";
 import { formatUtcDateForDisplay } from "../../../utils/utc-date-display.ts";
@@ -59,6 +60,12 @@ function formatListBlock(title: string, items: string[]): string {
 		return `${title}\n  (none)`;
 	}
 	return `${title}\n${items.map((item) => `  - ${item}`).join("\n")}`;
+}
+
+/** Format a milestone description as an indented continuation of its summary line. */
+export function formatMilestoneDescription(description?: string): string {
+	const normalized = description?.trim();
+	return normalized ? `\n    ${normalized.replace(/\n/g, "\n    ")}` : "";
 }
 
 function formatTaskIdList(taskIds: string[], limit = 20): string {
@@ -216,7 +223,10 @@ function resolveMilestoneValueForReporting(
 }
 
 export class MilestoneHandlers {
-	constructor(private readonly core: Core) {}
+	constructor(
+		private readonly core: Core,
+		private readonly surface: SurfaceMode = "full",
+	) {}
 
 	private async listLocalTasks(): Promise<Task[]> {
 		return await this.core.filesystem.listTasks();
@@ -226,7 +236,9 @@ export class MilestoneHandlers {
 		const failedTaskIds: string[] = [];
 		for (const [taskId, milestone] of previousMilestones.entries()) {
 			try {
-				await this.core.editTask(taskId, { milestone: milestone ?? null }, false);
+				await this.core.editTask(taskId, { milestone: milestone ?? null }, false, {
+					preserveUnknownFrontmatter: this.surface === "mini",
+				});
 			} catch {
 				failedTaskIds.push(taskId);
 			}
@@ -324,17 +336,28 @@ export class MilestoneHandlers {
 			.sort((a, b) => a.localeCompare(b));
 
 		const blocks: string[] = [];
-		const milestoneLines = fileMilestones.map((m) =>
-			m.dueDate ? `${m.id}: ${m.title} (due ${formatUtcDateForDisplay(m.dueDate)})` : `${m.id}: ${m.title}`,
-		);
+		const milestoneLines = fileMilestones.map((milestone) => {
+			if (this.surface === "mini") {
+				return `${milestone.id}: ${milestone.title}${formatMilestoneDescription(milestone.description)}`;
+			}
+			return milestone.dueDate
+				? `${milestone.id}: ${milestone.title} (due ${formatUtcDateForDisplay(milestone.dueDate)})`
+				: `${milestone.id}: ${milestone.title}`;
+		});
 		blocks.push(formatListBlock(`Milestones (${fileMilestones.length}):`, milestoneLines));
 		blocks.push(formatListBlock(`Milestones found on tasks without files (${unconfigured.length}):`, unconfigured));
-		blocks.push(
-			formatListBlock(`Archived milestone values still on tasks (${archivedTaskValues.length}):`, archivedTaskValues),
-		);
-		blocks.push(
-			"Hint: use milestone_add to create milestone files, milestone_rename / milestone_remove to manage, milestone_archive to archive.",
-		);
+		if (this.surface === "full") {
+			blocks.push(
+				formatListBlock(`Archived milestone values still on tasks (${archivedTaskValues.length}):`, archivedTaskValues),
+			);
+			blocks.push(
+				"Hint: use milestone_add to create milestone files, milestone_rename / milestone_remove to manage, milestone_archive to archive.",
+			);
+		} else {
+			blocks.push(
+				"Hint: use milestone_add to create milestone files and milestone_rename / milestone_remove to manage them.",
+			);
+		}
 
 		return {
 			content: [
@@ -387,7 +410,7 @@ export class MilestoneHandlers {
 			content: [
 				{
 					type: "text",
-					text: `Created milestone "${milestone.title}" (${milestone.id}).${milestone.dueDate ? `\nDue: ${formatUtcDateForDisplay(milestone.dueDate)}` : ""}`,
+					text: `Created milestone "${milestone.title}" (${milestone.id}).${this.surface === "full" && milestone.dueDate ? `\nDue: ${formatUtcDateForDisplay(milestone.dueDate)}` : ""}`,
 				},
 			],
 		};
@@ -468,7 +491,9 @@ export class MilestoneHandlers {
 			try {
 				for (const task of matches) {
 					previousMilestones.set(task.id, task.milestone);
-					const updatedTask = await this.core.editTask(task.id, { milestone: targetMilestone }, false);
+					const updatedTask = await this.core.editTask(task.id, { milestone: targetMilestone }, false, {
+						preserveUnknownFrontmatter: this.surface === "mini",
+					});
 					const taskFilePath = updatedTask.filePath ?? task.filePath;
 					if (taskFilePath) {
 						updatedTaskFilePaths.add(taskFilePath);
@@ -533,7 +558,7 @@ export class MilestoneHandlers {
 				`Renamed milestone "${sourceMilestone.title}" (${sourceMilestone.id}) → "${renamedMilestone.title}" (${renamedMilestone.id}).`,
 			);
 		}
-		if (dueDateChanged) {
+		if (this.surface === "full" && dueDateChanged) {
 			summaryLines.push(
 				renamedMilestone.dueDate
 					? `Due: ${formatUtcDateForDisplay(renamedMilestone.dueDate)}`
@@ -547,7 +572,12 @@ export class MilestoneHandlers {
 		} else if (titleChanged) {
 			summaryLines.push("Skipped updating tasks (updateTasks=false).");
 		}
-		if (renameResult.sourcePath && renameResult.targetPath && renameResult.sourcePath !== renameResult.targetPath) {
+		if (
+			this.surface === "full" &&
+			renameResult.sourcePath &&
+			renameResult.targetPath &&
+			renameResult.sourcePath !== renameResult.targetPath
+		) {
 			summaryLines.push(`Renamed milestone file: ${renameResult.sourcePath} -> ${renameResult.targetPath}`);
 		}
 
@@ -610,6 +640,7 @@ export class MilestoneHandlers {
 						task.id,
 						{ milestone: taskHandling === "reassign" ? reassignedMilestone : null },
 						false,
+						{ preserveUnknownFrontmatter: this.surface === "mini" },
 					);
 					const taskFilePath = updatedTask.filePath ?? task.filePath;
 					if (taskFilePath) {

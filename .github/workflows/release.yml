@@ -86,7 +86,7 @@ jobs:
           ls -lh ${{ env.BIN }}
       - uses: actions/upload-artifact@v7
         with:
-          name: backlog-${{ matrix.target }}
+          name: mini-backlog-${{ matrix.target }}
           path: ${{ env.BIN }}
 
   npm-publish:
@@ -106,13 +106,7 @@ jobs:
         shell: bash
         run: |
           TAG="${GITHUB_REF##refs/tags/v}"
-          jq 'del(.devDependencies,.scripts.prepare,.scripts.preinstall,.type) |
-              .version = "'$TAG'" |
-              .bin = {backlog:"cli.js"} |
-              .files = ["cli.js","resolveBinary.cjs","postuninstall.cjs","package.json","README.md","LICENSE"] |
-              .scripts = {"postuninstall": "node postuninstall.cjs"} |
-              .repository = {"type":"git","url":"https://github.com/MrLesk/Backlog.md"} |
-              .optionalDependencies |= map_values("'$TAG'")' package.json > dist/package.json
+          node scripts/release-manifest.cjs root dist/package.json "$TAG"
           cp LICENSE README.md dist/ 2>/dev/null || true
       - uses: actions/setup-node@v6
         with:
@@ -138,27 +132,27 @@ jobs:
       matrix:
         include:
           - target: bun-linux-x64-baseline
-            package: backlog.md-linux-x64
+            package: mini-backlog.md-linux-x64
             os: linux
             cpu: x64
           - target: bun-linux-arm64
-            package: backlog.md-linux-arm64
+            package: mini-backlog.md-linux-arm64
             os: linux
             cpu: arm64
           - target: bun-darwin-x64
-            package: backlog.md-darwin-x64
+            package: mini-backlog.md-darwin-x64
             os: darwin
             cpu: x64
           - target: bun-darwin-arm64
-            package: backlog.md-darwin-arm64
+            package: mini-backlog.md-darwin-arm64
             os: darwin
             cpu: arm64
           - target: bun-windows-x64-baseline
-            package: backlog.md-windows-x64
+            package: mini-backlog.md-windows-x64
             os: win32
             cpu: x64
           - target: bun-windows-arm64
-            package: backlog.md-windows-arm64
+            package: mini-backlog.md-windows-arm64
             os: win32
             cpu: arm64
     runs-on: ubuntu-latest
@@ -166,7 +160,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
-          name: backlog-${{ matrix.target }}
+          name: mini-backlog-${{ matrix.target }}
         timeout-minutes: 15
       - name: Prepare package
         shell: bash
@@ -184,19 +178,7 @@ jobs:
             exit 1
           fi
           cp LICENSE README.md pkg/ 2>/dev/null || true
-          cat <<EOF > pkg/package.json
-          {
-            "name": "${{ matrix.package }}",
-            "version": "${TAG}",
-            "os": ["${{ matrix.os }}"],
-            "cpu": ["${{ matrix.cpu }}"],
-            "files": ["backlog${{ contains(matrix.target,'windows') && '.exe' || '' }}","package.json","LICENSE"],
-            "repository": {
-              "type": "git",
-              "url": "https://github.com/MrLesk/Backlog.md"
-            }
-          }
-          EOF
+          node scripts/release-manifest.cjs platform pkg/package.json "$TAG" "${{ matrix.package }}" "${{ matrix.os }}" "${{ matrix.cpu }}"
       - name: Ensure executable permission (non-Windows)
         if: ${{ !contains(matrix.target,'windows') }}
         shell: bash
@@ -241,7 +223,7 @@ jobs:
           VERSION="${GITHUB_REF##refs/tags/v}"
           MAX_ATTEMPTS=40
           SLEEP_SECONDS=15
-          PACKAGE_NAME="$(node -e 'const map = { win32: "windows", darwin: "darwin", linux: "linux" }; const platform = map[process.platform]; const arch = process.arch; if (!platform || !["x64","arm64"].includes(arch)) { process.exit(1); } process.stdout.write(`backlog.md-${platform}-${arch}`);')"
+          PACKAGE_NAME="$(node -e 'const map = { win32: "windows", darwin: "darwin", linux: "linux" }; const platform = map[process.platform]; const arch = process.arch; if (!platform || !["x64","arm64"].includes(arch)) { process.exit(1); } process.stdout.write(`mini-backlog.md-${platform}-${arch}`);')"
           BINARY_PATH="node_modules/${PACKAGE_NAME}/backlog"
 
           echo "Waiting for ${PACKAGE_NAME}@${VERSION} to become installable..."
@@ -253,7 +235,7 @@ jobs:
 
             if npm i "${PACKAGE_NAME}@${VERSION}" --prefer-online --no-audit --no-fund; then
               if [[ -f "$BINARY_PATH" ]]; then
-                if "./$BINARY_PATH" -v; then
+                if "./$BINARY_PATH" --version; then
                   echo "Resolved ${PACKAGE_NAME}@${VERSION} on attempt ${attempt}/${MAX_ATTEMPTS}."
                   exit 0
                 fi
@@ -281,12 +263,12 @@ jobs:
           MAX_ATTEMPTS=40
           SLEEP_SECONDS=15
           PACKAGES=(
-            "backlog.md-linux-x64"
-            "backlog.md-linux-arm64"
-            "backlog.md-darwin-x64"
-            "backlog.md-darwin-arm64"
-            "backlog.md-windows-x64"
-            "backlog.md-windows-arm64"
+            "mini-backlog.md-linux-x64"
+            "mini-backlog.md-linux-arm64"
+            "mini-backlog.md-darwin-x64"
+            "mini-backlog.md-darwin-arm64"
+            "mini-backlog.md-windows-x64"
+            "mini-backlog.md-windows-arm64"
           )
 
           for pkg in "${PACKAGES[@]}"; do
@@ -323,7 +305,7 @@ jobs:
             throw "Unsupported runner arch: $Arch"
           }
 
-          $PackageName = "backlog.md-windows-$Arch"
+          $PackageName = "mini-backlog.md-windows-$Arch"
           $BinaryPath = Join-Path -Path "node_modules/$PackageName" -ChildPath "backlog.exe"
 
           Write-Host "Waiting for $PackageName@$Version to become installable..."
@@ -338,7 +320,7 @@ jobs:
               npm init -y | Out-Null
               npm i "$PackageName@$Version" --prefer-online --no-audit --no-fund
               if ($LASTEXITCODE -eq 0 -and (Test-Path $BinaryPath)) {
-                & $BinaryPath -v
+                & $BinaryPath --version
                 if ($LASTEXITCODE -eq 0) {
                   Write-Host "Resolved $PackageName@$Version on attempt $attempt/$MaxAttempts."
                   exit 0
@@ -374,7 +356,7 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-      - name: Install and run backlog -v (Unix)
+      - name: Install and run backlog --version (Unix)
         if: ${{ matrix.os != 'windows-latest' }}
         shell: bash
         run: |
@@ -382,8 +364,8 @@ jobs:
           VERSION="${GITHUB_REF##refs/tags/v}"
           MAX_ATTEMPTS=40
           SLEEP_SECONDS=15
-          EXPECTED_PACKAGE="$(node -e 'const map = { win32: "windows", darwin: "darwin", linux: "linux" }; const platform = map[process.platform]; const arch = process.arch; if (!platform || !["x64","arm64"].includes(arch)) { process.exit(1); } process.stdout.write(`backlog.md-${platform}-${arch}`);')"
-          echo "Waiting for backlog.md@${VERSION} install + ${EXPECTED_PACKAGE} optional dependency..."
+          EXPECTED_PACKAGE="$(node -e 'const map = { win32: "windows", darwin: "darwin", linux: "linux" }; const platform = map[process.platform]; const arch = process.arch; if (!platform || !["x64","arm64"].includes(arch)) { process.exit(1); } process.stdout.write(`mini-backlog.md-${platform}-${arch}`);')"
+          echo "Waiting for mini-backlog.md@${VERSION} install + ${EXPECTED_PACKAGE} optional dependency..."
 
           for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
             rm -rf sanity
@@ -391,8 +373,8 @@ jobs:
             cd sanity
             npm init -y >/dev/null 2>&1
 
-            if npm i "backlog.md@${VERSION}" --prefer-online --no-audit --no-fund; then
-              if npx backlog -v; then
+            if npm i "mini-backlog.md@${VERSION}" --prefer-online --no-audit --no-fund; then
+              if npx backlog --version; then
                 echo "Install sanity succeeded on attempt ${attempt}/${MAX_ATTEMPTS}."
                 exit 0
               fi
@@ -413,9 +395,9 @@ jobs:
             fi
           done
 
-          echo "Install sanity timed out for backlog.md@${VERSION}."
+          echo "Install sanity timed out for mini-backlog.md@${VERSION}."
           exit 1
-      - name: Install and run backlog -v (Windows)
+      - name: Install and run backlog --version (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         shell: pwsh
         run: |
@@ -428,8 +410,8 @@ jobs:
             throw "Unsupported runner arch: $Arch"
           }
 
-          $ExpectedPackage = "backlog.md-windows-$Arch"
-          Write-Host "Waiting for backlog.md@$Version install + $ExpectedPackage optional dependency..."
+          $ExpectedPackage = "mini-backlog.md-windows-$Arch"
+          Write-Host "Waiting for mini-backlog.md@$Version install + $ExpectedPackage optional dependency..."
 
           for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
             if (Test-Path "sanity") {
@@ -440,9 +422,9 @@ jobs:
 
             try {
               npm init -y | Out-Null
-              npm i "backlog.md@$Version" --prefer-online --no-audit --no-fund
+              npm i "mini-backlog.md@$Version" --prefer-online --no-audit --no-fund
               if ($LASTEXITCODE -eq 0) {
-                npx backlog -v
+                npx backlog --version
                 if ($LASTEXITCODE -eq 0) {
                   Write-Host "Install sanity succeeded on attempt $attempt/$MaxAttempts."
                   exit 0
@@ -466,7 +448,7 @@ jobs:
             }
           }
 
-          throw "Install sanity timed out for backlog.md@$Version."
+          throw "Install sanity timed out for mini-backlog.md@$Version."
 
   github-release:
     needs: build
@@ -484,7 +466,7 @@ jobs:
           mkdir -p binaries
           for dir in release-assets/*/; do
             if [ -d "$dir" ]; then
-              target=$(basename "$dir" | sed 's/backlog-//')
+              target=$(basename "$dir" | sed 's/mini-backlog-//')
               echo "Processing target: $target"
               echo "Directory contents:"
               ls -la "$dir"
@@ -492,11 +474,11 @@ jobs:
               if [ -n "$binary" ]; then
                 echo "Found binary: $binary ($(ls -lh "$binary" | awk '{print $5}'))"
                 if [[ "$target" == *"windows"* ]] && [[ "$binary" == *".exe" ]]; then
-                  cp "$binary" "binaries/backlog-${target}.exe"
-                  echo "Copied to binaries/backlog-${target}.exe ($(ls -lh "binaries/backlog-${target}.exe" | awk '{print $5}'))"
+                  cp "$binary" "binaries/mini-backlog-${target}.exe"
+                  echo "Copied to binaries/mini-backlog-${target}.exe ($(ls -lh "binaries/mini-backlog-${target}.exe" | awk '{print $5}'))"
                 else
-                  cp "$binary" "binaries/backlog-${target}"
-                  echo "Copied to binaries/backlog-${target} ($(ls -lh "binaries/backlog-${target}" | awk '{print $5}'))"
+                  cp "$binary" "binaries/mini-backlog-${target}"
+                  echo "Copied to binaries/mini-backlog-${target} ($(ls -lh "binaries/mini-backlog-${target}" | awk '{print $5}'))"
                 fi
               fi
             fi

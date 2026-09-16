@@ -57,6 +57,7 @@ example-project/
 
 # Test temp directories created by bun tests
 tmp/
+.tmp/
 .tmp-test-*
 
 # Local files
@@ -66,6 +67,8 @@ tmp/
 test-benchmark-report.json
 
 .conductor
+
+.worktrees/
 
 # TUI screenshot captures
 .tui-screenshots

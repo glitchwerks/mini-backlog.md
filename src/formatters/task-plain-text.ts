@@ -1,4 +1,6 @@
 import type { TaskDetail } from "../core/task-detail.ts";
+import type { SurfaceMode } from "../mini/runtime.ts";
+import { formatMiniTaskPlainText } from "../mini/task-output.ts";
 import type { Task } from "../types/index.ts";
 import type { ChecklistItem } from "../ui/checklist.ts";
 import { transformCodePathsPlain } from "../ui/code-path.ts";
@@ -82,7 +84,13 @@ function formatDependencyGraphBlock(task: TaskDetail): string[] {
 	return ["", "Dependency Graph:", "-".repeat(50), ...graphLines];
 }
 
-export function formatTaskPlainText(task: TaskDetail, options: TaskPlainTextOptions = {}): string {
+export function formatTaskPlainText(
+	task: TaskDetail,
+	options: TaskPlainTextOptions = {},
+	surface: SurfaceMode = "full",
+): string {
+	if (surface === "mini") return formatMiniTaskPlainText(task);
+
 	const lines: string[] = [];
 	const filePath = options.filePathOverride ?? task.filePath;
 

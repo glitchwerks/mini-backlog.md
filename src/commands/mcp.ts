@@ -8,6 +8,7 @@
 import type { Command } from "commander";
 import { isConfigValueError } from "../file-system/operations.ts";
 import { createMcpServer } from "../mcp/server.ts";
+import { getActiveSurfaceMode } from "../mini/runtime.ts";
 import { findBacklogRoot } from "../utils/find-backlog-root.ts";
 import { resolveRuntimeCwd } from "../utils/runtime-cwd.ts";
 
@@ -42,7 +43,11 @@ function registerStartCommand(mcpCmd: Command): void {
 				// An explicit --cwd/BACKLOG_CWD pins the root; an inferred process.cwd()
 				// lets the server follow the client's workspace roots instead.
 				const pinned = runtimeCwd.source !== "process";
-				const server = await createMcpServer(projectRoot, { debug: options.debug, pinned });
+				const server = await createMcpServer(projectRoot, {
+					debug: options.debug,
+					pinned,
+					surface: getActiveSurfaceMode(),
+				});
 
 				await server.connect();
 				await server.start();

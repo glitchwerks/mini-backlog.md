@@ -26,6 +26,10 @@ async function createLauncherDir(binaryContent?: string): Promise<string> {
 		const [packageName] = getCandidatePackageNames();
 		const packageDir = join(dir, "node_modules", packageName);
 		await mkdir(packageDir, { recursive: true });
+		await writeFile(
+			join(packageDir, "package.json"),
+			JSON.stringify({ repository: { url: "git+https://github.com/glitchwerks/mini-backlog.md.git" } }),
+		);
 		const binaryPath = join(packageDir, isWindows ? "backlog.exe" : "backlog");
 		await writeFile(binaryPath, binaryContent);
 		await chmod(binaryPath, 0o755);
@@ -44,6 +48,18 @@ afterAll(async () => {
 });
 
 describe("cli launcher", () => {
+	it("rejects an installed upstream platform package instead of invoking it", async () => {
+		const dir = await createLauncherDir("upstream binary");
+		const [packageName] = getCandidatePackageNames();
+		await writeFile(
+			join(dir, "node_modules", packageName, "package.json"),
+			JSON.stringify({ repository: { url: "https://github.com/MrLesk/Backlog.md" } }),
+		);
+		const result = runLauncher(dir, ["--help"]);
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("mini-backlog.md");
+		expect(result.stderr).not.toMatch(/npm i -g backlog\.md|Failed to start backlog|Cannot execute/);
+	});
 	it("prints install guidance and exits 1 when no platform package is installed", async () => {
 		const dir = await createLauncherDir();
 		const result = runLauncher(dir, ["--version"]);

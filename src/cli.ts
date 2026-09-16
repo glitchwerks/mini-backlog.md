@@ -49,8 +49,20 @@ import {
 	isGitRepository,
 	updateReadmeWithBoard,
 } from "./index.ts";
-import { MilestoneHandlers, type MilestoneRemoveArgs } from "./mcp/tools/milestones/handlers.ts";
+import {
+	formatMilestoneDescription,
+	MilestoneHandlers,
+	type MilestoneRemoveArgs,
+} from "./mcp/tools/milestones/handlers.ts";
 import type { CallToolResult } from "./mcp/types.ts";
+import { applyMiniCommanderPolicy } from "./mini/commander-policy.ts";
+import { getActiveSurfaceMode, type SurfaceMode, setActiveSurfaceMode } from "./mini/runtime.ts";
+import { MINI_TASK_SORT_FIELDS } from "./mini/surface-policy.ts";
+import {
+	formatMiniAmbiguousTaskIdError,
+	formatMiniDuplicateTaskIdWarning,
+	formatMiniTaskSummaryLine,
+} from "./mini/task-output.ts";
 import {
 	type BacklogConfig,
 	type Decision,
@@ -295,6 +307,9 @@ function parsePositiveIntegerOption(value: unknown, optionName: string, helpComm
 }
 
 function formatTaskEditError(error: unknown, taskId: string, commandKind = "task"): string {
+	if (getActiveSurfaceMode() === "mini" && isAmbiguousTaskIdError(error)) {
+		return formatMiniAmbiguousTaskIdError(error.taskId || taskId, activeTaskPrefix);
+	}
 	const message = error instanceof Error ? error.message : String(error);
 	if (
 		message.startsWith("Malformed Acceptance Criteria markers:") ||
@@ -315,6 +330,8 @@ function formatTaskEditError(error: unknown, taskId: string, commandKind = "task
 }
 
 function formatPlainTaskListRow(task: Task, options: { includeStatus?: boolean } = {}): string {
+	if (getActiveSurfaceMode() === "mini") return formatMiniTaskSummaryLine(task, options);
+
 	const priorityIndicator = task.priority ? `[${task.priority.toUpperCase()}] ` : "";
 	const typeIndicator = task.type ? `[${task.type}] ` : "";
 	const statusIndicator = options.includeStatus && task.status ? ` (${task.status})` : "";
@@ -397,7 +414,9 @@ function printToolResult(result: CallToolResult): void {
 async function printDuplicateIntegrityWarning(core: Core): Promise<boolean> {
 	const groups = await findLocalDuplicateTaskIds(core);
 	if (groups.length === 0) return false;
-	console.error(formatDuplicateTaskIdWarning(groups));
+	console.error(
+		getActiveSurfaceMode() === "mini" ? formatMiniDuplicateTaskIdWarning(groups) : formatDuplicateTaskIdWarning(groups),
+	);
 	process.exitCode = 1;
 	return true;
 }
@@ -518,7 +537,7 @@ function printDependencyDefectsReport(defects: DependencyDefects): void {
 async function runMilestoneMutation(action: (handlers: MilestoneHandlers) => Promise<CallToolResult>): Promise<void> {
 	const cwd = await requireProjectRoot();
 	const core = new Core(cwd);
-	const handlers = new MilestoneHandlers(core);
+	const handlers = new MilestoneHandlers(core, getActiveSurfaceMode());
 
 	try {
 		printToolResult(await action(handlers));
@@ -828,36 +847,54 @@ async function requireRuntimeCwd(): Promise<string> {
  * Walks up the directory tree to find backlog/ or backlog.json, with git root fallback.
  * Exits with error message if no Backlog.md project is found.
  */
+function localTaskLookupHint(): string {
+	return getActiveSurfaceMode() === "mini"
+		? "Use 'backlog task list' to find tasks in this project."
+		: LOCAL_TASK_LOOKUP_HINT;
+}
+
 async function requireProjectRoot(): Promise<string> {
 	const root = await findBacklogRoot(await requireRuntimeCwd());
 	if (!root) {
-		console.error("No Backlog.md project found. Run `backlog init` to initialize.");
+		console.error(
+			getActiveSurfaceMode() === "mini"
+				? "No Backlog.md project found. Run this command from an existing Backlog.md project."
+				: "No Backlog.md project found. Run `backlog init` to initialize.",
+		);
 		process.exit(1);
 	}
 	return root;
-}
-
-// Windows color fix
-if (process.platform === "win32") {
-	const term = process.env.TERM;
-	if (!term || /^(xterm|dumb|ansi|vt100)$/i.test(term)) {
-		process.env.TERM = "xterm-256color";
-	}
 }
 
 // Auto-plain fallback for commands that otherwise launch interactive UIs.
 // Require both stdin and stdout to be TTY before attempting an interactive experience.
 const hasInteractiveTTY = Boolean(process.stdout.isTTY && process.stdin.isTTY);
 const shouldAutoPlain = !hasInteractiveTTY;
-const plainFlagInArgv = process.argv.includes("--plain");
+let activeArgv = process.argv;
+let activeTaskPrefix: string | undefined;
+
+async function loadActiveTaskPrefix(): Promise<string | undefined> {
+	try {
+		const runtimeCwd = await resolveRuntimeCwd();
+		const projectRoot = await findBacklogRoot(runtimeCwd.cwd);
+		if (!projectRoot) return undefined;
+		return (await new Core(projectRoot).filesystem.loadConfig())?.prefixes?.task;
+	} catch {
+		return undefined;
+	}
+}
+
+function canUseInteractiveUi(): boolean {
+	return getActiveSurfaceMode() === "full" && hasInteractiveTTY;
+}
 
 function isPlainRequested(options?: { plain?: boolean }): boolean {
-	return Boolean(options?.plain || plainFlagInArgv);
+	return getActiveSurfaceMode() === "mini" || Boolean(options?.plain || activeArgv.includes("--plain"));
 }
 
 function getReadOutputMode(options: { json?: boolean; plain?: boolean }): ReadOutputMode | null {
 	try {
-		return resolveReadOutputMode(options, hasInteractiveTTY);
+		return resolveReadOutputMode(options, canUseInteractiveUi());
 	} catch (error) {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exitCode = 1;
@@ -865,66 +902,8 @@ function getReadOutputMode(options: { json?: boolean; plain?: boolean }): ReadOu
 	}
 }
 
-// Temporarily isolate BUN_OPTIONS during CLI parsing to prevent conflicts
-// Save the original value so it's available for subsequent commands
-const originalBunOptions = process.env.BUN_OPTIONS;
-if (process.env.BUN_OPTIONS) {
-	delete process.env.BUN_OPTIONS;
-}
-
 // Get version from package.json
 const version = await getVersion();
-
-// Bare-run entry handling (before Commander parses commands)
-// Show a plain local help entry when invoked without subcommands, unless help/version requested.
-try {
-	let rawArgs = process.argv.slice(2);
-	// Some package managers (e.g., Bun global shims) may inject the resolved
-	// CLI executable path as the first non-node argument. Strip it if detected.
-	if (rawArgs.length > 0) {
-		const first = rawArgs[0];
-		if (
-			typeof first === "string" &&
-			/node_modules[\\/]+backlog\.md-(darwin|linux|windows)-[^\\/]+[\\/]+backlog(\.exe)?$/.test(first)
-		) {
-			rawArgs = rawArgs.slice(1);
-		}
-	}
-	const wantsHelp = rawArgs.includes("-h") || rawArgs.includes("--help");
-	const wantsVersion = rawArgs.includes("-v") || rawArgs.includes("--version");
-	const isBareRoot = rawArgs.length === 0 || (rawArgs.length === 1 && rawArgs[0] === "--plain");
-	if (isBareRoot && !wantsHelp && !wantsVersion) {
-		let initialized = false;
-		try {
-			const runtimeCwd = await resolveRuntimeCwd();
-			const projectRoot = await findBacklogRoot(runtimeCwd.cwd);
-			if (projectRoot) {
-				const core = new Core(projectRoot);
-				const cfg = await core.filesystem.loadConfig();
-				initialized = !!cfg;
-			}
-		} catch (error) {
-			// An initialized project whose config Backlog refuses to read must not be presented as an
-			// uninitialized directory: report the value and stop, as every other entry point does.
-			if (isConfigValueError(error)) {
-				console.error(error.message);
-				process.exit(1);
-			}
-			initialized = false;
-		}
-
-		const { printRootEntry } = await import("./ui/root-entry.ts");
-		await printRootEntry({
-			version,
-			initialized,
-			...(rawArgs.includes("--plain") ? { color: false } : {}),
-		});
-		// Ensure we don't enter Commander command parsing
-		process.exit(0);
-	}
-} catch {
-	// Fall through to normal CLI parsing on any root entry error.
-}
 
 function getMcpStartCwdOverrideFromArgv(argv = process.argv): string | undefined {
 	const args = argv.slice(2);
@@ -951,19 +930,19 @@ function getMcpStartCwdOverrideFromArgv(argv = process.argv): string | undefined
 	return undefined;
 }
 
-// Global config migration - run before any command processing
-// Only run if we're in a backlog project (skip for init, help, version)
-const shouldRunMigration =
-	!process.argv.includes("init") &&
-	!process.argv.includes("--help") &&
-	!process.argv.includes("-h") &&
-	!process.argv.includes("--version") &&
-	!process.argv.includes("-v") &&
-	process.argv.length > 2; // Ensure we have actual commands
+async function runConfigMigration(argv: string[]): Promise<void> {
+	// Only run if we're in a backlog project (skip for init, help, version).
+	const shouldRunMigration =
+		!argv.includes("init") &&
+		!argv.includes("--help") &&
+		!argv.includes("-h") &&
+		!argv.includes("--version") &&
+		!argv.includes("-v") &&
+		argv.length > 2;
+	if (!shouldRunMigration) return;
 
-if (shouldRunMigration) {
 	try {
-		const runtimeCwd = await resolveRuntimeCwd({ cwd: getMcpStartCwdOverrideFromArgv() });
+		const runtimeCwd = await resolveRuntimeCwd({ cwd: getMcpStartCwdOverrideFromArgv(argv) });
 		const projectRoot = await findBacklogRoot(runtimeCwd.cwd);
 		if (projectRoot) {
 			const core = new Core(projectRoot);
@@ -976,6 +955,66 @@ if (shouldRunMigration) {
 		}
 	} catch (_error) {
 		// Silently ignore migration errors - project might not be initialized yet
+	}
+}
+
+async function handleBareInvocation(
+	argv: string[],
+	surface: SurfaceMode,
+	command: Command,
+	cliVersion: string,
+): Promise<boolean> {
+	try {
+		let rawArgs = argv.slice(2);
+		// Some package managers (e.g., Bun global shims) may inject the resolved
+		// CLI executable path as the first non-node argument. Strip it if detected.
+		const first = rawArgs[0];
+		if (
+			typeof first === "string" &&
+			/node_modules[\\/]+backlog\.md-(darwin|linux|windows)-[^\\/]+[\\/]+backlog(\.exe)?$/.test(first)
+		) {
+			rawArgs = rawArgs.slice(1);
+		}
+
+		const wantsHelp = rawArgs.includes("-h") || rawArgs.includes("--help");
+		const wantsVersion = rawArgs.includes("-v") || rawArgs.includes("--version");
+		const isBareRoot = rawArgs.length === 0 || (surface === "full" && rawArgs.length === 1 && rawArgs[0] === "--plain");
+		if (!isBareRoot || wantsHelp || wantsVersion) return false;
+
+		if (surface === "mini") {
+			command.outputHelp();
+			return true;
+		}
+
+		let initialized = false;
+		try {
+			const runtimeCwd = await resolveRuntimeCwd();
+			const projectRoot = await findBacklogRoot(runtimeCwd.cwd);
+			if (projectRoot) {
+				const core = new Core(projectRoot);
+				initialized = Boolean(await core.filesystem.loadConfig());
+			}
+		} catch (error) {
+			// An initialized project whose config Backlog refuses to read must not be presented as an
+			// uninitialized directory: report the value and stop, as every other entry point does.
+			if (isConfigValueError(error)) {
+				console.error(error.message);
+				process.exitCode = 1;
+				return true;
+			}
+			initialized = false;
+		}
+
+		const { printRootEntry } = await import("./ui/root-entry.ts");
+		await printRootEntry({
+			version: cliVersion,
+			initialized,
+			...(rawArgs.includes("--plain") ? { color: false } : {}),
+		});
+		return true;
+	} catch {
+		// Fall through to normal CLI parsing on any root entry error.
+		return false;
 	}
 }
 
@@ -1965,7 +2004,7 @@ addHelpSchema(taskCmd.command("create [title]"), {
 		},
 	)
 	.action(async (title: string | undefined, options) => {
-		const shouldUseWizard = hasInteractiveTTY && title === undefined && !hasCreateFieldFlags(options);
+		const shouldUseWizard = canUseInteractiveUi() && title === undefined && !hasCreateFieldFlags(options);
 		if (!shouldUseWizard && (title === undefined || title.trim().length === 0)) {
 			printMissingRequiredArgument("title");
 			return;
@@ -2054,7 +2093,9 @@ addHelpSchema(taskCmd.command("create [title]"), {
 			});
 
 			if (usePlainOutput) {
-				console.log(formatTaskPlainText(await loadTaskDetail(core, task), { filePathOverride: filePath }));
+				console.log(
+					formatTaskPlainText(await loadTaskDetail(core, task), { filePathOverride: filePath }, getActiveSurfaceMode()),
+				);
 				return;
 			}
 
@@ -2065,7 +2106,7 @@ addHelpSchema(taskCmd.command("create [title]"), {
 			}
 
 			console.log(`Created task ${task.id}`);
-			console.log(`File: ${filePath}`);
+			if (getActiveSurfaceMode() === "full") console.log(`File: ${filePath}`);
 		} catch (error) {
 			console.error(error instanceof Error ? error.message : String(error));
 			process.exitCode = 1;
@@ -2172,13 +2213,16 @@ addHelpSchema(program.command("search [query]"), {
 		const rawTaskTypes = parseDelimitedStringList(options.taskType) ?? [];
 		const rawSearchProjects = parseDelimitedStringList(options.project) ?? [];
 		const rawTypes = options.type ? (Array.isArray(options.type) ? options.type : [options.type]) : undefined;
-		const allowedTypes: SearchResultType[] = ["task", "document", "decision"];
+		const miniSurface = getActiveSurfaceMode() === "mini";
+		const allowedTypes: SearchResultType[] = miniSurface ? ["task", "document"] : ["task", "document", "decision"];
+		let rejectedType: string | undefined;
 		const types = rawTypes
 			? rawTypes
 					.map((value: string) => value.toLowerCase())
 					.filter((value: string): value is SearchResultType => {
 						if (!allowedTypes.includes(value as SearchResultType)) {
-							console.warn(`Ignoring unsupported type '${value}'. Supported: task, document, decision`);
+							if (miniSurface) rejectedType ??= value;
+							else console.warn(`Ignoring unsupported type '${value}'. Supported: task, document, decision`);
 							return false;
 						}
 						return true;
@@ -2186,6 +2230,12 @@ addHelpSchema(program.command("search [query]"), {
 			: modifiedFileFilters?.length || rawTaskTypes.length > 0 || rawSearchProjects.length > 0
 				? ["task"]
 				: allowedTypes;
+		if (rejectedType) {
+			console.error(`Unsupported type '${rejectedType}'. Supported: task, document`);
+			cleanup();
+			process.exitCode = 1;
+			return;
+		}
 		if (rawTaskTypes.length > 0 && rawTypes && !types.includes("task")) {
 			console.error("--task-type filters task results. Include --type task or omit --type.");
 			cleanup();
@@ -2291,7 +2341,7 @@ addHelpSchema(program.command("search [query]"), {
 				if (projected.done) break;
 				projectedResults.push({ ...result, task: projected.value });
 			}
-			printJson(searchJson(projectedResults, cwd, core.filesystem.docsDir));
+			printJson(searchJson(projectedResults, cwd, core.filesystem.docsDir, getActiveSurfaceMode()));
 			cleanup();
 			return;
 		}
@@ -2426,6 +2476,10 @@ function printSearchResults(results: SearchResult[]): void {
 		console.log("Tasks:");
 		for (const taskResult of localTasks) {
 			const { task } = taskResult;
+			if (getActiveSurfaceMode() === "mini") {
+				console.log(formatMiniTaskSummaryLine(task, { includeStatus: true }));
+				continue;
+			}
 			const scoreText = formatScore(taskResult.score);
 			const statusText = task.status ? ` (${task.status})` : "";
 			const priorityText = task.priority ? ` [${task.priority.toUpperCase()}]` : "";
@@ -2447,7 +2501,7 @@ function printSearchResults(results: SearchResult[]): void {
 		printed = true;
 	}
 
-	if (decisions.length > 0) {
+	if (getActiveSurfaceMode() === "full" && decisions.length > 0) {
 		if (printed) {
 			console.log("");
 		}
@@ -2527,6 +2581,9 @@ async function runTaskList(
 ) {
 	const outputMode = getTaskReadOutputMode(options);
 	if (!outputMode) return;
+	const taskSortFields: readonly string[] =
+		getActiveSurfaceMode() === "mini" ? MINI_TASK_SORT_FIELDS : TASK_SORT_FIELDS;
+	const taskSortFieldList = taskSortFields.join(", ");
 	const cwd = await requireProjectRoot();
 	const core = new Core(cwd);
 	const hasDuplicateIds = await printDuplicateIntegrityWarning(core);
@@ -2630,8 +2687,8 @@ async function runTaskList(
 
 	if (options.sort) {
 		const sortField = options.sort.toLowerCase();
-		if (!TASK_SORT_FIELDS.includes(sortField)) {
-			console.error(`Invalid sort field: ${options.sort}. Valid values are: ${TASK_SORT_FIELD_LIST}`);
+		if (!taskSortFields.includes(sortField)) {
+			console.error(`Invalid sort field: ${options.sort}. Valid values are: ${taskSortFieldList}`);
 			process.exitCode = 1;
 			cleanup();
 			return;
@@ -2687,7 +2744,7 @@ async function runTaskList(
 			const rows = options.ready ? projected.filter((row) => row.isReady) : projected;
 			const narrowed = narrowForDisplay(rows);
 			if (outputMode === "json") {
-				emitJson(taskListJson(narrowed.display));
+				emitJson(taskListJson(narrowed.display, getActiveSurfaceMode()));
 				cleanup();
 				return;
 			}
@@ -2862,8 +2919,8 @@ async function runTaskList(
 			let sortedTasks = tasks;
 			if (options.sort) {
 				const sortField = options.sort.toLowerCase();
-				if (!TASK_SORT_FIELDS.includes(sortField)) {
-					throw new Error(`Invalid sort field: ${options.sort}. Valid values are: ${TASK_SORT_FIELD_LIST}`);
+				if (!taskSortFields.includes(sortField)) {
+					throw new Error(`Invalid sort field: ${options.sort}. Valid values are: ${taskSortFieldList}`);
 				}
 				sortedTasks = sortTasks(tasks, sortField, config?.priorities);
 			} else {
@@ -3020,7 +3077,12 @@ type EditCommandTarget = {
 	resolve: (core: Core, idOrSelectedPath: string) => Promise<Task | null>;
 	listCandidates: (core: Core) => Promise<Task[]>;
 	selectionValue: (candidate: Task) => string;
-	update: (core: Core, existing: Task, input: TaskUpdateInput) => Promise<Task>;
+	update: (
+		core: Core,
+		existing: Task,
+		input: TaskUpdateInput,
+		options?: { preserveUnknownFrontmatter?: boolean },
+	) => Promise<Task>;
 	notFoundMessage: (id: string) => string;
 };
 
@@ -3031,9 +3093,20 @@ const taskEditTarget: EditCommandTarget = {
 	resolve: (core, id) => core.loadTaskById(id, { includeCrossBranch: false }),
 	listCandidates: (core) => core.queryTasks({ includeCrossBranch: false }),
 	selectionValue: (candidate) => candidate.id,
-	update: (core, existing, input) => core.editTask(existing.id, input, undefined, { includeCrossBranch: false }),
-	notFoundMessage: (id) => `Task ${id} not found. ${LOCAL_TASK_LOOKUP_HINT}`,
+	update: (core, existing, input, options) =>
+		core.editTask(existing.id, input, undefined, { includeCrossBranch: false, ...options }),
+	notFoundMessage: (id) => `Task ${id} not found. ${localTaskLookupHint()}`,
 };
+
+async function updateEditTarget(
+	core: Core,
+	target: EditCommandTarget,
+	existing: Task,
+	input: TaskUpdateInput,
+): Promise<Task> {
+	const options = getActiveSurfaceMode() === "mini" ? { preserveUnknownFrontmatter: true } : undefined;
+	return await target.update(core, existing, input, options);
+}
 
 const draftEditTarget: EditCommandTarget = {
 	label: "Draft",
@@ -3068,11 +3141,16 @@ const draftEditTarget: EditCommandTarget = {
 	},
 	listCandidates: (core) => core.filesystem.listHealthyDrafts(),
 	selectionValue: (candidate) => candidate.filePath ?? candidate.id,
-	update: (core, existing, input) => {
+	update: (core, existing, input, options) => {
 		if (!existing.filePath) {
 			throw new Error(`Cannot update draft ${existing.id} without its file path.`);
 		}
-		return core.updateDraftFromInput({ filePath: existing.filePath, canonicalId: existing.id }, input);
+		return core.updateDraftFromInput(
+			{ filePath: existing.filePath, canonicalId: existing.id },
+			input,
+			undefined,
+			options,
+		);
 	},
 	notFoundMessage: (id) => `Draft ${id} not found.`,
 };
@@ -3089,7 +3167,7 @@ async function runEditCommand(target: EditCommandTarget, requestedIds: string[] 
 		taskIds.push(trimmed);
 	}
 	const taskId = taskIds[0];
-	const shouldUseWizard = hasInteractiveTTY && !hasEditFieldFlags(options);
+	const shouldUseWizard = canUseInteractiveUi() && !hasEditFieldFlags(options);
 	if (!shouldUseWizard && !taskId) {
 		printMissingRequiredArgument("taskId");
 		return;
@@ -3160,7 +3238,7 @@ async function runEditCommand(target: EditCommandTarget, requestedIds: string[] 
 		}
 
 		try {
-			const updatedTask = await target.update(core, existingTaskForWizard, wizardInput);
+			const updatedTask = await updateEditTarget(core, target, existingTaskForWizard, wizardInput);
 			console.log(`Updated ${target.label.toLowerCase()} ${updatedTask.id}`);
 		} catch (error) {
 			console.error(formatTaskEditError(error, existingTaskForWizard.id, target.label.toLowerCase()));
@@ -3499,7 +3577,7 @@ async function runEditCommand(target: EditCommandTarget, requestedIds: string[] 
 	if (taskIds.length === 1) {
 		let updatedTask: Task;
 		try {
-			updatedTask = await target.update(core, existingTask, buildTaskUpdateInput(editArgs));
+			updatedTask = await updateEditTarget(core, target, existingTask, buildTaskUpdateInput(editArgs));
 		} catch (error) {
 			console.error(formatTaskEditError(error, existingTask.id, target.label.toLowerCase()));
 			process.exitCode = 1;
@@ -3507,7 +3585,7 @@ async function runEditCommand(target: EditCommandTarget, requestedIds: string[] 
 		}
 
 		if (isPlainRequested(options)) {
-			console.log(formatTaskPlainText(await loadTaskDetail(core, updatedTask)));
+			console.log(formatTaskPlainText(await loadTaskDetail(core, updatedTask), {}, getActiveSurfaceMode()));
 			return;
 		}
 
@@ -3520,7 +3598,7 @@ async function runEditCommand(target: EditCommandTarget, requestedIds: string[] 
 	// rather than repeating a full task body for every ID.
 	for (const task of resolvedTasks) {
 		try {
-			const updated = await target.update(core, task, buildTaskUpdateInput(editArgs));
+			const updated = await updateEditTarget(core, target, task, buildTaskUpdateInput(editArgs));
 			console.log(`Updated ${target.label.toLowerCase()} ${updated.id}`);
 		} catch (error) {
 			editFailures.push({ taskId: task.id, message: formatTaskEditError(error, task.id, target.label.toLowerCase()) });
@@ -3802,7 +3880,7 @@ addHelpSchema(taskCmd.command("view <taskId>"), {
 		const localTasks = await core.fs.listTasks();
 		const task = await core.getTaskWithSubtasks(taskId, localTasks, { includeCrossBranch: false });
 		if (!task) {
-			console.error(`Task ${taskId} not found. ${LOCAL_TASK_LOOKUP_HINT}`);
+			console.error(`Task ${taskId} not found. ${localTaskLookupHint()}`);
 			process.exitCode = 1;
 			return;
 		}
@@ -3813,12 +3891,12 @@ addHelpSchema(taskCmd.command("view <taskId>"), {
 
 		// Plain text output for non-interactive environments
 		if (outputMode === "json") {
-			printJson(taskViewJson(await loadTaskDetail(core, task), cwd));
+			printJson(taskViewJson(await loadTaskDetail(core, task), cwd, getActiveSurfaceMode()));
 			return;
 		}
 
 		if (outputMode === "plain") {
-			console.log(formatTaskPlainText(await loadTaskDetail(core, task)));
+			console.log(formatTaskPlainText(await loadTaskDetail(core, task), {}, getActiveSurfaceMode()));
 			return;
 		}
 
@@ -3839,7 +3917,7 @@ addHelpSchema(taskCmd.command("archive <taskId>"), {
 		const core = new Core(cwd);
 		const task = await core.loadTaskById(taskId, { includeCrossBranch: false });
 		if (!task) {
-			console.error(`Task ${taskId} not found. ${LOCAL_TASK_LOOKUP_HINT}`);
+			console.error(`Task ${taskId} not found. ${localTaskLookupHint()}`);
 			process.exitCode = 1;
 			return;
 		}
@@ -3899,7 +3977,7 @@ addHelpSchema(taskCmd.command("complete <taskId>"), {
 		const task = await core.loadTaskById(taskId, { includeCrossBranch: false });
 
 		if (!task) {
-			console.error(`Task ${taskId} not found. ${LOCAL_TASK_LOOKUP_HINT}`);
+			console.error(`Task ${taskId} not found. ${localTaskLookupHint()}`);
 			process.exitCode = 1;
 			return;
 		}
@@ -3915,7 +3993,9 @@ addHelpSchema(taskCmd.command("complete <taskId>"), {
 		const terminalStatus = getTerminalStatus(statuses) ?? "Done";
 		if (!isTerminalStatus(task.status, statuses)) {
 			console.error(
-				`Task ${task.id} is not ${terminalStatus}. Set status to "${terminalStatus}" with: backlog task edit ${task.id} -s "${terminalStatus}" before cleanup.`,
+				getActiveSurfaceMode() === "mini"
+					? `Task ${task.id} is not ${terminalStatus}. Set status with: backlog task edit ${task.id} --status "${terminalStatus}" before completing.`
+					: `Task ${task.id} is not ${terminalStatus}. Set status to "${terminalStatus}" with: backlog task edit ${task.id} -s "${terminalStatus}" before cleanup.`,
 			);
 			process.exitCode = 1;
 			return;
@@ -3930,7 +4010,7 @@ addHelpSchema(taskCmd.command("complete <taskId>"), {
 		}
 
 		console.log(`Completed task ${task.id}.`);
-		if (completedFilePath) {
+		if (getActiveSurfaceMode() === "full" && completedFilePath) {
 			console.log(`File: ${completedFilePath}`);
 		}
 	});
@@ -3965,6 +4045,16 @@ taskCmd
 	.option("--plain", "use plain text output")
 	.option("--json", "print versioned machine-readable JSON output")
 	.action(async (taskId: string | undefined, options: { json?: boolean; plain?: boolean }) => {
+		if (getActiveSurfaceMode() === "mini") {
+			if (taskId) {
+				console.error(`Unknown command: ${taskId}`);
+				process.exitCode = 1;
+				return;
+			}
+			taskCmd.outputHelp();
+			return;
+		}
+
 		const outputMode = getReadOutputMode(options);
 		if (!outputMode) return;
 		const cwd = await requireProjectRoot();
@@ -4299,15 +4389,17 @@ addHelpSchema(milestoneCmd.command("list"), {
 		const buckets = buildMilestoneBuckets(tasks, milestones, statuses, { archivedMilestoneIds, archivedMilestones });
 		const active = buckets.filter((bucket) => !bucket.isNoMilestone && !bucket.isCompleted);
 		const completed = buckets.filter((bucket) => !bucket.isNoMilestone && bucket.isCompleted);
+		const isMini = getActiveSurfaceMode() === "mini";
 
-		const formatBucket = (bucket: (typeof buckets)[number]) => {
+		const formatBucket = (bucket: (typeof buckets)[number], includeDescription = false) => {
 			const id = bucket.milestone ?? bucket.label;
 			const label = bucket.label;
 			const milestone = [...milestones, ...archivedMilestones].find(
 				(candidate) => milestoneKey(candidate.id) === milestoneKey(id),
 			);
-			const dueDate = milestone?.dueDate ? `, due ${formatUtcDateForDisplay(milestone.dueDate)}` : "";
-			return `  ${id}: ${label} (${bucket.doneCount}/${bucket.total} done${dueDate})`;
+			const dueDate = !isMini && milestone?.dueDate ? `, due ${formatUtcDateForDisplay(milestone.dueDate)}` : "";
+			const description = includeDescription && isMini ? formatMilestoneDescription(milestone?.description) : "";
+			return `  ${id}: ${label} (${bucket.doneCount}/${bucket.total} done${dueDate})${description}`;
 		};
 
 		console.log(`Active milestones (${active.length}):`);
@@ -4315,7 +4407,7 @@ addHelpSchema(milestoneCmd.command("list"), {
 			console.log("  (none)");
 		} else {
 			for (const bucket of active) {
-				console.log(formatBucket(bucket));
+				console.log(formatBucket(bucket, true));
 			}
 		}
 
@@ -5887,15 +5979,44 @@ registerInstructionsCommand(program);
 // MCP command group
 registerMcpCommand(program);
 
-program
-	.parseAsync(process.argv)
-	.catch((error) => {
-		console.error(error instanceof Error ? error.message : String(error));
-		process.exitCode = 1;
-	})
-	.finally(() => {
-		// Restore BUN_OPTIONS after CLI parsing completes so it's available for subsequent commands
-		if (originalBunOptions) {
-			process.env.BUN_OPTIONS = originalBunOptions;
+export async function runCli(argv: string[] = process.argv, surface: SurfaceMode = "mini"): Promise<void> {
+	activeArgv = argv;
+	activeTaskPrefix = undefined;
+	setActiveSurfaceMode(surface);
+
+	// Windows color fix
+	if (process.platform === "win32") {
+		const term = process.env.TERM;
+		if (!term || /^(xterm|dumb|ansi|vt100)$/i.test(term)) {
+			process.env.TERM = "xterm-256color";
 		}
-	});
+	}
+
+	// Temporarily isolate BUN_OPTIONS during CLI parsing to prevent conflicts.
+	const originalBunOptions = process.env.BUN_OPTIONS;
+	if (originalBunOptions) delete process.env.BUN_OPTIONS;
+
+	try {
+		if (surface === "mini") applyMiniCommanderPolicy(program);
+		if (await handleBareInvocation(argv, surface, program, version)) return;
+		await runConfigMigration(argv);
+		if (surface === "mini") activeTaskPrefix = await loadActiveTaskPrefix();
+		await program.parseAsync(argv);
+	} catch (error) {
+		console.error(
+			surface === "mini" && isAmbiguousTaskIdError(error)
+				? formatMiniAmbiguousTaskIdError(error.taskId, activeTaskPrefix)
+				: error instanceof Error
+					? error.message
+					: String(error),
+		);
+		process.exitCode = 1;
+	} finally {
+		// Restore BUN_OPTIONS after CLI parsing completes so it's available for subsequent commands
+		if (originalBunOptions) process.env.BUN_OPTIONS = originalBunOptions;
+	}
+}
+
+if (import.meta.main) {
+	await runCli(process.argv, "mini");
+}
