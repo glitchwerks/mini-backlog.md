@@ -1,11 +1,21 @@
 # mini-backlog.md
 
-`mini-backlog.md` is a restricted fork of [Backlog.md](https://github.com/MrLesk/Backlog.md) for task, document, and milestone management. Install the unchanged npm package and executable:
+`mini-backlog.md` is a restricted fork of [Backlog.md](https://github.com/MrLesk/Backlog.md) for task, document, and milestone management. The package name remains `backlog.md` and the executable remains `backlog`. The npm registry package `backlog.md` is upstream's unrestricted product.
+
+## Install from this fork
+
+Install Git, Bun 1.3.14 or newer, and Node.js with npm. Clone this fork, then build and install its local binary. These commands work in PowerShell, Git Bash, and Unix shells; run each line separately:
 
 ```bash
-npm i -g backlog.md
+git clone https://github.com/glitchwerks/mini-backlog.md.git
+cd mini-backlog.md
+bun install --frozen-lockfile --ignore-scripts
+bun run build
+npm install --global --omit=optional --ignore-scripts .
 backlog --help
 ```
+
+The build produces `dist/backlog.exe` on Windows and `dist/backlog` elsewhere. The local package includes that binary; optional registry binaries are omitted. The wrapper refuses platform packages that identify upstream instead of this fork. Rebuild and repeat the local install after updating your checkout. Mini requires an existing Backlog.md project; it does not provide project initialization.
 
 ## Restricted surface
 
@@ -73,6 +83,8 @@ The command table lists each public command and its explicit non-help options. `
 The MCP server starts with `backlog mcp start`. Workflow and Definition-of-Done resources and tools are not exposed. Task and milestone archive operations, due-date inputs and outputs, and every other upstream command and tool are unavailable.
 
 ## Upstream synchronization
+
+For development, `bun run check:types` checks TypeScript, `bun run check` checks formatting and lint, and `bun run test` runs the tests. CI bundles upstream regressions with `BACKLOG_BUILD_OUTDIR=<temporary-directory> bun scripts/build-test-cli.ts` and sets `BACKLOG_TEST_CLI_BUNDLE` to that directory's `full-cli-entry.js`. This test harness is not shipped. `bun run build` always builds mini. `bun scripts/smoke-compiled-build.ts <binary-path> <version>` exercises the same mini smoke used by CI and Nix.
 
 This fork synchronizes upstream changes from [MrLesk/Backlog.md](https://github.com/MrLesk/Backlog.md) while keeping the restricted public surface above. The npm package name remains `backlog.md`, and the executable remains `backlog`.
 

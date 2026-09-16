@@ -106,13 +106,7 @@ jobs:
         shell: bash
         run: |
           TAG="${GITHUB_REF##refs/tags/v}"
-          jq 'del(.devDependencies,.scripts.prepare,.scripts.preinstall,.type) |
-              .version = "'$TAG'" |
-              .bin = {backlog:"cli.js"} |
-              .files = ["cli.js","resolveBinary.cjs","postuninstall.cjs","package.json","README.md","LICENSE"] |
-              .scripts = {"postuninstall": "node postuninstall.cjs"} |
-              .repository = {"type":"git","url":"https://github.com/MrLesk/Backlog.md"} |
-              .optionalDependencies |= map_values("'$TAG'")' package.json > dist/package.json
+          node scripts/release-manifest.cjs root dist/package.json "$TAG"
           cp LICENSE README.md dist/ 2>/dev/null || true
       - uses: actions/setup-node@v6
         with:
@@ -184,19 +178,7 @@ jobs:
             exit 1
           fi
           cp LICENSE README.md pkg/ 2>/dev/null || true
-          cat <<EOF > pkg/package.json
-          {
-            "name": "${{ matrix.package }}",
-            "version": "${TAG}",
-            "os": ["${{ matrix.os }}"],
-            "cpu": ["${{ matrix.cpu }}"],
-            "files": ["backlog${{ contains(matrix.target,'windows') && '.exe' || '' }}","package.json","LICENSE"],
-            "repository": {
-              "type": "git",
-              "url": "https://github.com/MrLesk/Backlog.md"
-            }
-          }
-          EOF
+          node scripts/release-manifest.cjs platform pkg/package.json "$TAG" "${{ matrix.package }}" "${{ matrix.os }}" "${{ matrix.cpu }}"
       - name: Ensure executable permission (non-Windows)
         if: ${{ !contains(matrix.target,'windows') }}
         shell: bash
@@ -253,7 +235,7 @@ jobs:
 
             if npm i "${PACKAGE_NAME}@${VERSION}" --prefer-online --no-audit --no-fund; then
               if [[ -f "$BINARY_PATH" ]]; then
-                if "./$BINARY_PATH" -v; then
+                if "./$BINARY_PATH" --version; then
                   echo "Resolved ${PACKAGE_NAME}@${VERSION} on attempt ${attempt}/${MAX_ATTEMPTS}."
                   exit 0
                 fi
@@ -338,7 +320,7 @@ jobs:
               npm init -y | Out-Null
               npm i "$PackageName@$Version" --prefer-online --no-audit --no-fund
               if ($LASTEXITCODE -eq 0 -and (Test-Path $BinaryPath)) {
-                & $BinaryPath -v
+                & $BinaryPath --version
                 if ($LASTEXITCODE -eq 0) {
                   Write-Host "Resolved $PackageName@$Version on attempt $attempt/$MaxAttempts."
                   exit 0
@@ -374,7 +356,7 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-      - name: Install and run backlog -v (Unix)
+      - name: Install and run backlog --version (Unix)
         if: ${{ matrix.os != 'windows-latest' }}
         shell: bash
         run: |
@@ -392,7 +374,7 @@ jobs:
             npm init -y >/dev/null 2>&1
 
             if npm i "backlog.md@${VERSION}" --prefer-online --no-audit --no-fund; then
-              if npx backlog -v; then
+              if npx backlog --version; then
                 echo "Install sanity succeeded on attempt ${attempt}/${MAX_ATTEMPTS}."
                 exit 0
               fi
@@ -415,7 +397,7 @@ jobs:
 
           echo "Install sanity timed out for backlog.md@${VERSION}."
           exit 1
-      - name: Install and run backlog -v (Windows)
+      - name: Install and run backlog --version (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         shell: pwsh
         run: |
@@ -442,7 +424,7 @@ jobs:
               npm init -y | Out-Null
               npm i "backlog.md@$Version" --prefer-online --no-audit --no-fund
               if ($LASTEXITCODE -eq 0) {
-                npx backlog -v
+                npx backlog --version
                 if ($LASTEXITCODE -eq 0) {
                   Write-Host "Install sanity succeeded on attempt $attempt/$MaxAttempts."
                   exit 0

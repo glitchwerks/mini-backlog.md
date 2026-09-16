@@ -80,3 +80,8 @@ it("keeps the published mini contract synchronized with the fail-closed policy",
 	expect(readme).toContain("There is no switch that restores the full Backlog.md surface.");
 	expect(readme).toContain("MrLesk/Backlog.md");
 });
+
+it("does not request upstream platform binaries when installing the source package", async () => {
+	const pkg = await Bun.file("package.json").json();
+	expect(pkg.optionalDependencies ?? {}).toEqual({});
+});

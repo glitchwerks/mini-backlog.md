@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 
@@ -51,5 +51,77 @@ describe("compiled mini CLI entry", () => {
 			code: 1,
 			stderr: expect.stringContaining("error:"),
 		});
+	});
+
+	it("passes the compiled and Nix installation smoke against a seeded mini project", async () => {
+		const pkg = await Bun.file(join(projectRoot, "package.json")).json();
+		const { stdout } = await execFileAsync(
+			process.execPath,
+			["scripts/smoke-compiled-build.ts", executable, pkg.version],
+			{ cwd: projectRoot, timeout: 60000 },
+		);
+		expect(stdout).toContain("Compiled build smoke checks passed");
+	}, 60000);
+
+	it("installs a local source package containing this mini binary without platform dependencies", async () => {
+		const source = join(buildDirectory, "source");
+		const install = join(buildDirectory, "installed");
+		await mkdir(join(source, "dist"), { recursive: true });
+		await cp(executable, join(source, "dist", process.platform === "win32" ? "backlog.exe" : "backlog"));
+		await cp(join(projectRoot, "scripts"), join(source, "scripts"), { recursive: true });
+		await cp(join(projectRoot, "package.json"), join(source, "package.json"));
+		const { $ } = await import("bun");
+		const packed =
+			await $`npm pack --json --ignore-scripts --cache ${join(buildDirectory, "npm-cache")} --pack-destination ${buildDirectory}`
+				.cwd(source)
+				.quiet();
+		const pack = JSON.parse(packed.stdout.toString())[0];
+		expect(pack.files.map((file: { path: string }) => file.path)).toContain(
+			`dist/backlog${process.platform === "win32" ? ".exe" : ""}`,
+		);
+		expect(pack.files.map((file: { path: string }) => file.path)).not.toContain("src/test/full-cli-entry.ts");
+		await $`npm install --offline --prefix ${install} --cache ${join(buildDirectory, "npm-cache")} --omit=optional --ignore-scripts --no-audit --no-fund ${join(buildDirectory, pack.filename)}`.quiet();
+		const { stdout } = await execFileAsync(
+			"node",
+			[join(install, "node_modules/backlog.md/scripts/cli.cjs"), "--help"],
+			{ timeout: 10000 },
+		);
+		expect(stdout).toContain("mini-backlog.md");
+		expect(stdout).not.toMatch(/^ {2}(init|browser|help)\b/m);
+		await expect(
+			execFileAsync("node", [join(install, "node_modules/backlog.md/scripts/cli.cjs"), "board"], { timeout: 10000 }),
+		).rejects.toMatchObject({ code: 1 });
+	}, 60000);
+
+	it("runs a platform artifact with generated fork release metadata", async () => {
+		const release = join(buildDirectory, "release");
+		const platform = process.platform === "win32" ? "windows" : process.platform;
+		const name = `backlog.md-${platform}-${process.arch}`;
+		const platformDir = join(release, "node_modules", name);
+		await mkdir(platformDir, { recursive: true });
+		await cp(executable, join(platformDir, process.platform === "win32" ? "backlog.exe" : "backlog"));
+		await cp(join(projectRoot, "scripts/cli.cjs"), join(release, "cli.js"));
+		await cp(join(projectRoot, "scripts/resolveBinary.cjs"), join(release, "resolveBinary.cjs"));
+		await execFileAsync("node", ["scripts/release-manifest.cjs", "root", join(release, "package.json"), "9.8.7"], {
+			cwd: projectRoot,
+		});
+		await execFileAsync(
+			"node",
+			[
+				"scripts/release-manifest.cjs",
+				"platform",
+				join(platformDir, "package.json"),
+				"9.8.7",
+				name,
+				process.platform,
+				process.arch,
+			],
+			{ cwd: projectRoot },
+		);
+		const { stdout } = await execFileAsync("node", [join(release, "cli.js"), "--help"], { timeout: 10000 });
+		expect(stdout).toContain("mini-backlog.md");
+		await expect(execFileAsync("node", [join(release, "cli.js"), "browser"], { timeout: 10000 })).rejects.toMatchObject(
+			{ code: 1 },
+		);
 	});
 });
