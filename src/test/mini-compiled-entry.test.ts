@@ -10,11 +10,8 @@ let buildDirectory: string;
 let executable: string;
 
 function parseNpmPackOutput(output: string): Array<{ filename: string; files: Array<{ path: string }> }> {
-	const lineStarts = [
-		0,
-		...Array.from(output.matchAll(/\r?\n(?=\[)/g), (match) => (match.index ?? 0) + match[0].length),
-	];
-	for (const start of lineStarts.reverse()) {
+	const arrayStarts = Array.from(output.matchAll(/\[/g), (match) => match.index ?? 0);
+	for (const start of arrayStarts.reverse()) {
 		try {
 			const parsed = JSON.parse(output.slice(start).trim());
 			if (Array.isArray(parsed)) return parsed;
@@ -27,6 +24,12 @@ it("parses npm pack JSON after a non-JSON preamble", () => {
 	expect(
 		parseNpmPackOutput('npm notice preparing package\n.[{not json}\n[\n  {"filename":"mini.tgz","files":[]}\n]\n'),
 	).toEqual([{ filename: "mini.tgz", files: [] }]);
+});
+
+it("parses npm pack JSON after an inline progress prefix", () => {
+	expect(parseNpmPackOutput('.[\n  {"filename":"mini.tgz","files":[]}\n]\n')).toEqual([
+		{ filename: "mini.tgz", files: [] },
+	]);
 });
 
 describe("compiled mini CLI entry", () => {
