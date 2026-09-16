@@ -847,10 +847,20 @@ async function requireRuntimeCwd(): Promise<string> {
  * Walks up the directory tree to find backlog/ or backlog.json, with git root fallback.
  * Exits with error message if no Backlog.md project is found.
  */
+function localTaskLookupHint(): string {
+	return getActiveSurfaceMode() === "mini"
+		? "Use 'backlog task list' to find tasks in this project."
+		: LOCAL_TASK_LOOKUP_HINT;
+}
+
 async function requireProjectRoot(): Promise<string> {
 	const root = await findBacklogRoot(await requireRuntimeCwd());
 	if (!root) {
-		console.error("No Backlog.md project found. Run `backlog init` to initialize.");
+		console.error(
+			getActiveSurfaceMode() === "mini"
+				? "No Backlog.md project found. Run this command from an existing Backlog.md project."
+				: "No Backlog.md project found. Run `backlog init` to initialize.",
+		);
 		process.exit(1);
 	}
 	return root;
@@ -956,7 +966,7 @@ async function handleBareInvocation(
 
 		const wantsHelp = rawArgs.includes("-h") || rawArgs.includes("--help");
 		const wantsVersion = rawArgs.includes("-v") || rawArgs.includes("--version");
-		const isBareRoot = rawArgs.length === 0 || (rawArgs.length === 1 && rawArgs[0] === "--plain");
+		const isBareRoot = rawArgs.length === 0 || (surface === "full" && rawArgs.length === 1 && rawArgs[0] === "--plain");
 		if (!isBareRoot || wantsHelp || wantsVersion) return false;
 
 		if (surface === "mini") {
@@ -3073,7 +3083,7 @@ const taskEditTarget: EditCommandTarget = {
 	selectionValue: (candidate) => candidate.id,
 	update: (core, existing, input, options) =>
 		core.editTask(existing.id, input, undefined, { includeCrossBranch: false, ...options }),
-	notFoundMessage: (id) => `Task ${id} not found. ${LOCAL_TASK_LOOKUP_HINT}`,
+	notFoundMessage: (id) => `Task ${id} not found. ${localTaskLookupHint()}`,
 };
 
 async function updateEditTarget(
@@ -3858,7 +3868,7 @@ addHelpSchema(taskCmd.command("view <taskId>"), {
 		const localTasks = await core.fs.listTasks();
 		const task = await core.getTaskWithSubtasks(taskId, localTasks, { includeCrossBranch: false });
 		if (!task) {
-			console.error(`Task ${taskId} not found. ${LOCAL_TASK_LOOKUP_HINT}`);
+			console.error(`Task ${taskId} not found. ${localTaskLookupHint()}`);
 			process.exitCode = 1;
 			return;
 		}
@@ -3895,7 +3905,7 @@ addHelpSchema(taskCmd.command("archive <taskId>"), {
 		const core = new Core(cwd);
 		const task = await core.loadTaskById(taskId, { includeCrossBranch: false });
 		if (!task) {
-			console.error(`Task ${taskId} not found. ${LOCAL_TASK_LOOKUP_HINT}`);
+			console.error(`Task ${taskId} not found. ${localTaskLookupHint()}`);
 			process.exitCode = 1;
 			return;
 		}
@@ -3955,7 +3965,7 @@ addHelpSchema(taskCmd.command("complete <taskId>"), {
 		const task = await core.loadTaskById(taskId, { includeCrossBranch: false });
 
 		if (!task) {
-			console.error(`Task ${taskId} not found. ${LOCAL_TASK_LOOKUP_HINT}`);
+			console.error(`Task ${taskId} not found. ${localTaskLookupHint()}`);
 			process.exitCode = 1;
 			return;
 		}
@@ -3971,7 +3981,9 @@ addHelpSchema(taskCmd.command("complete <taskId>"), {
 		const terminalStatus = getTerminalStatus(statuses) ?? "Done";
 		if (!isTerminalStatus(task.status, statuses)) {
 			console.error(
-				`Task ${task.id} is not ${terminalStatus}. Set status to "${terminalStatus}" with: backlog task edit ${task.id} -s "${terminalStatus}" before cleanup.`,
+				getActiveSurfaceMode() === "mini"
+					? `Task ${task.id} is not ${terminalStatus}. Set status with: backlog task edit ${task.id} --status "${terminalStatus}" before completing.`
+					: `Task ${task.id} is not ${terminalStatus}. Set status to "${terminalStatus}" with: backlog task edit ${task.id} -s "${terminalStatus}" before cleanup.`,
 			);
 			process.exitCode = 1;
 			return;
@@ -5977,7 +5989,13 @@ export async function runCli(argv: string[] = process.argv, surface: SurfaceMode
 		await runConfigMigration(argv);
 		await program.parseAsync(argv);
 	} catch (error) {
-		console.error(error instanceof Error ? error.message : String(error));
+		console.error(
+			surface === "mini" && isAmbiguousTaskIdError(error)
+				? formatMiniAmbiguousTaskIdError(error.taskId)
+				: error instanceof Error
+					? error.message
+					: String(error),
+		);
 		process.exitCode = 1;
 	} finally {
 		// Restore BUN_OPTIONS after CLI parsing completes so it's available for subsequent commands

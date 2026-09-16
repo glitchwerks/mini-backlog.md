@@ -104,6 +104,9 @@ describe("mini MCP surface", () => {
 				params: { name: "milestone_rename", arguments: { from: "m-0", to: "Renamed release" } },
 			});
 			expect(getText(renamed.content).toLowerCase()).not.toContain("due");
+			expect(getText(renamed.content)).toBe(
+				'Renamed milestone "Dated release" (m-0) → "Renamed release" (m-0).\nUpdated 0 local tasks: ',
+			);
 		} finally {
 			await server.stop();
 		}
@@ -122,6 +125,12 @@ describe("mini MCP surface", () => {
 		expect(output).toContain("m-0: Dated release");
 		expect(output).toContain("Visible description");
 		expect(output.toLowerCase()).not.toContain("due");
+		const renamed = await $`bun ${MINI_CLI_PATH} milestone rename m-0 "Renamed release"`
+			.cwd(TEST_DIR)
+			.quiet()
+			.nothrow();
+		expect(renamed.exitCode).toBe(0);
+		expect(renamed.stdout.toString()).not.toMatch(/Renamed milestone file|backlog[\\/]milestones|\.md/);
 	});
 
 	it("starts empty without a project and roots-upgrades to the same exact approved surface", async () => {
@@ -157,4 +166,24 @@ describe("mini MCP surface", () => {
 			await server.stop();
 		}
 	});
+});
+
+it("rejects unlisted tools added by a future registrar at runtime", async () => {
+	TEST_DIR = createUniqueTestDir("mini-mcp-future-tool");
+	await createProject(TEST_DIR);
+	const server = await createMcpServer(TEST_DIR, { surface: "mini" });
+	try {
+		server.addTool({
+			name: "document_future",
+			description: "Future upstream addition",
+			inputSchema: { type: "object" },
+			handler: async () => ({ content: [{ type: "text", text: "Hidden" }] }),
+		});
+		expect((await server.testInterface.listTools()).tools.map((tool) => tool.name)).not.toContain("document_future");
+		await expect(server.testInterface.callTool({ params: { name: "document_future", arguments: {} } })).rejects.toThrow(
+			"Tool not found",
+		);
+	} finally {
+		await server.stop();
+	}
 });

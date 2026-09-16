@@ -236,7 +236,9 @@ export class MilestoneHandlers {
 		const failedTaskIds: string[] = [];
 		for (const [taskId, milestone] of previousMilestones.entries()) {
 			try {
-				await this.core.editTask(taskId, { milestone: milestone ?? null }, false);
+				await this.core.editTask(taskId, { milestone: milestone ?? null }, false, {
+					preserveUnknownFrontmatter: this.surface === "mini",
+				});
 			} catch {
 				failedTaskIds.push(taskId);
 			}
@@ -489,7 +491,9 @@ export class MilestoneHandlers {
 			try {
 				for (const task of matches) {
 					previousMilestones.set(task.id, task.milestone);
-					const updatedTask = await this.core.editTask(task.id, { milestone: targetMilestone }, false);
+					const updatedTask = await this.core.editTask(task.id, { milestone: targetMilestone }, false, {
+						preserveUnknownFrontmatter: this.surface === "mini",
+					});
 					const taskFilePath = updatedTask.filePath ?? task.filePath;
 					if (taskFilePath) {
 						updatedTaskFilePaths.add(taskFilePath);
@@ -568,7 +572,12 @@ export class MilestoneHandlers {
 		} else if (titleChanged) {
 			summaryLines.push("Skipped updating tasks (updateTasks=false).");
 		}
-		if (renameResult.sourcePath && renameResult.targetPath && renameResult.sourcePath !== renameResult.targetPath) {
+		if (
+			this.surface === "full" &&
+			renameResult.sourcePath &&
+			renameResult.targetPath &&
+			renameResult.sourcePath !== renameResult.targetPath
+		) {
 			summaryLines.push(`Renamed milestone file: ${renameResult.sourcePath} -> ${renameResult.targetPath}`);
 		}
 
@@ -631,6 +640,7 @@ export class MilestoneHandlers {
 						task.id,
 						{ milestone: taskHandling === "reassign" ? reassignedMilestone : null },
 						false,
+						{ preserveUnknownFrontmatter: this.surface === "mini" },
 					);
 					const taskFilePath = updatedTask.filePath ?? task.filePath;
 					if (taskFilePath) {

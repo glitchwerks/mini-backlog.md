@@ -588,6 +588,16 @@ hidden summary
 			expect(editResult.exitCode).toBe(1);
 			expect(editStderr).toContain("Task ID TASK-1 is ambiguous");
 			expect(editStderr).not.toMatch(/secret-alpha|secret-beta|backlog[\\/]tasks|backlog doctor/);
+			for (const args of [
+				["task", "view", "TASK-1", "--plain"],
+				["task", "view", "TASK-1", "--json"],
+				["task", "complete", "TASK-1"],
+			]) {
+				const result = await $`bun ${[MINI_CLI_PATH, ...args]}`.cwd(testDir).quiet().nothrow();
+				expect(result.exitCode).toBe(1);
+				expect(result.stderr.toString()).toContain("Task ID TASK-1 is ambiguous");
+				expect(result.stderr.toString()).not.toMatch(/secret-alpha|secret-beta|backlog[\\/]tasks|backlog doctor/);
+			}
 		} finally {
 			await safeCleanup(testDir);
 		}

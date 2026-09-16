@@ -14,6 +14,14 @@ describe("shipped mini CLI surface", () => {
 		const output = result.stdout.toString();
 
 		expect(result.exitCode).toBe(0);
+		expect(
+			output
+				.split("Commands:\n")[1]
+				?.trim()
+				.split("\n")
+				.map((line) => line.trim().split(/\s/)[0])
+				.sort(),
+		).toEqual(["doc", "mcp", "milestone", "search", "task"]);
 		for (const allowed of ["task", "search", "doc", "milestone", "mcp"]) expect(output).toContain(allowed);
 		for (const hidden of [
 			"init",
@@ -41,6 +49,9 @@ describe("shipped mini CLI surface", () => {
 		"task edit TASK-1 --project Web",
 		"tasks list",
 		"task 1",
+		"--plain",
+		"help",
+		"task help",
 	])("rejects excluded invocation: %s", async (args) => {
 		const result = await runMini(...args.split(" "));
 
@@ -108,4 +119,24 @@ describe("shipped mini CLI surface", () => {
 			expect(output).not.toContain(hidden);
 		}
 	});
+});
+
+it.each([
+	["task", ["complete", "create", "edit", "list", "view"]],
+	["doc", ["create", "list", "search", "update", "view"]],
+	["milestone", ["add", "list", "remove", "rename"]],
+	["mcp", ["start"]],
+] as const)("publishes the exact %s group without positional shorthand", async (group, expected) => {
+	const result = await runMini(group, "--help");
+	const help = result.stdout.toString();
+	expect(result.exitCode).toBe(0);
+	expect(help.split("\n")[0]).toBe(`Usage: backlog ${group} [options] [command]`);
+	expect(
+		help
+			.split("Commands:\n")[1]
+			?.trim()
+			.split("\n")
+			.map((line) => line.trim().split(/\s/)[0])
+			.sort(),
+	).toEqual([...expected]);
 });

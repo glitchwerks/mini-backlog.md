@@ -954,7 +954,10 @@ export class Core {
 	 * and a completed record must not go through {@link updateTask} anyway - it would not be found
 	 * in the active corpus and the write would look like a brand-new task whose status just changed.
 	 */
-	private async writeVacatedIdCleanup(cleanup: VacatedIdCleanup): Promise<{
+	private async writeVacatedIdCleanup(
+		cleanup: VacatedIdCleanup,
+		options: TaskEditOptions = {},
+	): Promise<{
 		cleanedTaskIds: string[];
 		filePaths: string[];
 	}> {
@@ -963,13 +966,19 @@ export class Core {
 		const writeAll = async () => {
 			for (const task of cleanup.active) {
 				const updated = { ...task, updatedDate };
-				const savedPath = await this.fs.saveTask(updated);
+				const savedPath = await this.fs.saveTask(
+					updated,
+					await this.getEditSerializationOptions(task.filePath, options),
+				);
 				filePaths.push(savedPath);
 				this.contentStore?.upsertTask({ ...updated, filePath: savedPath });
 			}
 			for (const task of cleanup.completed) {
 				const updated = { ...task, updatedDate };
-				const savedPath = await this.fs.saveTask(updated);
+				const savedPath = await this.fs.saveTask(
+					updated,
+					await this.getEditSerializationOptions(task.filePath, options),
+				);
 				filePaths.push(savedPath);
 				// The record stays completed, with the reference gone. Refresh exactly this file in any
 				// in-process ContentStore: a record elsewhere claiming the same ID is a conflict this
@@ -2839,7 +2848,7 @@ export class Core {
 			let cleanedTaskIds: string[] = [];
 			let cleanedPaths: string[] = [];
 			try {
-				const written = await this.writeVacatedIdCleanup(cleanup);
+				const written = await this.writeVacatedIdCleanup(cleanup, options);
 				cleanedTaskIds = written.cleanedTaskIds;
 				cleanedPaths = written.filePaths;
 			} catch (error) {

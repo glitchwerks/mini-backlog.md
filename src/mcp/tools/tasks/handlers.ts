@@ -360,7 +360,9 @@ export class TaskHandlers {
 		const modifiedFiles = args.modifiedFiles?.map((file) => file.trim()).filter((file) => file.length > 0);
 		if (!query && (!modifiedFiles || modifiedFiles.length === 0) && !args.type?.length && !args.project?.length) {
 			throw new BacklogToolError(
-				"Search query, modifiedFiles, type filter, or project filter is required",
+				this.surface === "mini"
+					? "Search query or type filter is required"
+					: "Search query, modifiedFiles, type filter, or project filter is required",
 				"VALIDATION_ERROR",
 			);
 		}

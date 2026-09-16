@@ -21,6 +21,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { Core } from "../core/backlog.ts";
 import type { SurfaceMode } from "../mini/runtime.ts";
+import { MINI_MCP_TOOL_NAMES } from "../mini/surface-policy.ts";
 import type { BacklogConfig } from "../types/index.ts";
 import { getPackageName } from "../utils/app-info.ts";
 import { resolveBacklogDirectory } from "../utils/backlog-directory.ts";
@@ -342,6 +343,7 @@ export class McpServer extends Core {
 	 * Register a tool implementation with the server.
 	 */
 	public addTool(tool: McpToolHandler): void {
+		if (this.surface === "mini" && !MINI_MCP_TOOL_NAMES.some((name) => name === tool.name)) return;
 		this.tools.set(tool.name, tool);
 	}
 

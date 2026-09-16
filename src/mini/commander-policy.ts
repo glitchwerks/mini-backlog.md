@@ -53,6 +53,8 @@ export function applyMiniCommanderPolicy(program: Command): void {
 			eventEmitter.removeAllListeners(event);
 		command.description(MINI_CLI_DESCRIPTIONS[path as keyof typeof MINI_CLI_DESCRIPTIONS]);
 		command.helpOption("--help", "display help for command");
+		command.addHelpCommand(false);
+		if (path === "task") (command.registeredArguments as Argument[]).splice(0);
 		for (const option of command.options) {
 			const longFlagIndex = option.flags.indexOf("--");
 			if (longFlagIndex >= 0) option.flags = option.flags.slice(longFlagIndex);
