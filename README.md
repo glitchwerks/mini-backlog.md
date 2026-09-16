@@ -1,6 +1,6 @@
 # mini-backlog.md
 
-`mini-backlog.md` is a restricted fork of [Backlog.md](https://github.com/MrLesk/Backlog.md) for task, document, and milestone management. The package name remains `backlog.md` and the executable remains `backlog`. The npm registry package `backlog.md` is upstream's unrestricted product.
+`mini-backlog.md` is a restricted fork of [Backlog.md](https://github.com/MrLesk/Backlog.md) for task, document, and milestone management. The npm package is `mini-backlog.md`; the executable remains `backlog`. The npm registry package `backlog.md` is upstream's unrestricted product and is never installed or resolved by this fork.
 
 ## Install from this fork
 
@@ -86,7 +86,7 @@ The MCP server starts with `backlog mcp start`. Workflow and Definition-of-Done 
 
 For development, `bun run check:types` checks TypeScript, `bun run check` checks formatting and lint, and `bun run test` runs the tests. CI bundles upstream regressions with `BACKLOG_BUILD_OUTDIR=<temporary-directory> bun scripts/build-test-cli.ts` and sets `BACKLOG_TEST_CLI_BUNDLE` to that directory's `full-cli-entry.js`. This test harness is not shipped. `bun run build` always builds mini. `bun scripts/smoke-compiled-build.ts <binary-path> <version>` exercises the same mini smoke used by CI and Nix.
 
-This fork synchronizes upstream changes from [MrLesk/Backlog.md](https://github.com/MrLesk/Backlog.md) while keeping the restricted public surface above. The npm package name remains `backlog.md`, and the executable remains `backlog`.
+This fork synchronizes upstream changes from [MrLesk/Backlog.md](https://github.com/MrLesk/Backlog.md) while keeping the restricted public surface above. Its root and platform npm packages use the `mini-backlog.md` identity; the executable remains `backlog`.
 
 ## License
 

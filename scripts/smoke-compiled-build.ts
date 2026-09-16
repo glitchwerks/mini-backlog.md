@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { removeKnownBunRuntimeWarning } from "./smoke-stderr.ts";
 
 const [executablePath, expectedVersion] = process.argv.slice(2);
 if (!executablePath || !expectedVersion) {
@@ -19,7 +20,7 @@ const smokeRoot = await mkdtemp(join(tmpdir(), "mini-backlog-smoke-"));
 /** Exercise the installed executable, including Nix's Bun wrapper, with bounded subprocesses. */
 async function run(...args: string[]): Promise<string> {
 	const result = await exec(executable, args, { cwd: smokeRoot, timeout });
-	assert.equal(result.stderr, "");
+	assert.equal(removeKnownBunRuntimeWarning(result.stderr), "");
 	return result.stdout;
 }
 

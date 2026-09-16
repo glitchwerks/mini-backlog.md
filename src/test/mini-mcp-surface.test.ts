@@ -187,3 +187,36 @@ it("rejects unlisted tools added by a future registrar at runtime", async () => 
 		await server.stop();
 	}
 });
+
+it("rejects resources and prompts added by future registrars at runtime", async () => {
+	TEST_DIR = createUniqueTestDir("mini-mcp-future-resource-prompt");
+	await createProject(TEST_DIR);
+	const server = await createMcpServer(TEST_DIR, { surface: "mini" });
+	try {
+		server.addResource({
+			uri: "backlog://future-resource",
+			name: "Future resource",
+			handler: async (uri) => ({ contents: [{ uri, mimeType: "text/plain", text: "Hidden" }] }),
+		});
+		server.addPrompt({
+			name: "future_prompt",
+			description: "Future prompt",
+			handler: async () => ({
+				description: "Hidden",
+				messages: [{ role: "user", content: { type: "text", text: "Hidden" } }],
+			}),
+		});
+
+		expect((await server.testInterface.listResources()).resources).toEqual([]);
+		expect((await server.testInterface.listResourceTemplates()).resourceTemplates).toEqual([]);
+		expect((await server.testInterface.listPrompts()).prompts).toEqual([]);
+		await expect(server.testInterface.readResource({ params: { uri: "backlog://future-resource" } })).rejects.toThrow(
+			"Resource not found",
+		);
+		await expect(server.testInterface.getPrompt({ params: { name: "future_prompt", arguments: {} } })).rejects.toThrow(
+			"Prompt not found",
+		);
+	} finally {
+		await server.stop();
+	}
+});

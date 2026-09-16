@@ -3,7 +3,7 @@ const { existsSync, readFileSync } = require("node:fs");
 const { basename, dirname, join } = require("node:path");
 
 function getPackageName(platform = process.platform, arch = process.arch) {
-	return `backlog.md-${platform === "win32" ? "windows" : platform}-${arch}`;
+	return `mini-backlog.md-${platform === "win32" ? "windows" : platform}-${arch}`;
 }
 
 /**

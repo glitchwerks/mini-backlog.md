@@ -23,14 +23,22 @@ it.each(["root", "platform"])("generates fork repository metadata in the %s rele
 			kind,
 			output,
 			"9.8.7",
-			...(kind === "platform" ? ["backlog.md-windows-x64", "win32", "x64"] : []),
+			...(kind === "platform" ? ["mini-backlog.md-windows-x64", "win32", "x64"] : []),
 		]);
 		const manifest = await Bun.file(output).json();
 		expect(manifest.repository.url).toBe("git+https://github.com/glitchwerks/mini-backlog.md.git");
 		expect(manifest.version).toBe("9.8.7");
-		expect(manifest.name).toBe(kind === "root" ? "backlog.md" : "backlog.md-windows-x64");
+		expect(manifest.name).toBe(kind === "root" ? "mini-backlog.md" : "mini-backlog.md-windows-x64");
 		if (kind === "root") {
 			expect(manifest.bin).toEqual({ backlog: "cli.js" });
+			expect(Object.keys(manifest.optionalDependencies)).toEqual([
+				"mini-backlog.md-darwin-arm64",
+				"mini-backlog.md-darwin-x64",
+				"mini-backlog.md-linux-arm64",
+				"mini-backlog.md-linux-x64",
+				"mini-backlog.md-windows-arm64",
+				"mini-backlog.md-windows-x64",
+			]);
 			expect(Object.values(manifest.optionalDependencies)).toEqual(Array(6).fill("9.8.7"));
 			expect(manifest.files).not.toContain("src/test/full-cli-entry.ts");
 		} else {

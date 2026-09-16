@@ -149,7 +149,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@v22
       - name: Build and smoke-test Nix package
         run: |
-          nix build .#backlog-md --print-build-logs
+          nix build .#mini-backlog-md --print-build-logs
           expected_version="$(jq -r .version package.json)"
           actual_version="$(./result/bin/backlog --version)"
           test "$actual_version" = "$expected_version"

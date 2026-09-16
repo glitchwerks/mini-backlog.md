@@ -308,7 +308,7 @@ function parsePositiveIntegerOption(value: unknown, optionName: string, helpComm
 
 function formatTaskEditError(error: unknown, taskId: string, commandKind = "task"): string {
 	if (getActiveSurfaceMode() === "mini" && isAmbiguousTaskIdError(error)) {
-		return formatMiniAmbiguousTaskIdError(error.taskId || taskId);
+		return formatMiniAmbiguousTaskIdError(error.taskId || taskId, activeTaskPrefix);
 	}
 	const message = error instanceof Error ? error.message : String(error);
 	if (
@@ -871,6 +871,18 @@ async function requireProjectRoot(): Promise<string> {
 const hasInteractiveTTY = Boolean(process.stdout.isTTY && process.stdin.isTTY);
 const shouldAutoPlain = !hasInteractiveTTY;
 let activeArgv = process.argv;
+let activeTaskPrefix: string | undefined;
+
+async function loadActiveTaskPrefix(): Promise<string | undefined> {
+	try {
+		const runtimeCwd = await resolveRuntimeCwd();
+		const projectRoot = await findBacklogRoot(runtimeCwd.cwd);
+		if (!projectRoot) return undefined;
+		return (await new Core(projectRoot).filesystem.loadConfig())?.prefixes?.task;
+	} catch {
+		return undefined;
+	}
+}
 
 function canUseInteractiveUi(): boolean {
 	return getActiveSurfaceMode() === "full" && hasInteractiveTTY;
@@ -5969,6 +5981,7 @@ registerMcpCommand(program);
 
 export async function runCli(argv: string[] = process.argv, surface: SurfaceMode = "mini"): Promise<void> {
 	activeArgv = argv;
+	activeTaskPrefix = undefined;
 	setActiveSurfaceMode(surface);
 
 	// Windows color fix
@@ -5987,11 +6000,12 @@ export async function runCli(argv: string[] = process.argv, surface: SurfaceMode
 		if (surface === "mini") applyMiniCommanderPolicy(program);
 		if (await handleBareInvocation(argv, surface, program, version)) return;
 		await runConfigMigration(argv);
+		if (surface === "mini") activeTaskPrefix = await loadActiveTaskPrefix();
 		await program.parseAsync(argv);
 	} catch (error) {
 		console.error(
 			surface === "mini" && isAmbiguousTaskIdError(error)
-				? formatMiniAmbiguousTaskIdError(error.taskId)
+				? formatMiniAmbiguousTaskIdError(error.taskId, activeTaskPrefix)
 				: error instanceof Error
 					? error.message
 					: String(error),

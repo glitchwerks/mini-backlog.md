@@ -9,6 +9,26 @@ const projectRoot = resolve(import.meta.dir, "../..");
 let buildDirectory: string;
 let executable: string;
 
+function parseNpmPackOutput(output: string): Array<{ filename: string; files: Array<{ path: string }> }> {
+	const lineStarts = [
+		0,
+		...Array.from(output.matchAll(/\r?\n(?=\[)/g), (match) => (match.index ?? 0) + match[0].length),
+	];
+	for (const start of lineStarts.reverse()) {
+		try {
+			const parsed = JSON.parse(output.slice(start).trim());
+			if (Array.isArray(parsed)) return parsed;
+		} catch {}
+	}
+	throw new Error("npm pack did not emit a JSON array");
+}
+
+it("parses npm pack JSON after a non-JSON preamble", () => {
+	expect(
+		parseNpmPackOutput('npm notice preparing package\n.[{not json}\n[\n  {"filename":"mini.tgz","files":[]}\n]\n'),
+	).toEqual([{ filename: "mini.tgz", files: [] }]);
+});
+
 describe("compiled mini CLI entry", () => {
 	beforeAll(async () => {
 		const scratchRoot = join(projectRoot, ".tmp");
@@ -75,7 +95,8 @@ describe("compiled mini CLI entry", () => {
 			await $`npm pack --json --ignore-scripts --cache ${join(buildDirectory, "npm-cache")} --pack-destination ${buildDirectory}`
 				.cwd(source)
 				.quiet();
-		const pack = JSON.parse(packed.stdout.toString())[0];
+		const pack = parseNpmPackOutput(packed.stdout.toString())[0];
+		if (!pack) throw new Error("npm pack emitted an empty JSON array");
 		expect(pack.files.map((file: { path: string }) => file.path)).toContain(
 			`dist/backlog${process.platform === "win32" ? ".exe" : ""}`,
 		);
@@ -83,20 +104,22 @@ describe("compiled mini CLI entry", () => {
 		await $`npm install --offline --prefix ${install} --cache ${join(buildDirectory, "npm-cache")} --omit=optional --ignore-scripts --no-audit --no-fund ${join(buildDirectory, pack.filename)}`.quiet();
 		const { stdout } = await execFileAsync(
 			"node",
-			[join(install, "node_modules/backlog.md/scripts/cli.cjs"), "--help"],
+			[join(install, "node_modules/mini-backlog.md/scripts/cli.cjs"), "--help"],
 			{ timeout: 10000 },
 		);
 		expect(stdout).toContain("mini-backlog.md");
 		expect(stdout).not.toMatch(/^ {2}(init|browser|help)\b/m);
 		await expect(
-			execFileAsync("node", [join(install, "node_modules/backlog.md/scripts/cli.cjs"), "board"], { timeout: 10000 }),
+			execFileAsync("node", [join(install, "node_modules/mini-backlog.md/scripts/cli.cjs"), "board"], {
+				timeout: 10000,
+			}),
 		).rejects.toMatchObject({ code: 1 });
 	}, 60000);
 
 	it("runs a platform artifact with generated fork release metadata", async () => {
 		const release = join(buildDirectory, "release");
 		const platform = process.platform === "win32" ? "windows" : process.platform;
-		const name = `backlog.md-${platform}-${process.arch}`;
+		const name = `mini-backlog.md-${platform}-${process.arch}`;
 		const platformDir = join(release, "node_modules", name);
 		await mkdir(platformDir, { recursive: true });
 		await cp(executable, join(platformDir, process.platform === "win32" ? "backlog.exe" : "backlog"));

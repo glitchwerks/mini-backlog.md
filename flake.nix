@@ -51,8 +51,8 @@
               })
             else
               standardBun;
-          backlog-md = pkgs.bun2nix.mkDerivation {
-            pname = "backlog";
+          mini-backlog-md = pkgs.bun2nix.mkDerivation {
+            pname = "mini-backlog";
             inherit (packageJson) version;
             src = ./.;
 
@@ -84,11 +84,11 @@
             installPhase = ''
               runHook preInstall
 
-              mkdir -p "$out/lib/backlog"
-              cp -R dist/nix/. "$out/lib/backlog/"
+              mkdir -p "$out/lib/mini-backlog"
+              cp -R dist/nix/. "$out/lib/mini-backlog/"
               makeWrapper ${bunRuntime}/bin/bun "$out/bin/backlog" \
-                --add-flags "$out/lib/backlog/cli.js" \
-                --set BACKLOG_BUNDLE_ASSET_DIR "$out/lib/backlog"
+                --add-flags "$out/lib/mini-backlog/cli.js" \
+                --set BACKLOG_BUNDLE_ASSET_DIR "$out/lib/mini-backlog"
 
               runHook postInstall
             '';
@@ -118,18 +118,18 @@
                   exit 1
                 fi
 
-                test "$(BUN_JSC_useJIT=false qemu-x86_64 -cpu IvyBridge ${bunRuntime}/bin/bun "$out/lib/backlog/cli.js" --version)" = "$version"
+                test "$(BUN_JSC_useJIT=false qemu-x86_64 -cpu IvyBridge ${bunRuntime}/bin/bun "$out/lib/mini-backlog/cli.js" --version)" = "$version"
                 BUN_JSC_useJIT=false qemu-x86_64 -cpu IvyBridge \
-                  ${bunRuntime}/bin/bun "$out/lib/backlog/cli.js" --help >/dev/null
+                  ${bunRuntime}/bin/bun "$out/lib/mini-backlog/cli.js" --help >/dev/null
               ''}
 
               runHook postInstallCheck
             '';
 
             meta = {
-              description = "A markdown-based task management CLI tool with Kanban board";
-              homepage = "https://backlog.md";
-              changelog = "https://github.com/MrLesk/Backlog.md/releases";
+              description = "A restricted Markdown task, document, and milestone management CLI";
+              homepage = "https://github.com/glitchwerks/mini-backlog.md";
+              changelog = "https://github.com/glitchwerks/mini-backlog.md/releases";
               license = pkgs.lib.licenses.mit;
               mainProgram = "backlog";
             };
@@ -137,12 +137,12 @@
         in
         {
           packages = {
-            default = backlog-md;
-            backlog-md = backlog-md;
+            default = mini-backlog-md;
+            mini-backlog-md = mini-backlog-md;
           };
 
           apps.default = flake-utils.lib.mkApp {
-            drv = backlog-md;
+            drv = mini-backlog-md;
             name = "backlog";
           };
 

@@ -16,7 +16,7 @@ if (kind === "root") {
 		scripts: { postuninstall: "node postuninstall.cjs" },
 		optionalDependencies: Object.fromEntries(
 			["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64", "windows-arm64", "windows-x64"].map((platform) => [
-				`backlog.md-${platform}`,
+				`mini-backlog.md-${platform}`,
 				version,
 			]),
 		),

@@ -1,5 +1,5 @@
 {
-  "name": "backlog.md",
+  "name": "mini-backlog.md",
   "version": "1.52.0",
   "type": "module",
   "module": "src/cli.ts",
@@ -76,7 +76,7 @@
   "bugs": {
     "url": "https://github.com/glitchwerks/mini-backlog.md/issues"
   },
-  "homepage": "https://backlog.md",
+  "homepage": "https://github.com/glitchwerks/mini-backlog.md#readme",
   "keywords": [
     "cli",
     "markdown",

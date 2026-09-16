@@ -6,9 +6,15 @@ if (!outdir) throw new Error("BACKLOG_BUILD_OUTDIR is required for the unshipped
 const { version } = await Bun.file("package.json").json();
 await Bun.build({
 	entrypoints: ["src/test/full-cli-entry.ts"],
+	root: "src",
 	outdir,
 	target: "bun",
 	minify: true,
-	define: { __EMBEDDED_VERSION__: JSON.stringify(version), "process.env.NODE_ENV": JSON.stringify("production") },
+	naming: { entry: "[name].[ext]" },
+	define: {
+		__EMBEDDED_VERSION__: JSON.stringify(version),
+		"process.env.BACKLOG_TEST_BUNDLED": JSON.stringify("true"),
+		"process.env.NODE_ENV": JSON.stringify("production"),
+	},
 	plugins: [tailwind],
 });

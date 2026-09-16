@@ -351,6 +351,7 @@ export class McpServer extends Core {
 	 * Register a resource implementation with the server.
 	 */
 	public addResource(resource: McpResourceHandler): void {
+		if (this.surface === "mini") return;
 		this.resources.set(resource.uri, resource);
 	}
 
@@ -358,6 +359,7 @@ export class McpServer extends Core {
 	 * Register a prompt implementation with the server.
 	 */
 	public addPrompt(prompt: McpPromptHandler): void {
+		if (this.surface === "mini") return;
 		this.prompts.set(prompt.name, prompt);
 	}
 
@@ -441,6 +443,7 @@ export class McpServer extends Core {
 
 	protected async listResources(extra?: ServerRequestExtra): Promise<ListResourcesResult> {
 		await this.ensureRootsResolved(extra);
+		if (this.surface === "mini") return { resources: [] };
 		return {
 			resources: Array.from(this.resources.values()).map((resource) => ({
 				uri: resource.uri,
@@ -464,6 +467,9 @@ export class McpServer extends Core {
 	): Promise<ReadResourceResult> {
 		await this.ensureRootsResolved(extra);
 		const { uri } = request.params;
+		if (this.surface === "mini") {
+			throw new McpError(ErrorCode.InvalidParams, `Resource not found: ${uri}`);
+		}
 
 		// Exact match first
 		let resource = this.resources.get(uri);
@@ -483,6 +489,7 @@ export class McpServer extends Core {
 
 	protected async listPrompts(extra?: ServerRequestExtra): Promise<ListPromptsResult> {
 		await this.ensureRootsResolved(extra);
+		if (this.surface === "mini") return { prompts: [] };
 		return {
 			prompts: Array.from(this.prompts.values()).map((prompt) => ({
 				name: prompt.name,
@@ -500,6 +507,9 @@ export class McpServer extends Core {
 	): Promise<GetPromptResult> {
 		await this.ensureRootsResolved(extra);
 		const { name, arguments: args = {} } = request.params;
+		if (this.surface === "mini") {
+			throw new McpError(ErrorCode.InvalidParams, `Prompt not found: ${name}`);
+		}
 		const prompt = this.prompts.get(name);
 
 		if (!prompt) {

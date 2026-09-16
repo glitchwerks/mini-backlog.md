@@ -44,7 +44,7 @@ it("keeps the published mini contract synchronized with the fail-closed policy",
 	const pkg = (await Bun.file("package.json").json()) as PackageManifest;
 	const readme = await Bun.file("README.md").text();
 
-	expect(pkg.name).toBe("backlog.md");
+	expect(pkg.name).toBe("mini-backlog.md");
 	expect(pkg.bin).toEqual({ backlog: "scripts/cli.cjs" });
 	expect(pkg.repository.url).toBe("git+https://github.com/glitchwerks/mini-backlog.md.git");
 	expect(pkg.bugs.url).toBe("https://github.com/glitchwerks/mini-backlog.md/issues");
@@ -83,5 +83,14 @@ it("keeps the published mini contract synchronized with the fail-closed policy",
 
 it("does not request upstream platform binaries when installing the source package", async () => {
 	const pkg = await Bun.file("package.json").json();
+	expect(pkg.name).toBe("mini-backlog.md");
 	expect(pkg.optionalDependencies ?? {}).toEqual({});
+});
+
+it("keeps release documentation on the fork package identity", async () => {
+	const development = await Bun.file("DEVELOPMENT.md").text();
+	expect(development).toContain("nix build .#mini-backlog-md");
+	expect(development).toContain("`mini-backlog.md`");
+	expect(development).not.toMatch(/(?:nix build \.#|`|\s)backlog\.md-(?:linux|darwin|windows)/);
+	expect(development).not.toContain("nix build .#backlog-md");
 });

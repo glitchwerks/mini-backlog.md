@@ -142,8 +142,8 @@ export function formatMiniDuplicateTaskIdWarning(groups: DuplicateGroup[]): stri
 	return `Duplicate task IDs detected: ${groups.map((group) => group.id).join(", ")}.`;
 }
 
-export function formatMiniAmbiguousTaskIdError(taskId: string): string {
-	return `Task ID ${canonicalTaskId(taskId)} is ambiguous.`;
+export function formatMiniAmbiguousTaskIdError(taskId: string, taskPrefix?: string): string {
+	return `Task ID ${canonicalTaskId(taskId, taskPrefix)} is ambiguous.`;
 }
 
 export function formatMiniTaskPlainText(task: TaskDetail): string {

@@ -316,6 +316,37 @@ describe("mini MCP task routing", () => {
 		}
 	});
 
+	it("uses the configured task prefix for an ambiguous bare MCP ID", async () => {
+		const testDir = createUniqueTestDir("mini-mcp-custom-prefix-ambiguity");
+		const server = new McpServer(testDir, "Mini MCP custom prefix ambiguity");
+		try {
+			await server.filesystem.ensureBacklogStructure();
+			await initializeFilesystemTestProject(server, "Mini MCP custom prefix ambiguity");
+			const serverConfig = await server.filesystem.loadConfig();
+			if (!serverConfig) throw new Error("Expected test config");
+			serverConfig.prefixes = { task: "OPS" };
+			await server.filesystem.saveConfig(serverConfig);
+			const first = { ...taskDetailFixture(), id: "OPS-1" };
+			await Bun.write(join(testDir, "backlog", "tasks", "ops-1 - first.md"), serializeTask(first));
+			await Bun.write(
+				join(testDir, "backlog", "tasks", "ops-01 - second.md"),
+				serializeTask({ ...first, id: "OPS-01", title: "Second duplicate" }),
+			);
+			registerTaskTools(server, serverConfig, "mini");
+
+			const result = await server.testInterface.callTool({
+				params: { name: "task_view", arguments: { id: "1" } },
+			});
+			const text = (result.content ?? []).map((item) => ("text" in item ? item.text : "")).join("\n");
+			expect(result.isError).toBe(true);
+			expect(text).toContain("Task ID OPS-1 is ambiguous");
+			expect(text).not.toContain("TASK-1");
+		} finally {
+			await server.stop();
+			await safeCleanup(testDir);
+		}
+	});
+
 	it("preserves unknown persisted frontmatter during an allowed edit", async () => {
 		const testDir = createUniqueTestDir("mini-mcp-task-edit-preservation");
 		const server = new McpServer(testDir, "Mini task edit preservation");
@@ -598,6 +629,31 @@ hidden summary
 				expect(result.stderr.toString()).toContain("Task ID TASK-1 is ambiguous");
 				expect(result.stderr.toString()).not.toMatch(/secret-alpha|secret-beta|backlog[\\/]tasks|backlog doctor/);
 			}
+		} finally {
+			await safeCleanup(testDir);
+		}
+	});
+
+	it("uses the configured task prefix for an ambiguous bare CLI ID", async () => {
+		const testDir = createUniqueTestDir("mini-cli-custom-prefix-ambiguity");
+		try {
+			const core = new Core(testDir);
+			await initializeFilesystemTestProject(core, "Mini CLI custom prefix ambiguity");
+			const projectConfig = await core.filesystem.loadConfig();
+			if (!projectConfig) throw new Error("Expected test config");
+			projectConfig.prefixes = { task: "OPS" };
+			await core.filesystem.saveConfig(projectConfig);
+			const first = { ...taskDetailFixture(), id: "OPS-1" };
+			await Bun.write(join(testDir, "backlog", "tasks", "ops-1 - first.md"), serializeTask(first));
+			await Bun.write(
+				join(testDir, "backlog", "tasks", "ops-01 - second.md"),
+				serializeTask({ ...first, id: "OPS-01", title: "Second duplicate" }),
+			);
+
+			const result = await $`bun ${MINI_CLI_PATH} task view 1 --plain`.cwd(testDir).quiet().nothrow();
+			expect(result.exitCode).toBe(1);
+			expect(result.stderr.toString()).toContain("Task ID OPS-1 is ambiguous");
+			expect(result.stderr.toString()).not.toContain("TASK-1");
 		} finally {
 			await safeCleanup(testDir);
 		}

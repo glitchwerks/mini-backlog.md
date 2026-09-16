@@ -20,12 +20,16 @@ import type { TaskCreateArgs, TaskEditRequest, TaskListArgs, TaskSearchArgs } fr
 import { TaskHandlers } from "./handlers.ts";
 import { taskArchiveSchema, taskCompleteSchema, taskViewSchema } from "./schemas.ts";
 
-async function projectMiniTaskError<T>(surface: SurfaceMode, operation: () => Promise<T>): Promise<T> {
+async function projectMiniTaskError<T>(
+	surface: SurfaceMode,
+	taskPrefix: string | undefined,
+	operation: () => Promise<T>,
+): Promise<T> {
 	try {
 		return await operation();
 	} catch (error) {
 		if (surface === "mini" && isAmbiguousTaskIdError(error)) {
-			throw new BacklogToolError(formatMiniAmbiguousTaskIdError(error.taskId), "AMBIGUOUS_TASK_ID");
+			throw new BacklogToolError(formatMiniAmbiguousTaskIdError(error.taskId, taskPrefix), "AMBIGUOUS_TASK_ID");
 		}
 		throw error;
 	}
@@ -89,7 +93,10 @@ export function registerTaskTools(server: McpServer, config: BacklogConfig, surf
 			annotations: { title: "Edit Task", destructiveHint: false },
 		},
 		taskEditSchema,
-		async (input) => projectMiniTaskError(surface, async () => handlers.editTask(input as unknown as TaskEditRequest)),
+		async (input) =>
+			projectMiniTaskError(surface, config.prefixes?.task, async () =>
+				handlers.editTask(input as unknown as TaskEditRequest),
+			),
 	);
 
 	const viewTaskTool: McpToolHandler = createSimpleValidatedTool(
@@ -100,7 +107,8 @@ export function registerTaskTools(server: McpServer, config: BacklogConfig, surf
 			annotations: { title: "View Task", readOnlyHint: true, destructiveHint: false },
 		},
 		taskViewSchema,
-		async (input) => projectMiniTaskError(surface, async () => handlers.viewTask(input as { id: string })),
+		async (input) =>
+			projectMiniTaskError(surface, config.prefixes?.task, async () => handlers.viewTask(input as { id: string })),
 	);
 
 	const archiveTaskTool: McpToolHandler = createSimpleValidatedTool(
@@ -122,7 +130,8 @@ export function registerTaskTools(server: McpServer, config: BacklogConfig, surf
 			annotations: { title: "Complete Task", destructiveHint: true },
 		},
 		taskCompleteSchema,
-		async (input) => projectMiniTaskError(surface, async () => handlers.completeTask(input as { id: string })),
+		async (input) =>
+			projectMiniTaskError(surface, config.prefixes?.task, async () => handlers.completeTask(input as { id: string })),
 	);
 
 	server.addTool(createTaskTool);
