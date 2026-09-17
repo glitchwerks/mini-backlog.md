@@ -1,11 +1,9 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { chmod, cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { getCandidatePackageNames } = require("../../scripts/resolveBinary.cjs");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { getSignalExitCode, isArchitectureSignal, isBinaryInstallError } = require("../../scripts/cli.cjs");
 
@@ -13,67 +11,62 @@ const isWindows = process.platform === "win32";
 const scriptsDir = join(import.meta.dir, "..", "..", "scripts");
 const tempDirs: string[] = [];
 
-/** Copy the launcher scripts into a temp dir with an optional fixture platform binary. */
-async function createLauncherDir(binaryContent?: string): Promise<string> {
-	const dir = await mkdtemp(join(tmpdir(), "backlog-launcher-"));
-	tempDirs.push(dir);
-	await cp(join(scriptsDir, "cli.cjs"), join(dir, "cli.cjs"));
-	await cp(join(scriptsDir, "resolveBinary.cjs"), join(dir, "resolveBinary.cjs"));
-	// A package.json and node_modules dir keep Bun's auto-install from resolving real packages
-	await writeFile(join(dir, "package.json"), "{}");
-	await mkdir(join(dir, "node_modules"), { recursive: true });
-	if (binaryContent !== undefined) {
-		const [packageName] = getCandidatePackageNames();
-		const packageDir = join(dir, "node_modules", packageName);
+async function createLauncherCheckout(
+	options: { localBuild?: boolean; platformPackage?: boolean } = {},
+): Promise<string> {
+	const root = await mkdtemp(join(tmpdir(), "mini-backlog-launcher-"));
+	tempDirs.push(root);
+	await mkdir(join(root, "scripts"), { recursive: true });
+	await copyFile(join(scriptsDir, "cli.cjs"), join(root, "scripts", "cli.cjs"));
+	await writeFile(join(root, "package.json"), "{}");
+
+	if (options.localBuild) {
+		await mkdir(join(root, "dist"), { recursive: true });
+		const binary = join(root, "dist", isWindows ? "backlog.exe" : "backlog");
+		await copyFile(process.execPath, binary);
+		await chmod(binary, 0o755);
+	}
+
+	if (options.platformPackage) {
+		const platform = process.platform === "win32" ? "windows" : process.platform;
+		const packageDir = join(root, "node_modules", `mini-backlog.md-${platform}-${process.arch}`);
 		await mkdir(packageDir, { recursive: true });
 		await writeFile(
 			join(packageDir, "package.json"),
 			JSON.stringify({ repository: { url: "git+https://github.com/glitchwerks/mini-backlog.md.git" } }),
 		);
-		const binaryPath = join(packageDir, isWindows ? "backlog.exe" : "backlog");
-		await writeFile(binaryPath, binaryContent);
-		await chmod(binaryPath, 0o755);
+		await writeFile(join(packageDir, isWindows ? "backlog.exe" : "backlog"), "registry artifact");
 	}
-	return dir;
+
+	return root;
 }
 
-function runLauncher(dir: string, args: string[] = []) {
-	// The published launcher has a Node shebang. Running it through the Bun test
-	// process can deadlock when a fixture executable exits via a Unix signal.
-	return spawnSync("node", [join(dir, "cli.cjs"), ...args], { encoding: "utf8" });
+function runLauncher(root: string, args: string[] = []) {
+	return spawnSync("node", [join(root, "scripts", "cli.cjs"), ...args], { encoding: "utf8" });
 }
 
 afterAll(async () => {
 	await Promise.all(tempDirs.map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
-describe("cli launcher", () => {
-	it("rejects an installed upstream platform package instead of invoking it", async () => {
-		const dir = await createLauncherDir("upstream binary");
-		const [packageName] = getCandidatePackageNames();
-		await writeFile(
-			join(dir, "node_modules", packageName, "package.json"),
-			JSON.stringify({ repository: { url: "https://github.com/MrLesk/Backlog.md" } }),
-		);
-		const result = runLauncher(dir, ["--help"]);
+describe("source-build CLI launcher", () => {
+	it("ignores registry platform packages when the local source build is missing", async () => {
+		const root = await createLauncherCheckout({ platformPackage: true });
+		const result = runLauncher(root, ["--version"]);
+
 		expect(result.status).toBe(1);
-		expect(result.stderr).toContain("mini-backlog.md");
-		expect(result.stderr).not.toMatch(/npm i -g backlog\.md|Failed to start backlog|Cannot execute/);
-	});
-	it("prints install guidance and exits 1 when no platform package is installed", async () => {
-		const dir = await createLauncherDir();
-		const result = runLauncher(dir, ["--version"]);
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain(`Binary package not installed for ${process.platform}-${process.arch}.`);
-		expect(result.stderr).toContain(`Tried packages: ${getCandidatePackageNames().join(", ")}`);
-		expect(result.stderr).toContain(`Detected: ${process.platform}-${process.arch}`);
+		expect(result.stderr).toContain("Source build not found at");
+		expect(result.stderr).toContain("Build and install mini-backlog.md from source");
+		expect(result.stderr).not.toContain("Tried packages:");
+		expect(result.stderr).not.toContain("Binary package not installed");
 	});
 
-	it.skipIf(isWindows)("spawns the installed binary, forwarding args and exit code", async () => {
-		const dir = await createLauncherDir('#!/bin/sh\necho "args: $@"\nexit 7\n');
-		const result = runLauncher(dir, ["task", "list"]);
-		expect(result.status).toBe(7);
-		expect(result.stdout).toContain("args: task list");
+	it("launches only the binary built beside the source checkout", async () => {
+		const root = await createLauncherCheckout({ localBuild: true });
+		const result = runLauncher(root, ["--version"]);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout.trim()).toBe(Bun.version);
 	});
 });
 

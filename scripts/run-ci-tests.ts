@@ -19,7 +19,7 @@ const PLATFORM_CONTRACT_FILES = [
 	"src/test/worktree-refresh.test.ts",
 	"src/test/worktree-task-id-allocation.test.ts",
 
-	// Shipped CLI, executable resolution, and child-process boundaries.
+	// Shipped CLI, source-build launcher, and child-process boundaries.
 	"src/test/agent-instructions.test.ts",
 	"src/test/cli-browser-port.test.ts",
 	"src/test/cli-doctor.test.ts",
@@ -29,7 +29,6 @@ const PLATFORM_CONTRACT_FILES = [
 	"src/test/editor.test.ts",
 	"src/test/offline-mode.test.ts",
 	"src/test/packaging-bin.test.ts",
-	"src/test/resolveBinary.test.ts",
 	"src/test/runtime-cwd.test.ts",
 	"src/test/status-callback.test.ts",
 	"src/test/terminal-status.test.ts",

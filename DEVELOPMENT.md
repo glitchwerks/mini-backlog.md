@@ -192,44 +192,27 @@ backlog.md/
 
 ## Release
 
-Mini Backlog.md relies on npm Trusted Publishing with GitHub Actions OIDC. The
-release workflow builds binaries, publishes all npm packages, and records
-provenance automatically. Follow the steps below to keep the setup healthy.
+Mini Backlog.md is distributed from source only. It does not publish npm packages
+or attach prebuilt binaries to GitHub releases.
 
-### Prerequisites
-
-- Choose the release version and ensure your git tag follows the
-  `v<major.minor.patch>` pattern. The workflow automatically rewrites
-  `package.json` files to match the tag, so you do **not** need to edit the
-  version field manually.
-- In npm's **Trusted publishers** settings, link the
-  `glitchwerks/mini-backlog.md` repository and the `Release multi-platform executables`
-  workflow for each package: `mini-backlog.md`,
-  `mini-backlog.md-linux-{x64,arm64}`, `mini-backlog.md-darwin-{x64,arm64}`, and
-  `mini-backlog.md-windows-{x64,arm64}`.
-- Remove the legacy `NODE_AUTH_TOKEN` repository secret. Publishing now uses
-  the GitHub-issued OIDC token, so no long-lived npm tokens should remain.
-- The workflow activates `npm@latest` (currently 11.6.0 as of 2025-09-18) via
-  Corepack to satisfy npm's trusted publishing requirement of version 11.5.1 or
-  newer. If npm raises the minimum version again, the latest tag will pick it
-  up automatically.
-
-### Publishing steps
-
-1. Commit the version bump and create a matching tag. You can either push the
-   tag from your terminal
+1. Synchronize an upstream release and retain its exact `package.json` version.
+   Never increment the fork beyond its upstream base.
+2. Merge the synchronization and restricted-surface changes into the fork's
+   `main` branch.
+3. Validate a fork-specific tag whose version exactly matches `package.json`:
    ```bash
-   git tag v<major.minor.patch>
-   git push origin main v<major.minor.patch>
+   bun scripts/validate-mini-tag.ts mini-v<major.minor.patch>
    ```
-   or create a GitHub Release in the UI (which creates the tag automatically).
-   Both paths trigger the same `Release multi-platform executables` workflow.
-2. Monitor the workflow run:
-   - `Dry run trusted publish` and `Dry run platform publish` confirm that
-     npm accepts the trusted publisher token before any real publish.
-   - Publishing uses trusted publishing (no tokens) so npm automatically records
-     provenance; no additional CLI flags are required.
-3. After the workflow completes, verify provenance on npm by opening each
-   package's **Provenance** tab or by running `npm view <package> --json | jq '.dist.provenance'`.
+4. Tag the merged fork commit and push only the fork-specific tag:
+   ```bash
+   git tag mini-v<major.minor.patch>
+   git push <fork-remote> mini-v<major.minor.patch>
+   ```
+5. Confirm the normal CI workflow passes for the tag. CI builds and tests the
+   source but publishes no packages and uploads no release binaries.
+
+Inherited upstream `v<major.minor.patch>` tags remain attached to their upstream
+commits and must never be moved or rewritten. GitHub's automatic source archives
+for `mini-v*` tags are the only release downloads.
 
 [← Back to README](README.md)

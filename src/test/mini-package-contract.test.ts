@@ -40,7 +40,7 @@ function codeValues(value: string): string[] {
 	return [...value.matchAll(/`([^`]+)`/g)].map((match) => match[1] ?? "");
 }
 
-it("keeps the published mini contract synchronized with the fail-closed policy", async () => {
+it("keeps the documented mini contract synchronized with the fail-closed policy", async () => {
 	const pkg = (await Bun.file("package.json").json()) as PackageManifest;
 	const readme = await Bun.file("README.md").text();
 
@@ -85,12 +85,4 @@ it("does not request upstream platform binaries when installing the source packa
 	const pkg = await Bun.file("package.json").json();
 	expect(pkg.name).toBe("mini-backlog.md");
 	expect(pkg.optionalDependencies ?? {}).toEqual({});
-});
-
-it("keeps release documentation on the fork package identity", async () => {
-	const development = await Bun.file("DEVELOPMENT.md").text();
-	expect(development).toContain("nix build .#mini-backlog-md");
-	expect(development).toContain("`mini-backlog.md`");
-	expect(development).not.toMatch(/(?:nix build \.#|`|\s)backlog\.md-(?:linux|darwin|windows)/);
-	expect(development).not.toContain("nix build .#backlog-md");
 });
