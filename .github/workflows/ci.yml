@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["mini-v*.*.*"]
   pull_request:
 
 permissions:
@@ -45,6 +46,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.os }}-bun-${{ env.BUN_VERSION }}-
       - run: bun install --frozen-lockfile --linker=isolated
+      - name: Validate source tag
+        if: startsWith(github.ref, 'refs/tags/mini-v') && matrix.os == 'ubuntu-latest'
+        run: bun scripts/validate-mini-tag.ts "$GITHUB_REF_NAME"
       - name: Verify bun2nix dependency lock
         if: matrix.os == 'ubuntu-latest'
         run: |

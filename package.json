@@ -1,6 +1,7 @@
 {
   "name": "mini-backlog.md",
   "version": "1.52.0",
+  "private": true,
   "type": "module",
   "module": "src/cli.ts",
   "files": [

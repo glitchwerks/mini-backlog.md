@@ -129,7 +129,7 @@
             meta = {
               description = "A restricted Markdown task, document, and milestone management CLI";
               homepage = "https://github.com/glitchwerks/mini-backlog.md";
-              changelog = "https://github.com/glitchwerks/mini-backlog.md/releases";
+              changelog = "https://github.com/glitchwerks/mini-backlog.md/tags";
               license = pkgs.lib.licenses.mit;
               mainProgram = "backlog";
             };

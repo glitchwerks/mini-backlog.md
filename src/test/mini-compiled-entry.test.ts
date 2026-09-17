@@ -118,36 +118,4 @@ describe("compiled mini CLI entry", () => {
 			}),
 		).rejects.toMatchObject({ code: 1 });
 	}, 60000);
-
-	it("runs a platform artifact with generated fork release metadata", async () => {
-		const release = join(buildDirectory, "release");
-		const platform = process.platform === "win32" ? "windows" : process.platform;
-		const name = `mini-backlog.md-${platform}-${process.arch}`;
-		const platformDir = join(release, "node_modules", name);
-		await mkdir(platformDir, { recursive: true });
-		await cp(executable, join(platformDir, process.platform === "win32" ? "backlog.exe" : "backlog"));
-		await cp(join(projectRoot, "scripts/cli.cjs"), join(release, "cli.js"));
-		await cp(join(projectRoot, "scripts/resolveBinary.cjs"), join(release, "resolveBinary.cjs"));
-		await execFileAsync("node", ["scripts/release-manifest.cjs", "root", join(release, "package.json"), "9.8.7"], {
-			cwd: projectRoot,
-		});
-		await execFileAsync(
-			"node",
-			[
-				"scripts/release-manifest.cjs",
-				"platform",
-				join(platformDir, "package.json"),
-				"9.8.7",
-				name,
-				process.platform,
-				process.arch,
-			],
-			{ cwd: projectRoot },
-		);
-		const { stdout } = await execFileAsync("node", [join(release, "cli.js"), "--help"], { timeout: 10000 });
-		expect(stdout).toContain("mini-backlog.md");
-		await expect(execFileAsync("node", [join(release, "cli.js"), "browser"], { timeout: 10000 })).rejects.toMatchObject(
-			{ code: 1 },
-		);
-	});
 });

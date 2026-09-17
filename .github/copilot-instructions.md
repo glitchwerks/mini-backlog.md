@@ -28,7 +28,7 @@
 
 ## Core Structure
 
-- **CLI Tool**: Built with Bun and TypeScript as a global npm package (`npm i -g mini-backlog.md`)
+- **CLI Tool**: Built from source with Bun and TypeScript, then installed locally; it is not published to npm
 - **Source Code**: Located in `/src` directory with modular TypeScript structure
 - **Task Management**: Uses markdown files in `backlog/` directory structure
 - **Workflow**: Git-integrated with task IDs referenced in commits and PRs
