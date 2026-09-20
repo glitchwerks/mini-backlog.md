@@ -15,6 +15,8 @@ function collectImportPaths(source: string): string[] {
 	// string contents out of the token stream, including escaped module names.
 	const scanner = createScanner(true, undefined, source);
 	const templateBraces: number[] = [];
+	const controlParens: boolean[] = [];
+	let followsControlHeader = false;
 	let previousToken = SyntaxKind.Unknown;
 	for (let token = scanner.scan(); token !== SyntaxKind.EndOfFile; token = scanner.scan()) {
 		// A bare hash in JSX text is not a private identifier. Rescan it so the
@@ -24,22 +26,39 @@ function collectImportPaths(source: string): string[] {
 		}
 		if (
 			(token === SyntaxKind.SlashToken || token === SyntaxKind.SlashEqualsToken) &&
-			[
-				SyntaxKind.EqualsToken,
-				SyntaxKind.OpenParenToken,
-				SyntaxKind.OpenBracketToken,
-				SyntaxKind.CommaToken,
-				SyntaxKind.ColonToken,
-				SyntaxKind.QuestionToken,
-				SyntaxKind.BarBarToken,
-				SyntaxKind.AmpersandAmpersandToken,
-				SyntaxKind.QuestionQuestionToken,
-				SyntaxKind.ExclamationToken,
-				SyntaxKind.ReturnKeyword,
-				SyntaxKind.EqualsGreaterThanToken,
-			].includes(previousToken)
+			(followsControlHeader ||
+				[
+					SyntaxKind.EqualsToken,
+					SyntaxKind.OpenParenToken,
+					SyntaxKind.OpenBraceToken,
+					SyntaxKind.OpenBracketToken,
+					SyntaxKind.CommaToken,
+					SyntaxKind.ColonToken,
+					SyntaxKind.QuestionToken,
+					SyntaxKind.BarBarToken,
+					SyntaxKind.AmpersandAmpersandToken,
+					SyntaxKind.QuestionQuestionToken,
+					SyntaxKind.ExclamationToken,
+					SyntaxKind.ReturnKeyword,
+					SyntaxKind.EqualsGreaterThanToken,
+				].includes(previousToken))
 		)
 			token = scanner.reScanSlashToken();
+		// A slash after a control header starts its statement, whereas a slash
+		// after a call or grouped expression is division. Track nested parentheses.
+		followsControlHeader = token === SyntaxKind.CloseParenToken && (controlParens.pop() ?? false);
+		if (token === SyntaxKind.OpenParenToken) {
+			controlParens.push(
+				[
+					SyntaxKind.IfKeyword,
+					SyntaxKind.WhileKeyword,
+					SyntaxKind.ForKeyword,
+					SyntaxKind.WithKeyword,
+					SyntaxKind.SwitchKeyword,
+					SyntaxKind.CatchKeyword,
+				].includes(previousToken),
+			);
+		}
 		if (token === SyntaxKind.TemplateHead) templateBraces.push(0);
 		else if (templateBraces.length > 0) {
 			const index = templateBraces.length - 1;
@@ -84,10 +103,22 @@ it.each([
 	// biome-ignore lint/suspicious/noTemplateCurlyInString: Literal source fixture, not test-time interpolation.
 	'const template = `${{} as import("../mcp/types.ts").CallToolResult}`;',
 	'const jsx = <span>#{1}</span>; type T = import("../mcp/types.ts").CallToolResult;',
+	'if (enabled) { type T = import("../mcp/types.ts").CallToolResult; }',
+	'function matches(value: string) { type T = import("../mcp/types.ts").CallToolResult; }',
+	'const ratio = (value) / (other as import("../mcp/types.ts").CallToolResult);',
 ])("reports forbidden dependency in %s", async (source) => {
 	const file = resolve(sourceRoot, "server/index.ts");
 	expect(collectImportPaths(source)).toContain("../mcp/types.ts");
 	expect(await collectBoundaryViolations([file], async () => source)).toEqual(["server/index.ts -> mcp/types.ts"]);
+});
+
+it.each([
+	String.raw`if (enabled) /import("..\/mcp\/types.ts")/.test(value);`,
+	String.raw`if ((enabled)) /import("..\/mcp\/types.ts")/.test(value);`,
+	String.raw`function matches(value: string) { /import("..\/mcp\/types.ts")/.test(value); }`,
+])("ignores regex import text at statement boundaries: %s", async (source) => {
+	expect(collectImportPaths(source)).toEqual([]);
+	expect(await collectBoundaryViolations([resolve(sourceRoot, "server/index.ts")], async () => source)).toEqual([]);
 });
 
 it("ignores import declarations inside comments and strings", () => {
