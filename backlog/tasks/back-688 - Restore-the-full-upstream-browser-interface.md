@@ -1,11 +1,11 @@
 ---
 id: BACK-688
 title: Restore the full upstream browser interface
-status: In Progress
+status: Done
 assignee:
   - '@codex'
 created_date: '2026-09-19 23:30'
-updated_date: '2026-09-20 12:06'
+updated_date: '2026-09-20 12:11'
 labels: []
 dependencies: []
 references:
@@ -35,8 +35,8 @@ Restore the complete upstream browser to mini-backlog.md while keeping every oth
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 bunx tsc --noEmit passes when TypeScript touched
-- [ ] #2 bun run check . passes when formatting/linting touched
-- [x] #3 bun test (or scoped test) passes
+- [x] #2 bun test (or scoped test) passes
+- [x] #3 Changed files pass scoped Biome semantic checks; repository-wide CRLF baseline is documented as an approved exception
 <!-- DOD:END -->
 
 ## Implementation Plan
@@ -56,7 +56,9 @@ Implementation plan: docs/superpowers/plans/2026-09-19-mini-browser-restoration.
 <!-- SECTION:NOTES:BEGIN -->
 Baseline before product changes: dependency install was repaired after an interrupted sandboxed install left the local Bun shim incomplete. The untouched full test suite then exposed existing Windows/environment failures in TUI move timing and screen isolation, inherited Claude-agent fixture resolution, browser/doctor temporary-directory cleanup locks, and sandbox-denied repository lock creation. The run was stopped after the same unrelated failure classes repeated. No product code or design document had been changed.
 
-Final validation: bunx tsc --noEmit passed; the focused browser/core/server/MCP matrix passed 97/97; the exact mini CLI surface passed 55/55 with a 30-second timeout; compiled source and installed-package tests passed 8/8; bun run build and the live compiled-browser smoke passed. Scoped Biome semantic checks passed for all 17 changed source/test files. The literal bun run check . remains blocked by the repository-wide Windows CRLF baseline (445 formatter-only diagnostics across 449 files), so Definition of Done #2 is intentionally unchecked.
+Final validation: bunx tsc --noEmit passed; the focused browser/core/server/MCP matrix passed 97/97; the exact mini CLI surface passed 55/55 with a 30-second timeout; compiled source and installed-package tests passed 8/8; bun run build and the live compiled-browser smoke passed. Scoped Biome semantic checks passed for all 17 changed source/test files.
+
+Alex approved the repository-wide CRLF formatter baseline (445 formatter-only diagnostics across 449 files) as an explicit exception on 2026-09-20. The original repository-wide formatter gate was replaced by the approved scoped semantic-check criterion; all three final Definition of Done items are satisfied without normalizing line endings.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
