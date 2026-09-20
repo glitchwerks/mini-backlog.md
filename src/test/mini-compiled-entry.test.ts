@@ -57,10 +57,10 @@ describe("compiled mini CLI entry", () => {
 
 		expect(stderr).toBe("");
 		expect(stdout).toContain("Usage: backlog [options] [command]");
-		for (const command of ["task", "search", "doc", "milestone", "mcp"]) {
+		for (const command of ["task", "search", "doc", "milestone", "mcp", "browser"]) {
 			expect(stdout).toMatch(new RegExp(`^  ${command}\\b`, "m"));
 		}
-		for (const command of ["board", "init", "browser", "instructions"]) {
+		for (const command of ["board", "init", "instructions"]) {
 			expect(stdout).not.toMatch(new RegExp(`^  ${command}\\b`, "m"));
 		}
 	});
@@ -84,6 +84,7 @@ describe("compiled mini CLI entry", () => {
 			{ cwd: projectRoot, timeout: 60000 },
 		);
 		expect(stdout).toContain("Compiled build smoke checks passed");
+		expect(stdout).toContain("Compiled browser smoke checks passed");
 	}, 60000);
 
 	it("installs a local source package containing this mini binary without platform dependencies", async () => {
@@ -111,11 +112,24 @@ describe("compiled mini CLI entry", () => {
 			{ timeout: 10000 },
 		);
 		expect(stdout).toContain("mini-backlog.md");
-		expect(stdout).not.toMatch(/^ {2}(init|browser|help)\b/m);
+		expect(stdout).toMatch(/^ {2}browser\b/m);
+		expect(stdout).not.toMatch(/^ {2}(init|help)\b/m);
 		await expect(
 			execFileAsync("node", [join(install, "node_modules/mini-backlog.md/scripts/cli.cjs"), "board"], {
 				timeout: 10000,
 			}),
 		).rejects.toMatchObject({ code: 1 });
+		const pkg = await Bun.file(join(projectRoot, "package.json")).json();
+		const installedExecutable = join(
+			install,
+			"node_modules/mini-backlog.md/dist",
+			process.platform === "win32" ? "backlog.exe" : "backlog",
+		);
+		const smoke = await execFileAsync(
+			process.execPath,
+			["scripts/smoke-compiled-build.ts", installedExecutable, pkg.version],
+			{ cwd: projectRoot, timeout: 60000 },
+		);
+		expect(smoke.stdout).toContain("Compiled browser smoke checks passed");
 	}, 60000);
 });
