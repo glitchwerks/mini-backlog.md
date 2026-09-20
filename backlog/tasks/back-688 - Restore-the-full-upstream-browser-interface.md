@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@codex'
 created_date: '2026-09-19 23:30'
-updated_date: '2026-09-20 00:51'
+updated_date: '2026-09-20 12:06'
 labels: []
 dependencies: []
 references:
@@ -22,21 +22,21 @@ Restore the complete upstream browser to mini-backlog.md while keeping every oth
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The mini CLI exposes the browser command with the upstream port and no-open options
-- [ ] #2 The complete upstream browser UI and API work without mini-specific filtering
-- [ ] #3 The browser and server do not import from CLI, command, or MCP modules
-- [ ] #4 Shared milestone mutations and domain errors are reused through the shared core boundary
-- [ ] #5 All other mini CLI and MCP surfaces remain restricted
-- [ ] #6 Source builds and installed packages include browser assets and launch successfully
-- [ ] #7 Tests cover the exact surface, browser launch, representative browser API behavior, and dependency boundaries
-- [ ] #8 README documents the browser command and full-surface exception
+- [x] #1 The mini CLI exposes the browser command with the upstream port and no-open options
+- [x] #2 The complete upstream browser UI and API work without mini-specific filtering
+- [x] #3 The browser and server do not import from CLI, command, or MCP modules
+- [x] #4 Shared milestone mutations and domain errors are reused through the shared core boundary
+- [x] #5 All other mini CLI and MCP surfaces remain restricted
+- [x] #6 Source builds and installed packages include browser assets and launch successfully
+- [x] #7 Tests cover the exact surface, browser launch, representative browser API behavior, and dependency boundaries
+- [x] #8 README documents the browser command and full-surface exception
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 bunx tsc --noEmit passes when TypeScript touched
+- [x] #1 bunx tsc --noEmit passes when TypeScript touched
 - [ ] #2 bun run check . passes when formatting/linting touched
-- [ ] #3 bun test (or scoped test) passes
+- [x] #3 bun test (or scoped test) passes
 <!-- DOD:END -->
 
 ## Implementation Plan
@@ -55,4 +55,12 @@ Implementation plan: docs/superpowers/plans/2026-09-19-mini-browser-restoration.
 
 <!-- SECTION:NOTES:BEGIN -->
 Baseline before product changes: dependency install was repaired after an interrupted sandboxed install left the local Bun shim incomplete. The untouched full test suite then exposed existing Windows/environment failures in TUI move timing and screen isolation, inherited Claude-agent fixture resolution, browser/doctor temporary-directory cleanup locks, and sandbox-denied repository lock creation. The run was stopped after the same unrelated failure classes repeated. No product code or design document had been changed.
+
+Final validation: bunx tsc --noEmit passed; the focused browser/core/server/MCP matrix passed 97/97; the exact mini CLI surface passed 55/55 with a 30-second timeout; compiled source and installed-package tests passed 8/8; bun run build and the live compiled-browser smoke passed. Scoped Biome semantic checks passed for all 17 changed source/test files. The literal bun run check . remains blocked by the repository-wide Windows CRLF baseline (445 formatter-only diagnostics across 449 files), so Definition of Done #2 is intentionally unchecked.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Restored the full upstream browser as the deliberate exception to mini's restricted CLI/MCP surface. Browser/server behavior now uses shared core milestone operations and a tested dependency boundary that rejects CLI, command, and MCP imports. Verified exact CLI/MCP restrictions, representative browser APIs, source and installed compiled launches, TypeScript, build output, and live process cleanup; repository-wide formatting remains blocked only by the existing CRLF baseline.
+<!-- SECTION:FINAL_SUMMARY:END -->
