@@ -1,10 +1,10 @@
 import { expect, it } from "bun:test";
-import { readdir, readFile } from "node:fs/promises";
-import { dirname, extname, join, relative, resolve, sep } from "node:path";
+import { readdir, readFile, realpath } from "node:fs/promises";
+import { dirname, extname, relative, resolve, sep } from "node:path";
 import { SyntaxKind } from "typescript/unstable/ast";
 import { createScanner } from "typescript/unstable/ast/scanner";
 
-const sourceRoot = resolve(import.meta.dir, "..");
+const sourceRoot = await realpath(resolve(import.meta.dir, ".."));
 const forbiddenRoots = [resolve(sourceRoot, "cli.ts"), resolve(sourceRoot, "commands"), resolve(sourceRoot, "mcp")];
 const transpiler = new Bun.Transpiler({ loader: "tsx" });
 
@@ -28,6 +28,7 @@ function collectImportPaths(source: string): string[] {
 			(token === SyntaxKind.SlashToken || token === SyntaxKind.SlashEqualsToken) &&
 			(followsControlHeader ||
 				[
+					SyntaxKind.SemicolonToken,
 					SyntaxKind.EqualsToken,
 					SyntaxKind.OpenParenToken,
 					SyntaxKind.OpenBraceToken,
@@ -76,7 +77,19 @@ function collectImportPaths(source: string): string[] {
 		if (token !== SyntaxKind.AwaitKeyword || previousToken !== SyntaxKind.ForKeyword) previousToken = token;
 		if (token !== SyntaxKind.FromKeyword && token !== SyntaxKind.ImportKeyword) continue;
 		const path = scanner.lookAhead(() => {
-			if (token === SyntaxKind.ImportKeyword && scanner.scan() !== SyntaxKind.OpenParenToken) return undefined;
+			if (token === SyntaxKind.ImportKeyword) {
+				let next = scanner.scan();
+				if (next === SyntaxKind.TypeKeyword) next = scanner.scan();
+				// Import-equals declarations have no `from`: import type M = require("...").
+				if (
+					next !== SyntaxKind.OpenParenToken &&
+					(!scanner.isIdentifier() ||
+						scanner.scan() !== SyntaxKind.EqualsToken ||
+						scanner.scan() !== SyntaxKind.RequireKeyword ||
+						scanner.scan() !== SyntaxKind.OpenParenToken)
+				)
+					return undefined;
+			}
 			return scanner.scan() === SyntaxKind.StringLiteral ? scanner.getTokenValue() : undefined;
 		});
 		if (path !== undefined) paths.add(path);
@@ -107,6 +120,7 @@ it.each([
 	'if (enabled) { type T = import("../mcp/types.ts").CallToolResult; }',
 	'function matches(value: string) { type T = import("../mcp/types.ts").CallToolResult; }',
 	'const ratio = (value) / (other as import("../mcp/types.ts").CallToolResult);',
+	'import type M = require("../mcp/types.ts"); type T = M.CallToolResult;',
 ])("reports forbidden dependency in %s", async (source) => {
 	const file = resolve(sourceRoot, "server/index.ts");
 	expect(collectImportPaths(source)).toContain("../mcp/types.ts");
@@ -118,6 +132,7 @@ it.each([
 	String.raw`if ((enabled)) /import("..\/mcp\/types.ts")/.test(value);`,
 	String.raw`for await (const value of values) /import("..\/mcp\/types.ts")/.test(value);`,
 	String.raw`function matches(value: string) { /import("..\/mcp\/types.ts")/.test(value); }`,
+	String.raw`const value = 1; /import("..\/mcp\/types.ts")/.test("x");`,
 ])("ignores regex import text at statement boundaries: %s", async (source) => {
 	expect(collectImportPaths(source)).toEqual([]);
 	expect(await collectBoundaryViolations([resolve(sourceRoot, "server/index.ts")], async () => source)).toEqual([]);
@@ -136,9 +151,73 @@ it("ignores import declarations inside comments and strings", () => {
 	expect(collectImportPaths(source)).toEqual([]);
 });
 
+it.each([
+	{
+		source: 'import { BacklogToolError } from "../mcp/errors/mcp-errors.js"; console.log(BacklogToolError);',
+		violation: "server/index.ts -> mcp/errors/mcp-errors.ts",
+	},
+	{
+		source: 'import type { CallToolResult } from "../mcp/types.js";',
+		violation: "server/index.ts -> mcp/types.ts",
+	},
+	{
+		source: 'type T = import("../mcp/types.js").CallToolResult;',
+		violation: "server/index.ts -> mcp/types.ts",
+	},
+])("reports forbidden .js imports resolved to TypeScript: $source", async ({ source, violation }) => {
+	expect(await collectBoundaryViolations([resolve(sourceRoot, "server/index.ts")], async () => source)).toEqual([
+		violation,
+	]);
+});
+
+it.each([
+	{
+		entry: 'import { value } from "../web/components/TaskCard.js"; console.log(value);',
+		bridge: "web/components/TaskCard.tsx",
+		source: 'export { BacklogToolError as value } from "../../mcp/errors/mcp-errors.js";',
+		violation: "web/components/TaskCard.tsx -> mcp/errors/mcp-errors.ts",
+	},
+	{
+		entry: 'import type { T } from "../core/milestones.js";',
+		bridge: "core/milestones.ts",
+		source: 'export type T = import("../mcp/types.js").CallToolResult;',
+		violation: "core/milestones.ts -> mcp/types.ts",
+	},
+])("follows .js imports through $bridge to forbidden modules", async ({ entry, bridge, source, violation }) => {
+	const entryFile = resolve(sourceRoot, "server/index.ts");
+	const sources = new Map([
+		[entryFile, entry],
+		[resolve(sourceRoot, bridge), source],
+	]);
+	expect(
+		await collectBoundaryViolations([entryFile], async (file) => {
+			const fixture = sources.get(file);
+			if (fixture === undefined) throw new Error(`Unexpected fixture dependency: ${file}`);
+			return fixture;
+		}),
+	).toEqual([violation]);
+});
+
+it.skipIf(process.platform !== "win32")("reports forbidden imports with Windows path casing", async () => {
+	for (const { specifier, violation } of [
+		{ specifier: "../MCP/types.ts", violation: "server/index.ts -> mcp/types.ts" },
+		{ specifier: "../MCP/TYPES.TS", violation: "server/index.ts -> mcp/types.ts" },
+		{ specifier: "../CLI.TS", violation: "server/index.ts -> cli.ts" },
+	]) {
+		const source = `type T = import("${specifier}");`;
+		const violations = await collectBoundaryViolations([resolve(sourceRoot, "server/index.ts")], async () => source);
+		expect(violations.map((edge) => edge.toLowerCase())).toEqual([violation]);
+	}
+});
+
 /** Identify adapter modules that the browser cannot depend on. */
 function isForbidden(file: string): boolean {
-	return forbiddenRoots.some((root) => file === root || file.startsWith(`${root}${sep}`));
+	// Windows realpath can retain the import's casing on its case-insensitive filesystem.
+	const target = process.platform === "win32" ? file.toLowerCase() : file;
+	return forbiddenRoots.some((root) => {
+		const forbiddenRoot = process.platform === "win32" ? root.toLowerCase() : root;
+		return target === forbiddenRoot || target.startsWith(`${forbiddenRoot}${sep}`);
+	});
 }
 
 /** Collect browser entry points deterministically, including components and type modules. */
@@ -155,11 +234,15 @@ async function collectTypeScriptFiles(directory: string): Promise<string[]> {
 /** Resolve relative TypeScript imports without executing application code. */
 async function resolveRelativeImport(fromFile: string, specifier: string): Promise<string | null> {
 	if (!specifier.startsWith(".")) return null;
-	const base = resolve(dirname(fromFile), specifier);
-	for (const candidate of [base, `${base}.ts`, `${base}.tsx`, join(base, "index.ts"), join(base, "index.tsx")]) {
-		if ([".ts", ".tsx"].includes(extname(candidate)) && (await Bun.file(candidate).exists())) return candidate;
+	let target: string;
+	try {
+		// Match Bun's extension substitution (.js -> .ts/.tsx) and directory resolution.
+		target = Bun.resolveSync(specifier, dirname(fromFile));
+	} catch (error) {
+		if (error && typeof error === "object" && "code" in error && error.code === "ERR_MODULE_NOT_FOUND") return null;
+		throw error;
 	}
-	return null;
+	return [".ts", ".tsx"].includes(extname(target)) ? realpath(target) : null;
 }
 
 /** Traverse real resolved dependencies and report every forbidden adapter edge. */
