@@ -5,11 +5,12 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-09-19 23:30'
-updated_date: '2026-09-20 12:11'
+updated_date: '2026-09-20 12:12'
 labels: []
 dependencies: []
 references:
   - 'https://github.com/glitchwerks/mini-backlog.md/issues/5'
+  - 'https://github.com/glitchwerks/mini-backlog.md/pull/6'
 type: feature
 ordinal: 319000
 ---
