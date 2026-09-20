@@ -5,6 +5,7 @@ function freezeStringLists<const T extends Record<string, readonly string[]>>(va
 
 export const MINI_CLI_OPTIONS = freezeStringLists({
 	"": ["--version"],
+	browser: ["--port", "--no-open"],
 	task: [],
 	"task create": [
 		"--description",
@@ -80,7 +81,8 @@ export const MINI_CLI_OPTIONS = freezeStringLists({
 } as const);
 
 export const MINI_CLI_DESCRIPTIONS = Object.freeze({
-	"": "mini-backlog.md - restricted task, document, and milestone management",
+	"": "mini-backlog.md - restricted CLI/MCP with the full browser interface",
+	browser: "start the browser interface",
 	task: "manage tasks",
 	"task create": "create a task",
 	"task list": "list tasks",
