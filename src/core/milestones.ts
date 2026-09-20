@@ -2,6 +2,12 @@ import type { Milestone, MilestoneBucket, MilestoneSummary, Task } from "../type
 
 const NO_MILESTONE_KEY = "__none";
 
+/** Format a milestone description as an indented continuation of its summary line. */
+export function formatMilestoneDescription(description?: string): string {
+	const normalized = description?.trim();
+	return normalized ? `\n    ${normalized.replace(/\n/g, "\n    ")}` : "";
+}
+
 /**
  * Normalize a milestone name/ID by trimming whitespace
  */
