@@ -234,21 +234,8 @@ function buildMilestoneAliasMap(
 	};
 	const addIdAliases = (normalizedId: string, options?: { allowOverwrite?: boolean }) => {
 		const allowOverwrite = options?.allowOverwrite ?? true;
-		const idKey = milestoneKey(normalizedId);
-		if (idKey) {
-			setAlias(idKey, normalizedId, allowOverwrite);
-		}
-		const idMatch = normalizedId.match(/^m-(\d+)$/i);
-		if (!idMatch?.[1]) {
-			return;
-		}
-		const numericAlias = String(Number.parseInt(idMatch[1], 10));
-		const canonicalId = `m-${numericAlias}`;
-		if (canonicalId) {
-			setAlias(canonicalId, normalizedId, allowOverwrite);
-		}
-		if (numericAlias) {
-			setAlias(numericAlias, normalizedId, allowOverwrite);
+		for (const aliasKey of buildMilestoneLookupKeys(normalizedId)) {
+			setAlias(aliasKey, normalizedId, allowOverwrite);
 		}
 	};
 	const activeTitleCounts = new Map<string, number>();
