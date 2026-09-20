@@ -1,18 +1,18 @@
 import { rename as moveFile } from "node:fs/promises";
 import type { Core } from "../../../core/backlog.ts";
-import type { SurfaceMode } from "../../../mini/runtime.ts";
-import type { Milestone, Task } from "../../../types/index.ts";
-import { normalizeDueDate } from "../../../utils/due-date.ts";
-import { formatUtcDateForDisplay } from "../../../utils/utc-date-display.ts";
-import { BacklogToolError } from "../../errors/mcp-errors.ts";
-import type { CallToolResult } from "../../types.ts";
 import {
 	buildMilestoneMatchKeys,
 	keySetsIntersect,
 	milestoneKey,
 	normalizeMilestoneName,
 	resolveMilestoneStorageValue,
-} from "../../utils/milestone-resolution.ts";
+} from "../../../core/milestones.ts";
+import type { SurfaceMode } from "../../../mini/runtime.ts";
+import type { Milestone, Task } from "../../../types/index.ts";
+import { normalizeDueDate } from "../../../utils/due-date.ts";
+import { formatUtcDateForDisplay } from "../../../utils/utc-date-display.ts";
+import { BacklogToolError } from "../../errors/mcp-errors.ts";
+import type { CallToolResult } from "../../types.ts";
 
 export type MilestoneAddArgs = {
 	name: string;
