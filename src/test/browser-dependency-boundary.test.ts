@@ -72,7 +72,8 @@ function collectImportPaths(source: string): string[] {
 				} else templateBraces[index] = (templateBraces[index] ?? 0) - 1;
 			}
 		}
-		previousToken = token;
+		// Preserve the control-header introducer across the optional await in for await (...).
+		if (token !== SyntaxKind.AwaitKeyword || previousToken !== SyntaxKind.ForKeyword) previousToken = token;
 		if (token !== SyntaxKind.FromKeyword && token !== SyntaxKind.ImportKeyword) continue;
 		const path = scanner.lookAhead(() => {
 			if (token === SyntaxKind.ImportKeyword && scanner.scan() !== SyntaxKind.OpenParenToken) return undefined;
@@ -115,6 +116,7 @@ it.each([
 it.each([
 	String.raw`if (enabled) /import("..\/mcp\/types.ts")/.test(value);`,
 	String.raw`if ((enabled)) /import("..\/mcp\/types.ts")/.test(value);`,
+	String.raw`for await (const value of values) /import("..\/mcp\/types.ts")/.test(value);`,
 	String.raw`function matches(value: string) { /import("..\/mcp\/types.ts")/.test(value); }`,
 ])("ignores regex import text at statement boundaries: %s", async (source) => {
 	expect(collectImportPaths(source)).toEqual([]);
