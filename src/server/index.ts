@@ -5,12 +5,11 @@ import { DEFAULT_STATUSES } from "../constants/index.ts";
 import { Core } from "../core/backlog.ts";
 import type { ContentStore } from "../core/content-store.ts";
 import { initializeProject } from "../core/init.ts";
+import { MilestoneOperationError, MilestoneOperations } from "../core/milestone-operations.ts";
 import type { SearchService } from "../core/search-service.ts";
 import { getTaskStatistics } from "../core/statistics.ts";
 import { loadTaskDetail } from "../core/task-detail.ts";
 import { isCreateLockError, isTaskLockError } from "../file-system/operations.ts";
-import { BacklogToolError } from "../mcp/errors/mcp-errors.ts";
-import { MilestoneHandlers } from "../mcp/tools/milestones/handlers.ts";
 import {
 	DOCUMENT_TYPE_VALUES,
 	type Document,
@@ -93,6 +92,11 @@ function parseDueDatePayload(value: unknown, clearable: boolean): DueDatePayload
 	} catch (error) {
 		return { ok: false, error: error instanceof Error ? error.message : String(error) };
 	}
+}
+
+/** Invalid HTTP input, kept separate from milestone domain failures. */
+class RequestBodyError extends Error {
+	readonly code = "VALIDATION_ERROR";
 }
 
 class DocumentPayloadValidationError extends Error {
@@ -247,6 +251,7 @@ export async function findNextAvailablePort(startPort: number, maxPort = MAX_POR
 
 export class BacklogServer {
 	private core: Core;
+	private readonly milestoneOperations: MilestoneOperations;
 	private server: Server<unknown> | null = null;
 	private runtimeWorkingDirectory: string | null = null;
 	private projectName = "Untitled Project";
@@ -263,6 +268,10 @@ export class BacklogServer {
 
 	constructor(projectPath: string) {
 		this.core = new Core(projectPath, { enableWatchers: true });
+		this.milestoneOperations = new MilestoneOperations(this.core, {
+			preserveUnknownTaskFrontmatter: false,
+			includeExtendedSummary: true,
+		});
 	}
 
 	private async resolveMilestoneInput(milestone: string): Promise<string> {
@@ -1576,40 +1585,25 @@ export class BacklogServer {
 		try {
 			body = JSON.parse(text);
 		} catch {
-			throw new BacklogToolError("Request body must be valid JSON.", "VALIDATION_ERROR");
+			throw new RequestBodyError("Request body must be valid JSON.");
 		}
 
 		if (!body || typeof body !== "object" || Array.isArray(body)) {
-			throw new BacklogToolError("Request body must be a JSON object.", "VALIDATION_ERROR");
+			throw new RequestBodyError("Request body must be a JSON object.");
 		}
 
 		return body as Record<string, unknown>;
 	}
 
-	private getMilestoneMutationMessage(result: { content: Array<{ type: string; text?: string }> }): string {
-		return result.content
-			.filter((item) => item.type === "text" && typeof item.text === "string")
-			.map((item) => item.text)
-			.join("\n");
-	}
-
 	private milestoneMutationErrorResponse(error: unknown, context: string): Response {
-		const status =
-			error instanceof BacklogToolError
-				? error.code === "NOT_FOUND"
-					? 404
-					: error.code === "VALIDATION_ERROR"
-						? 400
-						: 500
-				: 500;
+		const code =
+			error instanceof MilestoneOperationError || error instanceof RequestBodyError ? error.code : "INTERNAL_ERROR";
+		const status = code === "NOT_FOUND" ? 404 : code === "VALIDATION_ERROR" ? 400 : 500;
 		const message = error instanceof Error ? error.message : context;
 		if (status === 500) {
 			console.error(context, error);
 		}
-		return Response.json(
-			{ error: message, code: error instanceof BacklogToolError ? error.code : "INTERNAL_ERROR" },
-			{ status },
-		);
+		return Response.json({ error: message, code }, { status });
 	}
 
 	private async handleListMilestones(): Promise<Response> {
@@ -1647,58 +1641,24 @@ export class BacklogServer {
 
 	private async handleCreateMilestone(req: Request): Promise<Response> {
 		try {
-			const body = (await req.json()) as { title?: string; description?: string; dueDate?: unknown };
-			const title = body.title?.trim();
+			const body = await this.readOptionalJsonBody(req);
+			const title = typeof body.title === "string" ? body.title.trim() : "";
 
 			if (!title) {
-				return Response.json({ error: "Milestone title is required" }, { status: 400 });
+				throw new RequestBodyError("Milestone title is required");
 			}
 			const dueDate = parseDueDatePayload(body.dueDate, false);
-			if (!dueDate.ok) return Response.json({ error: dueDate.error }, { status: 400 });
+			if (!dueDate.ok) throw new RequestBodyError(dueDate.error);
 
-			// Check for duplicates
-			const existingMilestones = await this.core.filesystem.listMilestones();
-			const buildAliasKeys = (value: string): Set<string> => {
-				const normalized = value.trim().toLowerCase();
-				const keys = new Set<string>();
-				if (!normalized) {
-					return keys;
-				}
-				keys.add(normalized);
-				if (/^\d+$/.test(normalized)) {
-					const numeric = String(Number.parseInt(normalized, 10));
-					keys.add(numeric);
-					keys.add(`m-${numeric}`);
-					return keys;
-				}
-				const match = normalized.match(/^m-(\d+)$/);
-				if (match?.[1]) {
-					const numeric = String(Number.parseInt(match[1], 10));
-					keys.add(numeric);
-					keys.add(`m-${numeric}`);
-				}
-				return keys;
-			};
-			const requestedKeys = buildAliasKeys(title);
-			const duplicate = existingMilestones.find((milestone) => {
-				const milestoneKeys = new Set<string>([...buildAliasKeys(milestone.id), ...buildAliasKeys(milestone.title)]);
-				for (const key of requestedKeys) {
-					if (milestoneKeys.has(key)) {
-						return true;
-					}
-				}
-				return false;
+			const result = await this.milestoneOperations.add({
+				name: title,
+				description: body.description as string | undefined,
+				dueDate: dueDate.value ?? undefined,
 			});
-			if (duplicate) {
-				return Response.json({ error: "A milestone with this title or ID already exists" }, { status: 400 });
-			}
-
-			const milestone = await this.core.filesystem.createMilestone(title, body.description, dueDate.value ?? undefined);
 			this.broadcastDataUpdated("milestones");
-			return Response.json(milestone, { status: 201 });
+			return Response.json(result.milestone, { status: 201 });
 		} catch (error) {
-			console.error("Error creating milestone:", error);
-			return Response.json({ error: "Failed to create milestone" }, { status: 500 });
+			return this.milestoneMutationErrorResponse(error, "Error creating milestone");
 		}
 	}
 
@@ -1708,27 +1668,23 @@ export class BacklogServer {
 			const title = typeof body.title === "string" ? body.title.trim() : "";
 			const updateTasks = typeof body.updateTasks === "boolean" ? body.updateTasks : true;
 			const dueDate = parseDueDatePayload(body.dueDate, true);
-			if (!dueDate.ok) return Response.json({ error: dueDate.error }, { status: 400 });
+			if (!dueDate.ok) throw new RequestBodyError(dueDate.error);
 
 			if (!title) {
-				return Response.json({ error: "Milestone title is required" }, { status: 400 });
+				throw new RequestBodyError("Milestone title is required");
 			}
 
-			const sourceMilestone = await this.core.filesystem.loadMilestone(milestoneId);
-			const result = await new MilestoneHandlers(this.core).renameMilestone({
+			const result = await this.milestoneOperations.rename({
 				from: milestoneId,
 				to: title,
 				updateTasks,
 				dueDate: "dueDate" in body ? (dueDate.value ?? null) : undefined,
 			});
-			const milestone =
-				(await this.core.filesystem.loadMilestone(sourceMilestone?.id ?? milestoneId)) ??
-				(await this.core.filesystem.loadMilestone(title));
 			this.broadcastDataUpdated("milestones");
 			return Response.json({
 				success: true,
-				milestone: milestone ?? null,
-				message: this.getMilestoneMutationMessage(result),
+				milestone: result.milestone ?? null,
+				message: result.message,
 			});
 		} catch (error) {
 			return this.milestoneMutationErrorResponse(error, "Error updating milestone");
@@ -1748,10 +1704,10 @@ export class BacklogServer {
 			const reassignTo = typeof body.reassignTo === "string" ? body.reassignTo : undefined;
 
 			if (!taskHandling) {
-				return Response.json({ error: "taskHandling must be clear, keep, or reassign" }, { status: 400 });
+				throw new RequestBodyError("taskHandling must be clear, keep, or reassign");
 			}
 
-			const result = await new MilestoneHandlers(this.core).removeMilestone({
+			const result = await this.milestoneOperations.remove({
 				name: milestoneId,
 				taskHandling,
 				reassignTo,
@@ -1759,7 +1715,7 @@ export class BacklogServer {
 			this.broadcastDataUpdated("milestones");
 			return Response.json({
 				success: true,
-				message: this.getMilestoneMutationMessage(result),
+				message: result.message,
 			});
 		} catch (error) {
 			return this.milestoneMutationErrorResponse(error, "Error removing milestone");
@@ -1768,16 +1724,11 @@ export class BacklogServer {
 
 	private async handleArchiveMilestone(milestoneId: string): Promise<Response> {
 		try {
-			const result = await this.core.archiveMilestone(milestoneId);
-			if (!result.success) {
-				return Response.json({ error: "Milestone not found" }, { status: 404 });
-			}
+			const result = await this.milestoneOperations.archive({ name: milestoneId });
 			this.broadcastDataUpdated("milestones");
 			return Response.json({ success: true, milestone: result.milestone ?? null });
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Failed to archive milestone";
-			console.error("Error archiving milestone:", error);
-			return Response.json({ error: message }, { status: 500 });
+			return this.milestoneMutationErrorResponse(error, "Error archiving milestone");
 		}
 	}
 
