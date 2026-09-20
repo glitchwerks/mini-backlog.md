@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdir } from "node:fs/promises";
+import { $ } from "bun";
 import { Core } from "../core/backlog.ts";
 import { BacklogServer } from "../server/index.ts";
 import { createUniqueTestDir, retry, safeCleanup, withTimeout } from "./test-utils.ts";
@@ -12,6 +13,7 @@ let socket: WebSocket | null = null;
 beforeEach(async () => {
 	testDir = createUniqueTestDir("server-milestone-broadcast");
 	await mkdir(testDir, { recursive: true });
+	await $`git init -b main`.cwd(testDir).quiet();
 	const core = new Core(testDir);
 	await core.filesystem.ensureBacklogStructure();
 	await core.filesystem.saveConfig({
@@ -73,6 +75,17 @@ describe("milestone WebSocket publication", () => {
 		});
 
 		messages.length = 0;
+		const renameResponse = await fetch(`http://127.0.0.1:${serverPort}/api/milestones/${created.id}`, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ title: "Launch renamed" }),
+		});
+		expect(renameResponse.status).toBe(200);
+		await retry(async () => {
+			if (!messages.includes("milestones-updated")) throw new Error("Milestone rename was not published");
+		});
+
+		messages.length = 0;
 		const archiveResponse = await fetch(
 			`http://127.0.0.1:${serverPort}/api/milestones/${encodeURIComponent(created.id)}/archive`,
 			{ method: "POST" },
@@ -80,6 +93,27 @@ describe("milestone WebSocket publication", () => {
 		expect(archiveResponse.status).toBe(200);
 		await retry(async () => {
 			if (!messages.includes("milestones-updated")) throw new Error("Milestone archive was not published");
+		});
+
+		messages.length = 0;
+		const removeTargetResponse = await fetch(`http://127.0.0.1:${serverPort}/api/milestones`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ title: "Remove target" }),
+		});
+		expect(removeTargetResponse.status).toBe(201);
+		const removeTarget = (await removeTargetResponse.json()) as { id: string };
+		// Drain creation's publication before checking removal's own update.
+		await retry(async () => {
+			if (!messages.includes("milestones-updated")) throw new Error("Remove target creation was not published");
+		});
+		messages.length = 0;
+		const removeResponse = await fetch(`http://127.0.0.1:${serverPort}/api/milestones/${removeTarget.id}`, {
+			method: "DELETE",
+		});
+		expect(removeResponse.status).toBe(200);
+		await retry(async () => {
+			if (!messages.includes("milestones-updated")) throw new Error("Milestone removal was not published");
 		});
 	});
 });

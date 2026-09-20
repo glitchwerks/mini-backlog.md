@@ -24,7 +24,17 @@ import { watchJson } from "./commands/watch-json.ts";
 import { DEFAULT_DIRECTORIES, DEFAULT_FILES, DEFAULT_STATUSES } from "./constants/index.ts";
 import { type DuplicateRepairPlan, findLocalDuplicateTaskIds } from "./core/duplicate-task-repair.ts";
 import { initializeProject } from "./core/init.ts";
-import { buildMilestoneBuckets, collectArchivedMilestoneKeys, milestoneKey } from "./core/milestones.ts";
+import {
+	type MilestoneOperationResult,
+	MilestoneOperations,
+	type MilestoneRemoveArgs,
+} from "./core/milestone-operations.ts";
+import {
+	buildMilestoneBuckets,
+	collectArchivedMilestoneKeys,
+	formatMilestoneDescription,
+	milestoneKey,
+} from "./core/milestones.ts";
 import { loadTaskDetail, loadTaskListItems } from "./core/task-detail.ts";
 import { isConfigValueError } from "./file-system/operations.ts";
 import {
@@ -49,12 +59,6 @@ import {
 	isGitRepository,
 	updateReadmeWithBoard,
 } from "./index.ts";
-import {
-	formatMilestoneDescription,
-	MilestoneHandlers,
-	type MilestoneRemoveArgs,
-} from "./mcp/tools/milestones/handlers.ts";
-import type { CallToolResult } from "./mcp/types.ts";
 import { applyMiniCommanderPolicy } from "./mini/commander-policy.ts";
 import { getActiveSurfaceMode, type SurfaceMode, setActiveSurfaceMode } from "./mini/runtime.ts";
 import { MINI_TASK_SORT_FIELDS } from "./mini/surface-policy.ts";
@@ -394,23 +398,6 @@ async function normalizeCliProjects(core: Core, values: string[], optionName: st
 	return canonicalProjects;
 }
 
-function formatToolResultText(result: CallToolResult): string {
-	return result.content
-		.map((item) => (item.type === "text" ? item.text : ""))
-		.filter(Boolean)
-		.join("\n");
-}
-
-function printToolResult(result: CallToolResult): void {
-	const text = formatToolResultText(result);
-	if (text) {
-		console.log(text);
-	}
-	if (result.isError) {
-		process.exitCode = 1;
-	}
-}
-
 async function printDuplicateIntegrityWarning(core: Core): Promise<boolean> {
 	const groups = await findLocalDuplicateTaskIds(core);
 	if (groups.length === 0) return false;
@@ -534,13 +521,18 @@ function printDependencyDefectsReport(defects: DependencyDefects): void {
 	}
 }
 
-async function runMilestoneMutation(action: (handlers: MilestoneHandlers) => Promise<CallToolResult>): Promise<void> {
+async function runMilestoneMutation(
+	action: (operations: MilestoneOperations) => Promise<MilestoneOperationResult>,
+): Promise<void> {
 	const cwd = await requireProjectRoot();
-	const core = new Core(cwd);
-	const handlers = new MilestoneHandlers(core, getActiveSurfaceMode());
+	const isMini = getActiveSurfaceMode() === "mini";
+	const operations = new MilestoneOperations(new Core(cwd), {
+		preserveUnknownTaskFrontmatter: isMini,
+		includeExtendedSummary: !isMini,
+	});
 
 	try {
-		printToolResult(await action(handlers));
+		console.log((await action(operations)).message);
 	} catch (error) {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exitCode = 1;
@@ -4438,8 +4430,8 @@ addHelpSchema(milestoneCmd.command("add <name>"), {
 	.option("-d, --description <text>", "milestone description")
 	.option("--due-date <date>", "set due date (YYYY-MM-DD)")
 	.action(async (name: string, options: { description?: string; dueDate?: string }) => {
-		await runMilestoneMutation((handlers) =>
-			handlers.addMilestone({ name, description: options.description, dueDate: options.dueDate }),
+		await runMilestoneMutation((operations) =>
+			operations.add({ name, description: options.description, dueDate: options.dueDate }),
 		);
 	});
 
@@ -4476,8 +4468,8 @@ addHelpSchema(milestoneCmd.command("rename <from> <to>"), {
 				process.exitCode = 1;
 				return;
 			}
-			await runMilestoneMutation((handlers) =>
-				handlers.renameMilestone({
+			await runMilestoneMutation((operations) =>
+				operations.rename({
 					from,
 					to,
 					updateTasks: options.updateTasks !== false,
@@ -4521,8 +4513,8 @@ addHelpSchema(milestoneCmd.command("remove <name>"), {
 			return;
 		}
 
-		await runMilestoneMutation((handlers) =>
-			handlers.removeMilestone({
+		await runMilestoneMutation((operations) =>
+			operations.remove({
 				name,
 				taskHandling,
 				reassignTo: options.reassignTo,
@@ -4540,7 +4532,7 @@ addHelpSchema(milestoneCmd.command("archive <name>"), {
 })
 	.description("archive a milestone by id or title")
 	.action(async (name: string) => {
-		await runMilestoneMutation((handlers) => handlers.archiveMilestone({ name }));
+		await runMilestoneMutation((operations) => operations.archive({ name }));
 	});
 
 const boardCmd = program.command("board");

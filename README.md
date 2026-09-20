@@ -19,7 +19,7 @@ The build produces `dist/backlog.exe` on Windows and `dist/backlog` elsewhere. T
 
 ## Restricted surface
 
-Only the operations and fields below are public. Excluded operations are absent from both discovery and invocation. There is no switch that restores the full Backlog.md surface.
+The CLI and MCP surfaces are fail-closed: only the operations and fields below are public, and excluded operations are absent from both discovery and invocation. The full browser is a deliberate human-facing exception, launched with `backlog browser`.
 
 The command table lists each public command and its explicit non-help options. `--help` remains available for every listed command.
 
@@ -28,6 +28,7 @@ The command table lists each public command and its explicit non-help options. `
 | Command | Allowed options |
 | --- | --- |
 | `backlog` | `--version` |
+| `browser` | `--port`, `--no-open` |
 | `task` | — |
 | `task create` | `--description`, `--assignee`, `--status`, `--labels`, `--priority`, `--type`, `--milestone`, `--depends-on`, `--ac`, `--acceptance-criteria`, `--plain` |
 | `task list` | `--status`, `--exclude-status`, `--assignee`, `--unassigned`, `--milestone`, `--priority`, `--type`, `--labels`, `--search`, `--ready`, `--limit`, `--sort`, `--plain`, `--json`, `--watch` |
@@ -80,7 +81,7 @@ The command table lists each public command and its explicit non-help options. `
 | `task_summary` | `id`, `title`, `status`, `type`, `priority`, `assignees`, `labels`, `milestone`, `acceptanceCriteriaCompleted`, `acceptanceCriteriaCount`, `createdAt`, `updatedAt` |
 | `task_detail` | `id`, `title`, `status`, `type`, `priority`, `assignees`, `labels`, `milestone`, `acceptanceCriteriaCompleted`, `acceptanceCriteriaCount`, `createdAt`, `updatedAt`, `description`, `dependencies`, `acceptanceCriteria`, `comments` |
 
-The MCP server starts with `backlog mcp start`. Workflow and Definition-of-Done resources and tools are not exposed. Task and milestone archive operations, due-date inputs and outputs, and every other upstream command and tool are unavailable.
+The MCP server starts with `backlog mcp start`. Workflow and Definition-of-Done resources and tools are not exposed. Task and milestone archive operations and due-date inputs and outputs remain unavailable through mini CLI/MCP. The browser exposes the full upstream browser capabilities, including due dates and archive operations; launching it does not expand the mini CLI/MCP surface.
 
 ## Upstream synchronization
 

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -24,6 +25,92 @@ async function run(...args: string[]): Promise<string> {
 	return result.stdout;
 }
 
+/** Let the OS allocate a loopback port, releasing it immediately before launch. */
+async function findAvailablePort(): Promise<number> {
+	return new Promise((resolve, reject) => {
+		const server = createServer();
+		server.once("error", reject);
+		server.listen(0, "127.0.0.1", () => {
+			const address = server.address();
+			server.close((error) => {
+				if (error) reject(error);
+				else if (address && typeof address !== "string") resolve(address.port);
+				else reject(new Error("Unable to allocate a browser smoke port"));
+			});
+		});
+	});
+}
+
+/** Bound shutdown even if the child ignores graceful termination. */
+async function waitForExit(exited: Promise<void>, milliseconds: number): Promise<boolean> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	try {
+		return await Promise.race([
+			exited.then(() => true),
+			new Promise<boolean>((resolve) => {
+				timer = setTimeout(() => resolve(false), milliseconds);
+			}),
+		]);
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
+/** Prove the shipped browser policy, HTTP server, and embedded page work together. */
+async function verifyBrowser(): Promise<void> {
+	const port = await findAvailablePort();
+	const origin = `http://127.0.0.1:${port}`;
+	const child = spawn(executable, ["browser", "--port", String(port), "--no-open"], {
+		cwd: smokeRoot,
+		stdio: ["ignore", "pipe", "pipe"],
+		windowsHide: true,
+	});
+	let stderr = "";
+	let spawnError: Error | undefined;
+	let closed = false;
+	child.stdout.resume();
+	child.stderr.setEncoding("utf8").on("data", (chunk: string) => {
+		stderr = (stderr + chunk).slice(-8000);
+	});
+	child.once("error", (error) => {
+		spawnError = error;
+	});
+	const exited = new Promise<void>((resolve) => {
+		child.once("close", () => {
+			closed = true;
+			resolve();
+		});
+	});
+	try {
+		const deadline = Date.now() + 8000;
+		while (true) {
+			if (spawnError) throw spawnError;
+			assert.equal(closed, false, `Browser exited before readiness (code ${child.exitCode})`);
+			try {
+				const response = await fetch(`${origin}/api/status`, { signal: AbortSignal.timeout(500) });
+				assert.equal(response.ok, true);
+				await response.arrayBuffer();
+				break;
+			} catch (error) {
+				if (Date.now() >= deadline) throw new Error("Browser readiness deadline exceeded", { cause: error });
+				await new Promise((resolve) => setTimeout(resolve, 100));
+			}
+		}
+		const page = await fetch(`${origin}/`, { signal: AbortSignal.timeout(1000) });
+		assert.equal(page.ok, true);
+		assert.match(await page.text(), /<div id="root">/);
+	} catch (error) {
+		throw new Error(`Compiled browser smoke failed at ${origin}\nstderr: ${stderr || "(empty)"}`, { cause: error });
+	} finally {
+		if (!closed) child.kill("SIGTERM");
+		if (!(await waitForExit(exited, 1500))) {
+			child.kill("SIGKILL");
+			assert.equal(await waitForExit(exited, 1500), true, `Browser process ${child.pid} did not exit`);
+		}
+	}
+	console.log("Compiled browser smoke checks passed (HTTP status, embedded page, process cleanup).");
+}
+
 try {
 	const help = await run("--help");
 	assert.match(help, /mini-backlog\.md/);
@@ -34,12 +121,11 @@ try {
 			.split("\n")
 			.map((line) => line.trim().split(/\s/)[0])
 			.sort(),
-		["doc", "mcp", "milestone", "search", "task"],
+		["browser", "doc", "mcp", "milestone", "search", "task"],
 	);
 	assert.equal((await run("--version")).trim(), expectedVersion);
 	for (const args of [
 		["init"],
-		["browser"],
 		["board"],
 		["help"],
 		["--plain"],
@@ -73,6 +159,7 @@ try {
 	await run("milestone", "remove", "m-0");
 	await run("task", "edit", id, "--status", "Done");
 	await run("task", "complete", id);
+	await verifyBrowser();
 
 	const transport = new StdioClientTransport({
 		command: executable,

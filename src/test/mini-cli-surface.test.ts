@@ -22,8 +22,8 @@ describe("shipped mini CLI surface", () => {
 				.split("\n")
 				.map((line) => line.trim().split(/\s/)[0])
 				.sort(),
-		).toEqual(["doc", "mcp", "milestone", "search", "task"]);
-		for (const allowed of ["task", "search", "doc", "milestone", "mcp"]) expect(output).toContain(allowed);
+		).toEqual(["browser", "doc", "mcp", "milestone", "search", "task"]);
+		for (const allowed of ["task", "search", "doc", "milestone", "mcp", "browser"]) expect(output).toContain(allowed);
 		for (const hidden of [
 			"init",
 			"draft",
@@ -33,7 +33,6 @@ describe("shipped mini CLI surface", () => {
 			"config",
 			"doctor",
 			"cleanup",
-			"browser",
 			"overview",
 			"completion",
 			"instructions",
@@ -51,7 +50,6 @@ describe("shipped mini CLI surface", () => {
 		"config",
 		"doctor",
 		"cleanup",
-		"browser",
 		"overview",
 		"completion",
 		"instructions",
@@ -70,6 +68,20 @@ describe("shipped mini CLI surface", () => {
 
 		expect(result.exitCode).not.toBe(0);
 		expect(result.stderr.toString()).not.toContain("Definition of Done");
+	});
+
+	it("publishes only the browser's approved long options", async () => {
+		const result = await runMini("browser", "--help");
+		const help = result.stdout.toString();
+
+		expect(result.exitCode).toBe(0);
+		expect([...help.matchAll(/^ {2}(--[\w-]+)/gm)].map((match) => match[1]).sort()).toEqual([
+			"--help",
+			"--no-open",
+			"--port",
+		]);
+		expect(help).not.toContain("-p,");
+		expect(help).not.toContain("--non-interactive");
 	});
 
 	it("prints restricted Commander help for a bare invocation", async () => {
