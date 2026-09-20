@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@codex'
 created_date: '2026-09-19 23:30'
-updated_date: '2026-09-20 00:35'
+updated_date: '2026-09-20 00:51'
 labels: []
 dependencies: []
 references:
@@ -38,6 +38,18 @@ Restore the complete upstream browser to mini-backlog.md while keeping every oth
 - [ ] #2 bun run check . passes when formatting/linting touched
 - [ ] #3 bun test (or scoped test) passes
 <!-- DOD:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Implementation plan: docs/superpowers/plans/2026-09-19-mini-browser-restoration.md
+
+1. Restore `browser` through mini's positive CLI policy with only `--port` and `--no-open` (docs/superpowers/specs/2026-09-19-mini-browser-restoration-design.md:L42-L50).
+2. Consolidate milestone alias resolution in core, then extract transport-neutral add/rename/remove/archive operations with stable domain errors (docs/superpowers/specs/2026-09-19-mini-browser-restoration-design.md:L70-L78).
+3. Adapt CLI, MCP, and browser HTTP handlers to the shared operations; enforce that server/web imports cannot reach CLI, commands, or MCP (docs/superpowers/specs/2026-09-19-mini-browser-restoration-design.md:L80-L100).
+4. Prove full browser behavior through HTTP integration coverage and a live compiled-binary smoke test while preserving exact restricted CLI/MCP tests (docs/superpowers/specs/2026-09-19-mini-browser-restoration-design.md:L109-L119).
+5. Document the full browser as the deliberate exception to mini's restricted CLI/MCP contract (docs/superpowers/specs/2026-09-19-mini-browser-restoration-design.md:L121-L125).
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
