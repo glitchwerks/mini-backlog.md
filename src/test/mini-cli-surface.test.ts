@@ -110,6 +110,17 @@ describe("shipped mini CLI surface", () => {
 		expect(initRequired.stdout.toString()).toContain("backlog init --defaults");
 	});
 
+	it("explains when mini agents should create tasks", async () => {
+		const result = await runMini("instructions", "overview");
+		const output = result.stdout.toString();
+
+		expect(result.exitCode).toBe(0);
+		expect(output).toContain("Create a task for substantive work");
+		expect(output).toMatch(
+			/Skip task creation for questions,\s+explanations, quick lookups, and obvious mechanical changes\./,
+		);
+	});
+
 	it.each([
 		["overview", ["backlog search", "backlog instructions task-creation"]],
 		["task-creation", ["backlog task create", "--ac"]],

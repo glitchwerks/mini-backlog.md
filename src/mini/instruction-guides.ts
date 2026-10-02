@@ -5,6 +5,11 @@ export const MINI_INSTRUCTION_GUIDE_TEXT = Object.freeze({
 
 This project uses Backlog.md to track features, bugs, and structured work as tasks.
 
+### When to Use Backlog
+
+Create a task for substantive work that needs planning, decisions, or handoff notes. Skip task creation for questions,
+explanations, quick lookups, and obvious mechanical changes.
+
 ### Start Every Request Here
 
 Search and read before changing anything:
