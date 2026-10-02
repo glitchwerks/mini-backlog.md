@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-02 01:43'
-updated_date: '2026-10-02 12:39'
+updated_date: '2026-10-02 13:07'
 labels: []
 dependencies: []
 type: bug
@@ -49,6 +49,8 @@ Mini cannot create a new Backlog.md project or read the canonical workflow guide
 8. Add failing functional coverage for the hidden mini completion endpoint and explicit false Claude-agent integration flags; preserve the completion endpoint internally while keeping public mini discovery exact, normalize the documented boolean once before conflict validation, then run focused completion/init/surface verification and CI-equivalent checks before updating PR #7.
 
 9. Add failing noninteractive init coverage for disabled agent-instruction selection under none and mcp integration, plus direct surface-aware completion retry-warning coverage; normalize instruction selection before conflict checks and keep the full-mode retry text unchanged; then run focused init/surface/full-mode verification and build/smoke before updating PR #7.
+
+10. Add failing exact-output coverage for mini and full post-init customization and missing-remote guidance; centralize the surface-aware messages so mini advertises only Git-remote actions while production strings remain exact; then run focused init/surface/full-mode verification, TypeScript, targeted Biome, build, and compiled smoke before updating PR #7.
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -71,10 +73,12 @@ PR #7 init-integration follow-up RED: the new tests exposed all three review fin
 PR #7 completion/boolean follow-up RED: the internal completion endpoint was pruned in mini and returned exit 1 for both root and option candidates; explicit --install-claude-agent false returned exit 1 with both none and mcp integration. GREEN: mini retains completion and __complete as hidden internal paths, completion discovery omits hidden commands and exposes only already-pruned mini candidates, and the Claude-agent boolean is parsed once before conflict validation and reused. Verification: 4/4 new functional cases passed; focused completion/init/full-mode/mini surface coverage passed 129/129; mini contract coverage passed 45/45; TypeScript, targeted Biome, direct build, and compiled smoke including the internal completion endpoint passed. The Windows CI platform profile was stopped after reproducing existing environment baselines only: sandbox denial creating I:/apps/mini-backlog.md/.git/backlog.md/locks/create, unavailable sh/echo executables, and resulting lock, EBUSY, and 10-second timeout cascades. Exact repository-wide Biome still has the recorded 441 Windows CRLF diagnostics, so DoD #2 remains unchecked; the recorded Ubuntu board and Nix browser-asset baselines remain.
 
 PR #7 disabled-selection/warning follow-up RED: explicit --agent-instructions none exited 1 under both none and mcp integration, and no surface-aware warning formatter existed. GREEN: agent instruction selection is normalized once before conflict validation and reused, so only selections that install files conflict; completion installation failures now keep the exact full-mode retry text while mini directs users back through init without advertising the pruned completion install command. Verification: 4/4 new regression cases passed; focused completion/init/full-mode/mini surface coverage passed 172/172; mini contract coverage passed 45/45; TypeScript, targeted Biome with preserved line-ending modes, direct build, and compiled smoke passed. Exact repository-wide Biome remains the recorded Windows CRLF baseline, so DoD #2 remains unchecked; the recorded Ubuntu board and Nix browser-asset baselines remain.
+
+PR #7 post-init guidance follow-up RED: real mini init output still advertised the excluded backlog config command in its advanced-settings summary, while full-mode characterization confirmed the established production summary and missing-remote warning. GREEN: mini now omits the optional advanced-settings customization hint and its missing-remote advisory recommends only the supported git remote action; full strings remain exact. Verification: the 2 exact CLI regressions passed; broader init/full-mode/mini coverage passed 149/149; mini contract coverage passed 45/45; TypeScript, targeted Biome with preserved line endings, direct build, and compiled/browser smoke passed. Existing Windows CRLF Biome, Ubuntu board comparison, and Nix browser-asset baselines remain unchanged, so DoD #2 stays unchecked.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Normalized disabled agent-instruction selections before init integration conflicts and made completion-install failure guidance surface-aware, preserving full behavior while mini avoids advertising its rejected completion install command. Verified with 172 focused tests, 45 mini contract tests, TypeScript, targeted Biome, build, and compiled smoke.
+Kept mini post-init guidance within its supported surface by omitting the excluded config customization hint and using Git-remote-only recovery advice, while preserving full-mode strings exactly. Verified with 149 focused tests, 45 mini contract tests, TypeScript, targeted Biome, build, and compiled smoke.
 <!-- SECTION:FINAL_SUMMARY:END -->

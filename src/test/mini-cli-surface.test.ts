@@ -126,6 +126,29 @@ describe("shipped mini CLI surface", () => {
 		}
 	});
 
+	it("keeps post-init guidance within the restricted surface", async () => {
+		const dir = await mkdtemp(join(tmpdir(), "mini-init-guidance-"));
+		try {
+			await $`git init -b main`.cwd(dir).quiet();
+			const result = await $`bun ${MINI_CLI_PATH} init "Mini Guidance" --defaults --integration-mode none`
+				.cwd(dir)
+				.quiet()
+				.nothrow();
+			const stdout = result.stdout.toString();
+			const stderr = result.stderr.toString();
+
+			expect(result.exitCode).toBe(0);
+			expect(stdout).not.toContain("Advanced settings:");
+			expect(stdout).not.toContain("backlog config");
+			expect(stderr).toContain(
+				"Warning: remoteOperations is enabled but no git remotes are configured. Remote features will be skipped until a remote is added (e.g., 'git remote add origin <url>').",
+			);
+			expect(stderr).not.toContain("backlog config");
+		} finally {
+			await safeCleanup(dir);
+		}
+	});
+
 	it("installs mini-compatible Claude agent guidance through init", async () => {
 		const dir = await mkdtemp(join(tmpdir(), "mini-init-claude-agent-"));
 		try {

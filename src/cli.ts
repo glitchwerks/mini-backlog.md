@@ -1807,7 +1807,7 @@ addHelpSchema(program.command("init [projectName]"), {
 							(config.definitionOfDone ?? []).length > 0 ? config.definitionOfDone?.join(" | ") : muted("none")
 						}`,
 					);
-				} else {
+				} else if (getActiveSurfaceMode() === "full") {
 					summaryLines.push(`${label("Advanced settings:")} ${muted("unchanged (run `backlog config` to customize)")}`);
 				}
 				clack.note(summaryLines.join("\n"), "Initialization Summary");
@@ -1852,12 +1852,12 @@ addHelpSchema(program.command("init [projectName]"), {
 						// Ensure git ops are ready (config not strictly required for this check)
 						const hasRemotes = await core.gitOps.hasAnyRemote();
 						if (!hasRemotes) {
+							const remoteAction =
+								getActiveSurfaceMode() === "full"
+									? "Remote features will be skipped until a remote is added (e.g., 'git remote add origin <url>') or disable remoteOperations via 'backlog config set remoteOperations false'."
+									: "Remote features will be skipped until a remote is added (e.g., 'git remote add origin <url>').";
 							console.warn(
-								[
-									"Warning: remoteOperations is enabled but no git remotes are configured.",
-									"Remote features will be skipped until a remote is added (e.g., 'git remote add origin <url>')",
-									"or disable remoteOperations via 'backlog config set remoteOperations false'.",
-								].join(" "),
+								["Warning: remoteOperations is enabled but no git remotes are configured.", remoteAction].join(" "),
 							);
 						}
 					}
