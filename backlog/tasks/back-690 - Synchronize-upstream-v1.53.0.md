@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-02 16:17'
-updated_date: '2026-10-02 16:34'
+updated_date: '2026-10-02 17:23'
 labels: []
 dependencies: []
 references:
@@ -38,6 +38,8 @@ Track GitHub issue #8: incorporate the upstream v1.53.0 release while retaining 
 
 <!-- SECTION:PLAN:BEGIN -->
 1. Merge upstream release fd20f714 (v1.53.0) into the isolated branch based on fork main 9a99f1c8 (issue #8). 2. Preserve mini-specific CLI/init, launcher, JSON projections, browser and packaging in merge resolutions (README.md; PR #7). 3. Use doctor preview and supported duplicate-ID repair to retain overlapping upstream/fork task history; record any reference mappings (upstream BACK-687..689; fork PRs #2/#6/#7). 4. Match the published version 1.53.0 (upstream release URL in issue #8; tagged package.json still 1.52.0), extend surface regressions for newly excluded options, and run upstream watcher/list plus mini suites. 5. Verify TypeScript, targeted Biome, source-only build, compiled browser smoke and mini-v1.53.0 tag validation; commit and open PR closing #8 (README.md Upstream synchronization).
+
+PR9 watcher follow-up: reproduce root backlog.config.yml backlog_directory switching with a failing functional watch test; re-resolve watcher directories and stat inputs only on refresh; verify new-directory edits/additions/removals, missing directories, cleanup and idle stat-only behavior. Sources: src/cli.ts:L3068-L3090; src/commands/watch-json.ts:L135-L160; https://github.com/glitchwerks/mini-backlog.md/pull/9#discussion_r4167786294 (fetched 2026-10-02).
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -50,10 +52,20 @@ Verification: 122 mini CLI/MCP/task contract tests passed; 51 additional packagi
 Release verification rerun: 41 upstream pagination/watcher/launcher tests passed with 2 platform skips and exit 0 after runner cleanup correction; all 13 changed TypeScript files passed CRLF-aware Biome. Full bun run test was stopped after reproducing recorded board-tui-move.test.ts move persistence/cross-screen failures and claude-agent-install.test.ts link-text fixture failure, plus cli-browser-port.test.ts Windows EBUSY cleanup. Board failing cases: selected Enter move, M confirmation, whole-set move, second-Enter collapse, cross-column order, Escape during write, and per-task partial failure; an unhandled move persistence error also occurred. No fixes to those unrelated baselines were attempted.
 
 Independent read-only merge review found no actionable defects. Release ancestry and committed artifact persistence verified. PR #9 opened with Closes #8 and all verification/baseline details: https://github.com/glitchwerks/mini-backlog.md/pull/9. Implementation is ready for review; merge and mini-v1.53.0 tag publication remain separate post-review actions.
+
+PR9 review intake: one unresolved watcher P2 thread; six platform jobs passed at 36e70f. Parent independently verified Nix missing ../web/index.html failure and user explicitly accepted retaining that baseline; leave Nix unchanged.
+
+PR9 watcher review reproduction: root config switched backlog_directory to a missing replacement directory and emitted an empty list, but subsequent TASK-2 creation timed out waiting for a matching JSON snapshot before the fix. Fixed one-time watch paths by resolving current filesystem paths before each refresh and replacing subscriptions when changed; only ENOENT is tolerated for missing target directories, with stat reconciliation discovering creation. Replaced watcher errors cannot terminate the active watch. Idle passes remain stat-only. Regression covers root-config switch, missing/empty target, new-path edits/additions/removals, obsolete subscriptions, and changes during blocked initial read. Final watcher run: 18 pass, 1 Windows symlink skip, 0 fail; check:types and CRLF-aware scoped Biome passed. Source-only build and independent compiled CLI/browser/MCP smoke passed. Broader 10s mini run: 137 pass, 1 platform skip, 2 failures: excluded decision search timeout and source-tag workflow regex against CRLF. Exact decision-search test passed at 20s in 13.2s; 20s contract rerun in progress. Workflow and distribution test diff against 36e70f is empty. Accepted Nix missing embedded ../web/index.html remains unchanged.
+
+Independent reviewer returned ready with no actionable findings; parent independently reran root-config and concurrent-read regressions (2 pass, 0 fail) and TypeScript successfully. Broader 20s mini contract rerun: 126 pass, 1 platform skip, 1 timeout in rejects the excluded decision search type (20.015s), despite standalone same test passing at 13.2s. Running isolated full mini-cli-surface suite with local 60s allowance; no production timeout or test configuration changed.
+
+Isolated full mini-cli-surface rerun with local --timeout=60000: 88 pass, 0 fail; excluded decision search completed in 14.637s. All other contract suites passed in the prior combined run (126 pass with only that timeout and 1 platform skip). No test configuration was changed. Independent review ready; parent regressions/type-check passed. Review delta is ready for parent push/review coordination; full-tree CRLF lint, unrelated Windows tests and accepted Nix exception remain documented, DoD #2 remains unchecked.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Integrated upstream v1.53.0 while preserving mini restrictions, full init/instructions, browser and source-only launcher. Preserved both task histories through supported ID repair. Verified 122 mini contract tests, 51 broader tests, 41 release tests, TypeScript, scoped Biome, compiled/browser smoke and tag validation; documented full-suite Windows baselines. Submitted PR #9 closing issue #8.
+
+Addressed PR9 watcher reconfiguration feedback: paths and subscriptions now follow changed root backlog configuration while idle reconciliation remains stat-only. Verified failing functional reproduction then 18 watcher passes/1 platform skip, 88 mini CLI surface passes, remaining contract suites, TypeScript, scoped CRLF Biome, source-only build and independent compiled CLI/browser/MCP smoke. Recorded unchanged CRLF workflow test and variable local decision-search timeouts; Nix exception retained.
 <!-- SECTION:FINAL_SUMMARY:END -->
