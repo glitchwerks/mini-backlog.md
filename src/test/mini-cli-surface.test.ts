@@ -53,6 +53,29 @@ describe("shipped mini CLI surface", () => {
 		}
 	});
 
+	it("serves restricted root candidates through the internal completion endpoint", async () => {
+		const line = "backlog ";
+		const result = await runMini("completion", "__complete", line, String(line.length));
+		const candidates = result.stdout.toString().trim().split("\n").sort();
+
+		expect(result.exitCode).toBe(0);
+		expect(candidates).toEqual(["browser", "doc", "init", "instructions", "mcp", "milestone", "search", "task"]);
+	});
+
+	it("completes only allowed mini options through the internal endpoint", async () => {
+		const line = "backlog task create --";
+		const result = await runMini("completion", "__complete", line, String(line.length));
+		const candidates = result.stdout.toString().trim().split("\n");
+
+		expect(result.exitCode).toBe(0);
+		for (const allowed of ["--description", "--assignee", "--depends-on", "--ac"]) {
+			expect(candidates).toContain(allowed);
+		}
+		for (const excluded of ["--due-date", "--dod", "--parent", "--plan"]) {
+			expect(candidates).not.toContain(excluded);
+		}
+	});
+
 	it.each([
 		"draft",
 		"board",
@@ -63,6 +86,7 @@ describe("shipped mini CLI surface", () => {
 		"cleanup",
 		"overview",
 		"completion",
+		"completion install",
 		"task archive TASK-1",
 		"milestone archive m-1",
 		"task create X --due-date 2026-09-14",
@@ -118,6 +142,26 @@ describe("shipped mini CLI surface", () => {
 			for (const excluded of ["--plan", "--notes", "--parent", "backlog task <id>", "backlog task archive"]) {
 				expect(content).not.toContain(excluded);
 			}
+		} finally {
+			await safeCleanup(dir);
+		}
+	});
+
+	it.each([
+		"none",
+		"mcp",
+	])("accepts an explicitly disabled Claude agent with %s integration", async (integrationMode) => {
+		const dir = await mkdtemp(join(tmpdir(), `mini-init-agent-false-${integrationMode}-`));
+		try {
+			const result =
+				await $`bun ${MINI_CLI_PATH} init "Mini Agent Disabled" --defaults --no-git --integration-mode ${integrationMode} --install-claude-agent false`
+					.cwd(dir)
+					.quiet()
+					.nothrow();
+
+			expect(result.exitCode).toBe(0);
+			expect(await Bun.file(join(dir, "backlog", "config.yml")).exists()).toBe(true);
+			expect(await Bun.file(join(dir, ".claude", "agents", "project-manager-backlog.md")).exists()).toBe(false);
 		} finally {
 			await safeCleanup(dir);
 		}

@@ -21,6 +21,10 @@ export interface OptionInfo {
 	description: string;
 }
 
+function visibleSubcommands(command: Command): readonly Command[] {
+	return command.commands.filter((child) => !(child as Command & { _hidden?: boolean })._hidden);
+}
+
 /**
  * Extract command structure from a Commander.js program
  */
@@ -29,7 +33,7 @@ export function extractCommandStructure(program: Command): CommandInfo {
 		name: program.name(),
 		aliases: program.aliases(),
 		arguments: extractArguments(program),
-		subcommands: program.commands.map((cmd) => extractCommandInfo(cmd)),
+		subcommands: visibleSubcommands(program).map((cmd) => extractCommandInfo(cmd)),
 		options: program.options.map((opt) => extractOptionInfo(opt)),
 	};
 }
@@ -42,7 +46,7 @@ function extractCommandInfo(command: Command): CommandInfo {
 		name: command.name(),
 		aliases: command.aliases(),
 		arguments: extractArguments(command),
-		subcommands: command.commands.map((cmd) => extractCommandInfo(cmd)),
+		subcommands: visibleSubcommands(command).map((cmd) => extractCommandInfo(cmd)),
 		options: command.options.map((opt) => extractOptionInfo(opt)),
 	};
 }

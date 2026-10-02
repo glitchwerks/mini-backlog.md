@@ -126,6 +126,9 @@ export const MINI_CLI_DESCRIPTIONS = Object.freeze({
 	"mcp start": "start the restricted MCP server",
 } as const);
 
+/** Internal command paths needed by installed integrations but omitted from public mini discovery. */
+export const MINI_INTERNAL_CLI_PATHS = Object.freeze(["completion", "completion __complete"] as const);
+
 export const MINI_MCP_TOOL_NAMES = Object.freeze([
 	"task_create",
 	"task_list",

@@ -123,6 +123,16 @@ try {
 			.sort(),
 		["browser", "doc", "init", "instructions", "mcp", "milestone", "search", "task"],
 	);
+	assert.deepEqual((await run("completion", "__complete", "backlog ", "8")).trim().split("\n").sort(), [
+		"browser",
+		"doc",
+		"init",
+		"instructions",
+		"mcp",
+		"milestone",
+		"search",
+		"task",
+	]);
 	assert.equal((await run("--version")).trim(), expectedVersion);
 	for (const args of [
 		["board"],

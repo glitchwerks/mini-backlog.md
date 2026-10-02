@@ -1160,6 +1160,7 @@ addHelpSchema(program.command("init [projectName]"), {
 					if (value === undefined) return defaultValue;
 					return value.toLowerCase() === "true" || value === "1";
 				};
+				const installClaudeAgentRequested = parseBoolean(options.installClaudeAgent, false);
 
 				// Helper function to parse number strings
 				const parseNumber = (value: string | undefined, defaultValue: number): number => {
@@ -1407,19 +1408,19 @@ addHelpSchema(program.command("init [projectName]"), {
 				if (
 					!integrationOption &&
 					integrationMode === "mcp" &&
-					(options.agentInstructions || options.installClaudeAgent)
+					(options.agentInstructions || installClaudeAgentRequested)
 				) {
 					integrationMode = "cli";
 				}
 
-				if (integrationMode === "mcp" && (options.agentInstructions || options.installClaudeAgent)) {
+				if (integrationMode === "mcp" && (options.agentInstructions || installClaudeAgentRequested)) {
 					console.error(
 						"The MCP connector option cannot be combined with --agent-instructions or --install-claude-agent.",
 					);
 					process.exit(1);
 				}
 
-				if (integrationMode === "none" && (options.agentInstructions || options.installClaudeAgent)) {
+				if (integrationMode === "none" && (options.agentInstructions || installClaudeAgentRequested)) {
 					console.error(
 						"Skipping AI integration cannot be combined with --agent-instructions or --install-claude-agent.",
 					);
@@ -1638,8 +1639,7 @@ addHelpSchema(program.command("init [projectName]"), {
 
 				if (isNonInteractive) {
 					advancedConfig = applyAdvancedOptionOverrides();
-					installClaudeAgentSelection =
-						integrationMode === "cli" ? parseBoolean(options.installClaudeAgent, false) : false;
+					installClaudeAgentSelection = integrationMode === "cli" ? installClaudeAgentRequested : false;
 				} else {
 					const advancedPrompt = await clack.confirm({
 						message: "Configure advanced settings now? (Runs the advanced backlog config wizard)",
