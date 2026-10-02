@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-02 16:17'
-updated_date: '2026-10-02 20:11'
+updated_date: '2026-10-02 20:23'
 labels: []
 dependencies: []
 references:
@@ -46,6 +46,8 @@ PR9 root-config creation follow-up: reproduce adding a previously absent root co
 PR9 pagination follow-up: reproduce full CLI Next footer when ancestor --plain occurs between --search and literal --skip; verify Commander ancestor parsing before minimal reconstruction fix. Add unit coverage for ancestor boolean/required/optional/negated flags, repeated flags, aliases, inline values and separator; execute actual footer to preserve filters/window. Sources: src/utils/list-window.ts:L27-L31,L115-L118,L177-L202; src/test/cli-list-window.test.ts:L204-L218; https://github.com/glitchwerks/mini-backlog.md/pull/9#discussion_r4168247311 (fetched 2026-10-02).
 
 User-approved shell-neutral continuation: replace executable Next command with numeric --skip hint instructing rerun of original command while replacing the existing skip option and retaining all other arguments; update full overview/help and README, remove unused argv reconstruction/quoting metadata and helpers. Update full CLI paging tests to use original argv plus hinted skip, test quotes/ancestor flags/literal separators and terminal pages; verify paging/help, mini exclusion, type-check, scoped Biome and committed references. Sources: src/utils/list-window.ts:L192-L239; src/guidelines/cli-instructions/overview.md:L28; README.md:L7; https://github.com/glitchwerks/mini-backlog.md/pull/9#discussion_r4168392302 (fetched 2026-10-02); explicit user approval via parent.
+
+PR #9 review comment https://github.com/glitchwerks/mini-backlog.md/pull/9#discussion_r4169477426 (2026-10-02): align task-creation continuation guidance with the approved shell-neutral Next hint (src/guidelines/cli-instructions/overview.md:28); audit shipped guides/help/README for equivalent stale command promises, add a failing emitted-guide regression, and verify focused paging/instruction tests and scoped checks. Preserve accepted release baselines.
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -76,6 +78,8 @@ Third PR9 feedback RED: actual full task list --search --plain --skip --status T
 Final pagination verification: 22 upstream unit/full-CLI integration tests passed with 192 assertions, 0 failures; final explicit numeric-short boundary unit rerun passed 9 tests with 113 assertions. 15 mini paging rejection tests passed. TypeScript, scoped CRLF-aware Biome, and git diff --check passed. Independent reviewer confirmed optional-negative mismatch resolved and returned ready with no actionable findings; parent independently passed 9 unit tests/113 assertions and TypeScript and inspected diff. No CLI/public allowlist changes; accepted Nix missing embedded asset and prior unrelated baselines remain unchanged, DoD #2 remains unchecked.
 
 User explicitly approved shell-neutral continuation after native diagnosis: cmd.exe split POSIX single-quoted To Do into two literal-quote arguments; PowerShell rejected the POSIX apostrophe escape with TerminatorExpectedAtEndOfString. Footer now instructs rerunning the original command with next --skip before any -- separator, replacing the existing paging option and preserving all other arguments. Updated full overview/help and development README; mini paging remains excluded. Removed shell quoting, command reconstruction, ancestor operand tracking and their unused metadata; CLI no longer passes raw argv into paging. This supersedes the prior ancestor-parser strategy. Regression unit first failed against old executable footer; GREEN 20 paging/full-help tests with 162 assertions, including quotes/apostrophes/dollar/backtick query, spaced status, interleaved parent flag, literal --skip and -- query values, explicit separator placement, original --skip=0 overriding and terminal pages without Next. Full mini CLI surface passed 88 tests/356 assertions at local 60s timeout; TypeScript, scoped CRLF Biome, diff check, source-only build and independent compiled CLI/browser/MCP smoke passed. Independent reviewer returned ready without findings; parent independently reran 20 paging tests/162 assertions plus TypeScript and inspected docs/helper. Artifact audit git ls-tree HEAD confirmed all seven deliverables already committed; no new file references. Accepted Nix missing embedded asset and prior unrelated baselines retained; DoD #2 remains unchecked.
+
+PR #9 comment 4169477426: audited shipped guides/help/README for next-window/next-command promises; sole stale wording was task-creation guide. Emitted task-creation regression RED: 0 pass, 1 fail, missing rerun instruction. GREEN: focused paging/help suite 20 pass, 0 fail, 166 assertions; final wording clarifies Next only when more items follow, targeted guide rerun 1 pass. Mini published-guide contract 1 pass, 7 assertions; tsc and scoped CRLF Biome pass. Parent independently verified emitted guide regression and inspected diff. Artifact persistence: git ls-tree HEAD -- src/guidelines/cli-instructions/task-creation.md src/test/cli-list-window.test.ts confirmed both tracked. No runtime logic or mini allowlist changes. Accepted Nix missing embedded asset and whole-tree formatting/Windows baselines remain untouched; DoD 2 stays unchecked.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -90,4 +94,6 @@ Handled newly created root config during JSON watch: always subscribe to project
 Fixed full CLI pagination footer reconstruction when ancestor flags occur between child options and operands. Verified actual failing footer replay then 22 upstream paging passes, 15 mini paging rejection passes, TypeScript/Biome, independent review and parent unit verification. Ancestor flag order/values and literal query --skip are preserved while pagination advances.
 
 Implemented user-approved shell-neutral Next hints and updated full instructions/help/README. Removed unused command reconstruction and shell quoting. Verified 20 paging/help tests, 88 mini CLI surface tests, TypeScript/Biome, compiled CLI/browser/MCP smoke, independent review and artifact persistence; mini paging remains excluded.
+
+Aligned task-creation guidance with the approved shell-neutral continuation hint, including terminal-page behavior and replacement before an operand separator. Verified failing-before emitted-guide regression, 20 paging/help tests, mini guide publication, typecheck, scoped formatter, and tracked artifacts.
 <!-- SECTION:FINAL_SUMMARY:END -->

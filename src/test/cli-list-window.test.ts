@@ -339,5 +339,12 @@ describe("CLI list windows", () => {
 		}
 		expect(overview).toContain("replace any existing --skip option");
 		expect(overview).toContain("before any `--` separator");
+
+		const creation = (await runCli(["instructions", "task-creation"])).stdout;
+		expect(creation).toContain("when more items follow");
+		expect(creation).toContain("rerun the original command");
+		expect(creation).toContain("replace any existing --skip option");
+		expect(creation).toContain("before any `--` separator");
+		expect(creation).not.toContain("the command for the next window");
 	});
 });
