@@ -22,12 +22,10 @@ export type ListWindow = {
 	forcesText: boolean;
 	/** The typed arguments, repeated with a new `--skip` in the command for the following items. */
 	commandArgs: readonly string[];
-	/**
-	 * Flags of the running command whose next argument is their value, even when it reads `--skip` or
-	 * `--`. Not handled: Commander takes parent flags such as `--plain` of `task` out of the arguments
-	 * wherever they appear, so in `--search --plain --skip` the search value `--skip` is rebuilt wrongly.
-	 */
+	/** Flags whose next argument is their value, even when it reads `--skip` or `--`. */
 	valueFlags: ReadonlySet<string>;
+	/** Arguments removed by ancestor option parsing before the running command consumes its values. */
+	ancestorArgs: ReadonlySet<number>;
 };
 
 export type ListPage<T> = {
@@ -86,6 +84,46 @@ function commandName(command: Command): string {
 	return names.join(" ");
 }
 
+/** Commander parses ancestors first, removing their options and operands wherever they occur. */
+function ancestorArgumentIndexes(command: Command, args: readonly string[]): ReadonlySet<number> {
+	const ancestors: Command[] = [];
+	for (let current = command.parent; current; current = current.parent) ancestors.unshift(current);
+	let remaining = args.map((_, index) => index);
+	const consumed = new Set<number>();
+	for (const [depth, ancestor] of ancestors.entries()) {
+		for (let cursor = 0; cursor < remaining.length; cursor++) {
+			const index = remaining[cursor];
+			if (index === undefined) continue;
+			const argument = args[index] ?? "";
+			if (argument === "--") break;
+			const inline = argument.startsWith("--") && argument.includes("=");
+			const attached = /^-[^-].+/.test(argument);
+			const flag = inline ? argument.slice(0, argument.indexOf("=")) : attached ? argument.slice(0, 2) : argument;
+			const option = ancestor.options.find((option) => option.long === flag || option.short === flag);
+			if (!option || ((inline || attached) && !option.required && !option.optional)) continue;
+			consumed.add(index);
+			if (!inline && !attached && (option.required || option.optional)) {
+				const valueIndex = remaining[cursor + 1];
+				const value = valueIndex === undefined ? undefined : args[valueIndex];
+				const negativeNumber =
+					/^-(\d+|\d*\.\d+)(e[+-]?\d+)?$/.test(value ?? "") &&
+					!ancestors
+						.slice(0, depth + 1)
+						.some((parent) => parent.options.some((option) => /^-\d$/.test(option.short ?? "")));
+				if (
+					valueIndex !== undefined &&
+					(option.required || !value?.startsWith("-") || value === "-" || negativeNumber)
+				) {
+					consumed.add(valueIndex);
+					cursor++;
+				}
+			}
+		}
+		remaining = remaining.filter((index) => !consumed.has(index));
+	}
+	return consumed;
+}
+
 /** Reads the window options of the running command, or reports why they are invalid and returns null. */
 export function parseListWindow(
 	options: ListWindowOptions,
@@ -112,6 +150,7 @@ export function parseListWindow(
 		count: Boolean(options.count),
 		forcesText: Boolean(options.count) || maxCount !== undefined || skip !== undefined,
 		commandArgs,
+		ancestorArgs: ancestorArgumentIndexes(command, commandArgs),
 		valueFlags: new Set(
 			command.options
 				.filter((option) => option.required)
@@ -162,20 +201,29 @@ export function nextPageCommand(window: ListWindow, nextSkip: number): string {
 	const args = window.commandArgs;
 	const kept: string[] = [];
 	let afterSeparator: readonly string[] = [];
+	const nextValueIndex = (index: number) => {
+		let next = index + 1;
+		while (window.ancestorArgs.has(next)) kept.push(args[next++] ?? "");
+		return next;
+	};
 	for (let index = 0; index < args.length; index++) {
 		const argument = args[index] ?? "";
+		if (window.ancestorArgs.has(index)) {
+			kept.push(argument);
+			continue;
+		}
 		if (argument === "--") {
 			afterSeparator = args.slice(index);
 			break;
 		}
 		if (argument === "--skip") {
-			index++;
+			index = nextValueIndex(index);
 			continue;
 		}
 		if (argument.startsWith("--skip=")) continue;
 		kept.push(argument);
 		if (window.valueFlags.has(argument) && index + 1 < args.length) {
-			index++;
+			index = nextValueIndex(index);
 			kept.push(args[index] ?? "");
 		}
 	}

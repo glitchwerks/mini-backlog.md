@@ -203,6 +203,17 @@ describe("CLI list windows", () => {
 		expect(joinGroupedWindows(separated)).toEqual(printedLines((await runCli(["doc", "list", "--plain"])).stdout));
 	});
 
+	it("keeps the search value when an ancestor flag is interleaved before it", async () => {
+		const args = ["task", "list", "--search", "--plain", "--skip", "--status", "To Do"];
+		const complete = await runCli(args);
+		expect(complete.exitCode).toBe(0);
+		expect(idsIn(complete.stdout, /TASK-\d+/g)).toEqual(["TASK-1", "TASK-3", "TASK-4"]);
+		const windows = await followWindows([...args, "--max-count", "1"]);
+		expect(windows).toHaveLength(3);
+		expect(windows[0]).toContain("--max-count 1 --skip 1");
+		expect(joinGroupedWindows(windows)).toEqual(printedLines(complete.stdout));
+	});
+
 	it("prints only the number of listed items with --count", async () => {
 		expect((await runCli(["task", "list", "--count"])).stdout).toBe("5\n");
 		expect((await runCli(["task", "list", "--status", "To Do", "--count"])).stdout).toBe("3\n");

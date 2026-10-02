@@ -99,6 +99,53 @@ describe("list windows", () => {
 		);
 	});
 
+	it("preserves operands across ancestor options removed before subcommand parsing", () => {
+		const root = new Command("backlog").option("-c, --config <path>").option("--color [value]");
+		const task = root.command("task").option("--plain").option("--no-color");
+		const list = addListWindowOptions(task.command("list").option("-q, --search <query>"));
+		const cases = [
+			{ values: ["--search", "--plain", "--skip"], search: "--skip" },
+			{ values: ["--search", "--plain", "--plain", "--skip"], search: "--skip" },
+			{ values: ["--search", "--config", "--skip", "--skip"], search: "--skip" },
+			{ values: ["-q", "-c", "settings.yml", "--skip"], search: "--skip" },
+			{ values: ["--search", "-csettings.yml", "--skip"], search: "--skip" },
+			{ values: ["--search", "--config=settings.yml", "--skip"], search: "--skip" },
+			{ values: ["--search", "--color", "always", "--skip"], search: "--skip" },
+			{ values: ["--search", "--color", "-2", "--skip"], search: "--skip" },
+			{ values: ["--search", "--color", "--no-color", "--skip"], search: "--skip" },
+			{ values: ["--search", "--plain", "--"], search: "--" },
+			{ values: ["--search=--plain"], search: "--plain" },
+			{ values: ["--search=--skip", "--skip", "--plain", "2"], search: "--skip" },
+			{ values: ["--search", "--config", "settings.yml", "--plain", "--skip"], search: "--skip" },
+		];
+		for (const { values, search } of cases) {
+			const args = ["task", "list", ...values, "--max-count", "1", "--skip", "3"];
+			root.parse(args, { from: "user" });
+			expect(list.opts().search).toBe(search);
+			const parentOptions = [{ ...root.opts() }, { ...task.opts() }];
+			const window = parseListWindow(list.opts(), list, args);
+			if (!window) throw new Error("Missing window");
+			const next = nextPageCommand(window, 4);
+			expect(next).toContain("--max-count 1 --skip 4");
+			const words = next
+				.match(/'[^']*'|\S+/g)
+				?.slice(1)
+				.map((word) => word.replace(/^'|'$/g, ""));
+			if (!words) throw new Error("Missing next command");
+			root.parse(words, { from: "user" });
+			expect(list.opts()).toMatchObject({ search, maxCount: "1", skip: "4" });
+			expect([root.opts(), task.opts()]).toEqual(parentOptions);
+		}
+		// A numeric short option disables Commander's optional negative-number operand handling.
+		root.option("-1, --numeric-mode");
+		const args = ["task", "list", "--search", "--color", "-2", "--max-count", "1"];
+		root.parse(args, { from: "user" });
+		expect(list.opts().search).toBe("-2");
+		const window = parseListWindow(list.opts(), list, args);
+		if (!window) throw new Error("Missing window");
+		expect(nextPageCommand(window, 4)).toBe("backlog task list --search --color -2 --max-count 1 --skip 4");
+	});
+
 	it("accepts a positive max-count, a non-negative skip, and count without JSON", () => {
 		const args = ["task", "list"];
 		expect(parseListWindow({}, taskListCommand(), args)).toMatchObject({

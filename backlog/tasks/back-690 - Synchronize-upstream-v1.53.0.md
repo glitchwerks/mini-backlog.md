@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-02 16:17'
-updated_date: '2026-10-02 17:34'
+updated_date: '2026-10-02 17:52'
 labels: []
 dependencies: []
 references:
@@ -42,6 +42,8 @@ Track GitHub issue #8: incorporate the upstream v1.53.0 release while retaining 
 PR9 watcher follow-up: reproduce root backlog.config.yml backlog_directory switching with a failing functional watch test; re-resolve watcher directories and stat inputs only on refresh; verify new-directory edits/additions/removals, missing directories, cleanup and idle stat-only behavior. Sources: src/cli.ts:L3068-L3090; src/commands/watch-json.ts:L135-L160; https://github.com/glitchwerks/mini-backlog.md/pull/9#discussion_r4167786294 (fetched 2026-10-02).
 
 PR9 root-config creation follow-up: reproduce adding a previously absent root config during watch startup from folder-local config, then subscribe nonrecursively to project root and stat the root-config candidate using DEFAULT_FILES.ROOT_CONFIG. Keep task-directory inputs unchanged and avoid scanning root contents. Reverify watcher lifecycle, mini surface and compiled smoke. Sources: src/cli.ts:L3068-L3093; src/utils/backlog-directory.ts:L209-L217; src/constants/index.ts:L40; https://github.com/glitchwerks/mini-backlog.md/pull/9#discussion_r4168165425 (fetched 2026-10-02).
+
+PR9 pagination follow-up: reproduce full CLI Next footer when ancestor --plain occurs between --search and literal --skip; verify Commander ancestor parsing before minimal reconstruction fix. Add unit coverage for ancestor boolean/required/optional/negated flags, repeated flags, aliases, inline values and separator; execute actual footer to preserve filters/window. Sources: src/utils/list-window.ts:L27-L31,L115-L118,L177-L202; src/test/cli-list-window.test.ts:L204-L218; https://github.com/glitchwerks/mini-backlog.md/pull/9#discussion_r4168247311 (fetched 2026-10-02).
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -66,6 +68,10 @@ Isolated full mini-cli-surface rerun with local --timeout=60000: 88 pass, 0 fail
 Second PR9 watcher feedback reproduced after settling startup notifications: creating previously absent root backlog.config.yml timed out awaiting changed list, while preexisting-root case passed. Fix adds project-root nonrecursive subscription and stat input join(cwd, DEFAULT_FILES.ROOT_CONFIG); periodic signature never reads/scans repository contents. Parameterized functional regression covers both root-config creation and modification, then replacement-directory create/edit/add/remove and obsolete path suppression. GREEN: 19 watcher tests passed, 1 Windows symlink skip; TypeScript and scoped CRLF-aware Biome passed. Full mini CLI surface --timeout=60000 passed all 88 tests (excluded decision search 16.977s); source-only build and independent compiled CLI/browser/MCP smoke passed. Accepted Nix missing ../web/index.html and prior unrelated baselines remain unchanged. DoD #2 remains unchecked.
 
 Root-config creation delta independent review returned ready with no findings. Parent independently reran both root-config functional cases to completion: 2 pass, 0 fail, exit 0 (11.17s).
+
+Third PR9 feedback RED: actual full task list --search --plain --skip --status To Do --max-count 1 matched three filtered tasks, but executing footer Next produced two windows and changed query/window. Commander removes ancestor --plain before child consumes literal --skip; adding ancestor valueFlags alone would not solve it. Fix tracks ancestor-consumed argv indices then preserves those tokens/order while finding child option operands, replacing only true pagination skip. Actual Commander equivalence unit cases cover nested ancestors, repeated boolean flags, required operand named --skip, short alias/attached value, long inline value, optional operands including negative numbers and digit-short exclusion, negated flags, child inline values resembling parent flags, and literal --. Functional footer replay verifies identical filters/status/page-size and complete three-window result. Mini pagination remains excluded; 15 paging rejection tests passed. TypeScript/scoped CRLF Biome passed; final 22 upstream unit/integration rerun in progress. No CLI source or public surface changes; accepted Nix exception retained.
+
+Final pagination verification: 22 upstream unit/full-CLI integration tests passed with 192 assertions, 0 failures; final explicit numeric-short boundary unit rerun passed 9 tests with 113 assertions. 15 mini paging rejection tests passed. TypeScript, scoped CRLF-aware Biome, and git diff --check passed. Independent reviewer confirmed optional-negative mismatch resolved and returned ready with no actionable findings; parent independently passed 9 unit tests/113 assertions and TypeScript and inspected diff. No CLI/public allowlist changes; accepted Nix missing embedded asset and prior unrelated baselines remain unchanged, DoD #2 remains unchecked.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -76,4 +82,6 @@ Integrated upstream v1.53.0 while preserving mini restrictions, full init/instru
 Addressed PR9 watcher reconfiguration feedback: paths and subscriptions now follow changed root backlog configuration while idle reconciliation remains stat-only. Verified failing functional reproduction then 18 watcher passes/1 platform skip, 88 mini CLI surface passes, remaining contract suites, TypeScript, scoped CRLF Biome, source-only build and independent compiled CLI/browser/MCP smoke. Recorded unchanged CRLF workflow test and variable local decision-search timeouts; Nix exception retained.
 
 Handled newly created root config during JSON watch: always subscribe to project-root notifications and stat root-config candidate; verified RED/GREEN absent/present-root regression, 19 watcher passes/1 skip, 88 mini surface passes, TypeScript/Biome and compiled CLI/browser/MCP smoke.
+
+Fixed full CLI pagination footer reconstruction when ancestor flags occur between child options and operands. Verified actual failing footer replay then 22 upstream paging passes, 15 mini paging rejection passes, TypeScript/Biome, independent review and parent unit verification. Ancestor flag order/values and literal query --skip are preserved while pagination advances.
 <!-- SECTION:FINAL_SUMMARY:END -->
