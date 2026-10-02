@@ -18,7 +18,7 @@ Use the restricted commands exposed by this installation:
 - Search with \`backlog search "query" --plain\` and \`backlog task list --plain\`.
 - Inspect a task with \`backlog task view TASK-123 --plain\`.
 - Create a task with \`backlog task create "Title" -d "Why it matters" --ac "Testable outcome"\`.
-- Update a task with \`backlog task edit TASK-123 -s "In Progress" -a @your-name\`.
+- Update a task with \`backlog task edit TASK-123 -s "<active status>" -a @your-name\`.
 - Record durable discussion with \`backlog task edit TASK-123 --comment "Update" --comment-author @your-name\`.
 - Finish a terminal-status task with \`backlog task complete TASK-123\` when requested.
 

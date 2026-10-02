@@ -162,6 +162,8 @@ describe("shipped mini CLI surface", () => {
 			const content = await Bun.file(join(dir, ".claude", "agents", "project-manager-backlog.md")).text();
 			expect(content).toContain("backlog instructions overview");
 			expect(content).toContain("backlog task create");
+			expect(content).toContain('backlog task edit TASK-123 -s "<active status>" -a @your-name');
+			expect(content).not.toContain('backlog task edit TASK-123 -s "In Progress"');
 			for (const excluded of ["--plan", "--notes", "--parent", "backlog task <id>", "backlog task archive"]) {
 				expect(content).not.toContain(excluded);
 			}
