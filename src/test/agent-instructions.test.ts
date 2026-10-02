@@ -391,6 +391,18 @@ describe("addAgentInstructions", () => {
 		expect(content.indexOf(versionMarker)).toBeLessThan(content.indexOf("<!-- BACKLOG.MD MCP GUIDELINES END -->"));
 	});
 
+	it("installs mini MCP guidance using only tools available on the restricted surface", async () => {
+		await ensureMcpGuidelines(TEST_DIR, "AGENTS.md", "mini");
+		const content = await Bun.file(join(TEST_DIR, "AGENTS.md")).text();
+
+		for (const tool of ["task_list", "task_search", "task_view", "document_list", "milestone_list"]) {
+			expect(content).toContain(tool);
+		}
+		for (const unavailable of ["backlog://workflow/overview", "get_backlog_instructions", "backlog://init-required"]) {
+			expect(content).not.toContain(unavailable);
+		}
+	});
+
 	it("replaces MCP nudge with CLI guidelines when switching modes", async () => {
 		const agentsPath = join(TEST_DIR, "AGENTS.md");
 		const mcpBlock = [

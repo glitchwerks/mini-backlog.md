@@ -80,17 +80,44 @@ describe("shipped mini CLI surface", () => {
 		expect(result.stderr.toString()).not.toContain("Definition of Done");
 	});
 
-	it("initializes a new project with the full production init command", async () => {
+	it("publishes a prompt-free init command that initializes a fresh directory", async () => {
 		const dir = await mkdtemp(join(tmpdir(), "mini-init-"));
 		try {
-			const result = await $`bun ${MINI_CLI_PATH} init "Mini Init" --defaults --no-git --integration-mode none`
+			const guide = await runMini("instructions", "init-required");
+			const command = 'backlog init "Project Name" --defaults --no-git --integration-mode none';
+
+			expect(guide.exitCode).toBe(0);
+			expect(guide.stdout.toString()).toContain(command);
+
+			const result = await $`bun ${MINI_CLI_PATH} init "Project Name" --defaults --no-git --integration-mode none`
 				.cwd(dir)
 				.quiet()
 				.nothrow();
 
 			expect(result.exitCode).toBe(0);
 			expect(await Bun.file(join(dir, "backlog", "config.yml")).exists()).toBe(true);
-			expect(result.stdout.toString()).toContain("Initialized backlog project: Mini Init");
+			expect(result.stdout.toString()).toContain("Initialized backlog project: Project Name");
+		} finally {
+			await safeCleanup(dir);
+		}
+	});
+
+	it("installs mini-compatible Claude agent guidance through init", async () => {
+		const dir = await mkdtemp(join(tmpdir(), "mini-init-claude-agent-"));
+		try {
+			const result =
+				await $`bun ${MINI_CLI_PATH} init "Mini Agent" --defaults --no-git --integration-mode cli --install-claude-agent true`
+					.cwd(dir)
+					.quiet()
+					.nothrow();
+
+			expect(result.exitCode).toBe(0);
+			const content = await Bun.file(join(dir, ".claude", "agents", "project-manager-backlog.md")).text();
+			expect(content).toContain("backlog instructions overview");
+			expect(content).toContain("backlog task create");
+			for (const excluded of ["--plan", "--notes", "--parent", "backlog task <id>", "backlog task archive"]) {
+				expect(content).not.toContain(excluded);
+			}
 		} finally {
 			await safeCleanup(dir);
 		}
@@ -107,7 +134,9 @@ describe("shipped mini CLI surface", () => {
 		expect(index.stdout.toString()).toContain("backlog instructions task-finalization");
 		expect(index.stdout.toString()).toContain("backlog instructions init-required");
 		expect(overview.stdout.toString()).toContain("Backlog.md Overview (CLI)");
-		expect(initRequired.stdout.toString()).toContain("backlog init --defaults");
+		expect(initRequired.stdout.toString()).toContain(
+			'backlog init "Project Name" --defaults --no-git --integration-mode none',
+		);
 	});
 
 	it("explains when mini agents should create tasks", async () => {
@@ -126,7 +155,10 @@ describe("shipped mini CLI surface", () => {
 		["task-creation", ["backlog task create", "--ac"]],
 		["task-execution", ["backlog task view", "backlog task edit", "--comment"]],
 		["task-finalization", ["--check-ac", "backlog task complete"]],
-		["init-required", ["backlog init --defaults", "backlog instructions overview"]],
+		[
+			"init-required",
+			['backlog init "Project Name" --defaults --no-git --integration-mode none', "backlog instructions overview"],
+		],
 	] as const)("publishes mini-compatible %s guidance", async (guide, expectedCommands) => {
 		const result = await runMini("instructions", guide);
 		const output = result.stdout.toString();

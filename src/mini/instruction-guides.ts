@@ -112,8 +112,8 @@ Do not check acceptance criteria from code presence or intent alone. Do not star
 
 This directory does not have Backlog.md initialized.
 
-Run \`backlog init\` for interactive setup or \`backlog init --defaults\` for non-interactive defaults. For a local
-project without Git, run \`backlog init --no-git\`.
+Run \`backlog init\` for interactive setup. For prompt-free initialization with explicit Git and integration choices,
+run \`backlog init "Project Name" --defaults --no-git --integration-mode none\`.
 
 After initialization, run \`backlog instructions overview\` and follow the matching task guide.`,
 } satisfies Readonly<Record<InstructionGuideKey, string>>);

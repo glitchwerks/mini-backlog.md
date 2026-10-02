@@ -1578,7 +1578,7 @@ addHelpSchema(program.command("init [projectName]"), {
 								if (!instructionFile) {
 									return;
 								}
-								const nudgeResult = await ensureMcpGuidelines(cwd, instructionFile);
+								const nudgeResult = await ensureMcpGuidelines(cwd, instructionFile, getActiveSurfaceMode());
 								if (nudgeResult.changed) {
 									mcpGuidelineUpdates.push(nudgeResult);
 								}
@@ -1688,6 +1688,7 @@ addHelpSchema(program.command("init [projectName]"), {
 					mcpClients: [], // MCP clients are handled separately in CLI with interactive prompts
 					agentInstructions: agentFiles,
 					installClaudeAgent: installClaudeAgentSelection,
+					surfaceMode: getActiveSurfaceMode(),
 					advancedConfig: {
 						checkActiveBranches: advancedConfig.checkActiveBranches,
 						remoteOperations: advancedConfig.remoteOperations,

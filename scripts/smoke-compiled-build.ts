@@ -137,7 +137,10 @@ try {
 		});
 	}
 	assert.match(await run("instructions", "overview"), /Backlog\.md Overview \(CLI\)/);
-	assert.match(await run("instructions", "init-required"), /backlog init --defaults/);
+	assert.match(
+		await run("instructions", "init-required"),
+		/backlog init "Project Name" --defaults --no-git --integration-mode none/,
+	);
 	assert.match(
 		await run("init", "Compiled smoke", "--defaults", "--no-git", "--integration-mode", "none"),
 		/Initialized backlog project: Compiled smoke/,
