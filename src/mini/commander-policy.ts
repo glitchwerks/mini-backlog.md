@@ -1,5 +1,7 @@
 import type { Argument, Command } from "commander";
-import { MINI_CLI_DESCRIPTIONS, MINI_CLI_OPTIONS } from "./surface-policy.ts";
+import { MINI_CLI_DESCRIPTIONS, MINI_CLI_OPTIONS, MINI_INTERNAL_CLI_PATHS } from "./surface-policy.ts";
+
+const MINI_INTERNAL_CLI_PATH_SET = new Set<string>(MINI_INTERNAL_CLI_PATHS);
 
 const MINI_OPTION_DESCRIPTIONS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
 	search: { "--type": "limit results to type (task, document)" },
@@ -21,7 +23,8 @@ function walkCommands(command: Command): Command[] {
 }
 
 function hasAllowedPath(path: string, childName: string): boolean {
-	return Object.hasOwn(MINI_CLI_OPTIONS, path ? `${path} ${childName}` : childName);
+	const childPath = path ? `${path} ${childName}` : childName;
+	return Object.hasOwn(MINI_CLI_OPTIONS, childPath) || MINI_INTERNAL_CLI_PATH_SET.has(childPath);
 }
 
 function findCommand(program: Command, path: string): Command | undefined {
@@ -43,22 +46,24 @@ export function applyMiniCommanderPolicy(program: Command): void {
 	pruneChildren(program, "");
 	for (const command of walkCommands(program)) {
 		const path = commandPath(command);
+		const isInternal = MINI_INTERNAL_CLI_PATH_SET.has(path);
 		const allowed = new Set<string>(MINI_CLI_OPTIONS[path as keyof typeof MINI_CLI_OPTIONS] ?? []);
 		const optionDescriptions = MINI_OPTION_DESCRIPTIONS[path];
 		const options = command.options as NonNullable<Command["options"]> extends readonly (infer T)[] ? T[] : never;
 		options.splice(0, options.length, ...options.filter((option) => option.long && allowed.has(option.long)));
 		(command as Command & { _aliases: string[] })._aliases.splice(0);
-		const eventEmitter = command as Command & { removeAllListeners(event: string): void };
-		for (const event of ["beforeHelp", "afterHelp", "beforeAllHelp", "afterAllHelp"])
-			eventEmitter.removeAllListeners(event);
-		command.description(MINI_CLI_DESCRIPTIONS[path as keyof typeof MINI_CLI_DESCRIPTIONS]);
-		command.helpOption("--help", "display help for command");
+		if (isInternal) (command as Command & { _hidden: boolean })._hidden = true;
+		if (path !== "init" && path !== "instructions") {
+			const eventEmitter = command as Command & { removeAllListeners(event: string): void };
+			for (const event of ["beforeHelp", "afterHelp", "beforeAllHelp", "afterAllHelp"])
+				eventEmitter.removeAllListeners(event);
+		}
+		const description = MINI_CLI_DESCRIPTIONS[path as keyof typeof MINI_CLI_DESCRIPTIONS];
+		if (description) command.description(description);
+		command.helpOption("-h, --help", "display help for command");
 		command.addHelpCommand(false);
 		if (path === "task") (command.registeredArguments as Argument[]).splice(0);
 		for (const option of command.options) {
-			const longFlagIndex = option.flags.indexOf("--");
-			if (longFlagIndex >= 0) option.flags = option.flags.slice(longFlagIndex);
-			option.short = undefined;
 			const miniDescription = option.long ? optionDescriptions?.[option.long] : undefined;
 			if (miniDescription) option.description = miniDescription;
 		}

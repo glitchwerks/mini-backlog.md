@@ -28,9 +28,8 @@ describe("mini Commander policy", () => {
 		expect(program.commands[0]?.aliases()).toEqual([]);
 		const create = program.commands[0]?.commands[0];
 		expect(create?.options.map((option) => option.long)).toEqual(["--description"]);
-		expect(create?.options[0]?.short).toBeUndefined();
-		expect(create?.helpInformation()).toContain("--description <text>");
-		expect(create?.helpInformation()).not.toContain("-d,");
+		expect(create?.options[0]?.short).toBe("-d");
+		expect(create?.helpInformation()).toContain("-d, --description <text>");
 		expect(create?.registeredArguments[0]?.required).toBe(true);
 		expect(Object.isFrozen(MINI_CLI_OPTIONS)).toBe(true);
 		expect(Object.values(MINI_CLI_OPTIONS).every(Object.isFrozen)).toBe(true);

@@ -6,7 +6,12 @@ import { createInterface } from "node:readline/promises";
 import * as clack from "@clack/prompts";
 import { Command, type OptionValues } from "commander";
 import { runAdvancedConfigWizard } from "./commands/advanced-config-wizard.ts";
-import { type CompletionInstallResult, installCompletion, registerCompletionCommand } from "./commands/completion.ts";
+import {
+	type CompletionInstallResult,
+	formatCompletionInstallFailure,
+	installCompletion,
+	registerCompletionCommand,
+} from "./commands/completion.ts";
 import { configureAdvancedSettings } from "./commands/configure-advanced-settings.ts";
 import {
 	addHelpSchema,
@@ -1160,6 +1165,7 @@ addHelpSchema(program.command("init [projectName]"), {
 					if (value === undefined) return defaultValue;
 					return value.toLowerCase() === "true" || value === "1";
 				};
+				const installClaudeAgentRequested = parseBoolean(options.installClaudeAgent, false);
 
 				// Helper function to parse number strings
 				const parseNumber = (value: string | undefined, defaultValue: number): number => {
@@ -1399,6 +1405,40 @@ addHelpSchema(program.command("init [projectName]"), {
 				let integrationMode: IntegrationMode | null = integrationOption ?? (isNonInteractive ? "cli" : null);
 				const mcpServerName = MCP_SERVER_NAME;
 				type AgentSelection = AgentSelectionValue;
+				const agentInstructionNameMap: Record<string, AgentSelection> = {
+					cursor: "AGENTS.md",
+					claude: "CLAUDE.md",
+					agents: "AGENTS.md",
+					gemini: "GEMINI.md",
+					copilot: ".github/copilot-instructions.md",
+					none: "none",
+					"CLAUDE.md": "CLAUDE.md",
+					"AGENTS.md": "AGENTS.md",
+					"GEMINI.md": "GEMINI.md",
+					".github/copilot-instructions.md": ".github/copilot-instructions.md",
+				};
+				let requestedAgentSelection: ReturnType<typeof processAgentSelection> | undefined;
+				if (options.agentInstructions) {
+					const requestedInstructions = options.agentInstructions.split(",").map((value) => value.trim().toLowerCase());
+					const mappedFiles: AgentSelection[] = [];
+
+					for (const instruction of requestedInstructions) {
+						const mappedFile = agentInstructionNameMap[instruction];
+						if (!mappedFile) {
+							console.error(`Invalid agent instruction: ${instruction}`);
+							console.error("Valid options are: cursor, claude, agents, gemini, copilot, none");
+							process.exit(1);
+						}
+						mappedFiles.push(mappedFile);
+					}
+
+					requestedAgentSelection = processAgentSelection({ selected: mappedFiles });
+					if (requestedAgentSelection.needsRetry) {
+						console.error("Please select at least one agent instruction file before continuing.");
+						process.exit(1);
+					}
+				}
+				const agentInstructionFilesRequested = (requestedAgentSelection?.files.length ?? 0) > 0;
 				let agentFiles: AgentInstructionFile[] = [];
 				let agentInstructionsSkipped = false;
 				let mcpClientSetupSummary: string | undefined;
@@ -1407,19 +1447,19 @@ addHelpSchema(program.command("init [projectName]"), {
 				if (
 					!integrationOption &&
 					integrationMode === "mcp" &&
-					(options.agentInstructions || options.installClaudeAgent)
+					(agentInstructionFilesRequested || installClaudeAgentRequested)
 				) {
 					integrationMode = "cli";
 				}
 
-				if (integrationMode === "mcp" && (options.agentInstructions || options.installClaudeAgent)) {
+				if (integrationMode === "mcp" && (agentInstructionFilesRequested || installClaudeAgentRequested)) {
 					console.error(
 						"The MCP connector option cannot be combined with --agent-instructions or --install-claude-agent.",
 					);
 					process.exit(1);
 				}
 
-				if (integrationMode === "none" && (options.agentInstructions || options.installClaudeAgent)) {
+				if (integrationMode === "none" && (agentInstructionFilesRequested || installClaudeAgentRequested)) {
 					console.error(
 						"Skipping AI integration cannot be combined with --agent-instructions or --install-claude-agent.",
 					);
@@ -1463,40 +1503,9 @@ addHelpSchema(program.command("init [projectName]"), {
 					}
 
 					if (integrationMode === "cli") {
-						if (options.agentInstructions) {
-							const nameMap: Record<string, AgentSelection> = {
-								cursor: "AGENTS.md",
-								claude: "CLAUDE.md",
-								agents: "AGENTS.md",
-								gemini: "GEMINI.md",
-								copilot: ".github/copilot-instructions.md",
-								none: "none",
-								"CLAUDE.md": "CLAUDE.md",
-								"AGENTS.md": "AGENTS.md",
-								"GEMINI.md": "GEMINI.md",
-								".github/copilot-instructions.md": ".github/copilot-instructions.md",
-							};
-
-							const requestedInstructions = options.agentInstructions.split(",").map((f) => f.trim().toLowerCase());
-							const mappedFiles: AgentSelection[] = [];
-
-							for (const instruction of requestedInstructions) {
-								const mappedFile = nameMap[instruction];
-								if (!mappedFile) {
-									console.error(`Invalid agent instruction: ${instruction}`);
-									console.error("Valid options are: cursor, claude, agents, gemini, copilot, none");
-									process.exit(1);
-								}
-								mappedFiles.push(mappedFile);
-							}
-
-							const { files, needsRetry, skipped } = processAgentSelection({ selected: mappedFiles });
-							if (needsRetry) {
-								console.error("Please select at least one agent instruction file before continuing.");
-								process.exit(1);
-							}
-							agentFiles = files;
-							agentInstructionsSkipped = skipped;
+						if (requestedAgentSelection) {
+							agentFiles = requestedAgentSelection.files;
+							agentInstructionsSkipped = requestedAgentSelection.skipped;
 						} else if (isNonInteractive) {
 							agentFiles = ["AGENTS.md"];
 						} else {
@@ -1578,7 +1587,7 @@ addHelpSchema(program.command("init [projectName]"), {
 								if (!instructionFile) {
 									return;
 								}
-								const nudgeResult = await ensureMcpGuidelines(cwd, instructionFile);
+								const nudgeResult = await ensureMcpGuidelines(cwd, instructionFile, getActiveSurfaceMode());
 								if (nudgeResult.changed) {
 									mcpGuidelineUpdates.push(nudgeResult);
 								}
@@ -1638,8 +1647,7 @@ addHelpSchema(program.command("init [projectName]"), {
 
 				if (isNonInteractive) {
 					advancedConfig = applyAdvancedOptionOverrides();
-					installClaudeAgentSelection =
-						integrationMode === "cli" ? parseBoolean(options.installClaudeAgent, false) : false;
+					installClaudeAgentSelection = integrationMode === "cli" ? installClaudeAgentRequested : false;
 				} else {
 					const advancedPrompt = await clack.confirm({
 						message: "Configure advanced settings now? (Runs the advanced backlog config wizard)",
@@ -1688,6 +1696,7 @@ addHelpSchema(program.command("init [projectName]"), {
 					mcpClients: [], // MCP clients are handled separately in CLI with interactive prompts
 					agentInstructions: agentFiles,
 					installClaudeAgent: installClaudeAgentSelection,
+					surfaceMode: getActiveSurfaceMode(),
 					advancedConfig: {
 						checkActiveBranches: advancedConfig.checkActiveBranches,
 						remoteOperations: advancedConfig.remoteOperations,
@@ -1798,7 +1807,7 @@ addHelpSchema(program.command("init [projectName]"), {
 							(config.definitionOfDone ?? []).length > 0 ? config.definitionOfDone?.join(" | ") : muted("none")
 						}`,
 					);
-				} else {
+				} else if (getActiveSurfaceMode() === "full") {
 					summaryLines.push(`${label("Advanced settings:")} ${muted("unchanged (run `backlog config` to customize)")}`);
 				}
 				clack.note(summaryLines.join("\n"), "Initialization Summary");
@@ -1813,13 +1822,7 @@ addHelpSchema(program.command("init [projectName]"), {
 						`Shell completions installed (${completionInstallResult.shell})`,
 					);
 				} else if (completionInstallError) {
-					const indentedError = completionInstallError
-						.split("\n")
-						.map((line) => `  ${line}`)
-						.join("\n");
-					console.warn(
-						`⚠️  Shell completion installation failed:\n${indentedError}\n  Run \`backlog completion install\` later to retry.\n`,
-					);
+					console.warn(formatCompletionInstallFailure(completionInstallError, getActiveSurfaceMode()));
 				}
 
 				// Log init result
@@ -1849,12 +1852,12 @@ addHelpSchema(program.command("init [projectName]"), {
 						// Ensure git ops are ready (config not strictly required for this check)
 						const hasRemotes = await core.gitOps.hasAnyRemote();
 						if (!hasRemotes) {
+							const remoteAction =
+								getActiveSurfaceMode() === "full"
+									? "Remote features will be skipped until a remote is added (e.g., 'git remote add origin <url>') or disable remoteOperations via 'backlog config set remoteOperations false'."
+									: "Remote features will be skipped until a remote is added (e.g., 'git remote add origin <url>').";
 							console.warn(
-								[
-									"Warning: remoteOperations is enabled but no git remotes are configured.",
-									"Remote features will be skipped until a remote is added (e.g., 'git remote add origin <url>')",
-									"or disable remoteOperations via 'backlog config set remoteOperations false'.",
-								].join(" "),
+								["Warning: remoteOperations is enabled but no git remotes are configured.", remoteAction].join(" "),
 							);
 						}
 					}
@@ -5166,13 +5169,7 @@ const configCmd = addHelpSchema(program.command("config"), {
 					].join("\n"),
 				);
 			} else if (completionError) {
-				const indentedError = completionError
-					.split("\n")
-					.map((line) => `  ${line}`)
-					.join("\n");
-				console.warn(
-					`⚠️  Shell completion installation failed:\n${indentedError}\n  Run \`backlog completion install\` later to retry.\n`,
-				);
+				console.warn(formatCompletionInstallFailure(completionError, getActiveSurfaceMode()));
 			}
 			console.log("\nUse `backlog config list` to review all configuration values.");
 		} catch (err) {

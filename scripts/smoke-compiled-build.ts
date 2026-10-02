@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -114,18 +114,27 @@ async function verifyBrowser(): Promise<void> {
 try {
 	const help = await run("--help");
 	assert.match(help, /mini-backlog\.md/);
+	const commandSection = help.split("Commands:\n")[1] ?? "";
 	assert.deepEqual(
-		help
-			.split("Commands:\n")[1]
-			?.trim()
+		commandSection
 			.split("\n")
+			.filter((line) => /^ {2}\S/.test(line))
 			.map((line) => line.trim().split(/\s/)[0])
 			.sort(),
-		["browser", "doc", "mcp", "milestone", "search", "task"],
+		["browser", "doc", "init", "instructions", "mcp", "milestone", "search", "task"],
 	);
+	assert.deepEqual((await run("completion", "__complete", "backlog ", "8")).trim().split("\n").sort(), [
+		"browser",
+		"doc",
+		"init",
+		"instructions",
+		"mcp",
+		"milestone",
+		"search",
+		"task",
+	]);
 	assert.equal((await run("--version")).trim(), expectedVersion);
 	for (const args of [
-		["init"],
 		["board"],
 		["help"],
 		["--plain"],
@@ -137,15 +146,16 @@ try {
 			return failure.code === 1 && Boolean(failure.stderr?.includes("error:"));
 		});
 	}
-	// Mini intentionally has no initializer. Seed the durable project format directly.
-	for (const directory of ["tasks", "drafts", "completed", "docs", "milestones"]) {
-		await mkdir(join(smokeRoot, "backlog", directory), { recursive: true });
-	}
-	await Bun.write(
-		join(smokeRoot, "backlog/config.yml"),
-		'project_name: "Compiled smoke"\nstatuses: ["To Do", "In Progress", "Done"]\ndefault_status: "To Do"\nlabels: []\nfilesystem_only: true\nremote_operations: false\ncheck_active_branches: false\n',
+	assert.match(await run("instructions", "overview"), /Backlog\.md Overview \(CLI\)/);
+	assert.match(
+		await run("instructions", "init-required"),
+		/backlog init "Project Name" --defaults --no-git --integration-mode none/,
 	);
-	await run("task", "create", "Smoke task");
+	assert.match(
+		await run("init", "Compiled smoke", "--defaults", "--no-git", "--integration-mode", "none"),
+		/Initialized backlog project: Compiled smoke/,
+	);
+	await run("task", "create", "Smoke task", "-d", "Created with the production short alias");
 	const list = JSON.parse(await run("task", "list", "--json"));
 	assert.equal(list.tasks.length, 1);
 	const id = list.tasks[0].id;

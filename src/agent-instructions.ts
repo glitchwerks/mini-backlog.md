@@ -2,8 +2,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CLAUDE_AGENT_CONTENT, CLI_AGENT_NUDGE, MCP_AGENT_NUDGE, README_GUIDELINES } from "./constants/index.ts";
+import { CLI_AGENT_NUDGE, README_GUIDELINES } from "./constants/index.ts";
 import type { GitOperations } from "./git/operations.ts";
+import { getIntegrationGuidance } from "./mini/integration-guidance.ts";
+import type { SurfaceMode } from "./mini/runtime.ts";
 import { getVersion } from "./utils/version.ts";
 
 export type AgentInstructionFile =
@@ -228,6 +230,7 @@ export interface EnsureMcpGuidelinesResult {
 export async function ensureMcpGuidelines(
 	projectRoot: string,
 	fileName: AgentInstructionFile,
+	surface: SurfaceMode = "full",
 ): Promise<EnsureMcpGuidelinesResult> {
 	const filePath = join(projectRoot, fileName);
 	const fileExists = existsSync(filePath);
@@ -255,7 +258,7 @@ export async function ensureMcpGuidelines(
 		}
 	}
 
-	const nudgeBlock = wrapWithMarkers(MCP_AGENT_NUDGE, await getVersion(), "mcp");
+	const nudgeBlock = wrapWithMarkers(getIntegrationGuidance(surface).mcpAgentNudge, await getVersion(), "mcp");
 	let nextContent: string;
 	if (insertIndex !== null) {
 		const normalizedIndex = Math.max(0, Math.min(insertIndex, existing.length));
@@ -282,7 +285,7 @@ export async function ensureMcpGuidelines(
 /**
  * Installs the Claude Code backlog agent to the project's .claude/agents directory
  */
-export async function installClaudeAgent(projectRoot: string): Promise<void> {
+export async function installClaudeAgent(projectRoot: string, surface: SurfaceMode = "full"): Promise<void> {
 	const agentDir = join(projectRoot, ".claude", "agents");
 	const agentPath = join(agentDir, "project-manager-backlog.md");
 
@@ -291,5 +294,6 @@ export async function installClaudeAgent(projectRoot: string): Promise<void> {
 
 	// Write the agent content with the version marker appended
 	const versionLine = versionMarkerLine(await getVersion());
-	await Bun.write(agentPath, `${CLAUDE_AGENT_CONTENT.trimEnd()}\n\n${versionLine}\n`);
+	const content = getIntegrationGuidance(surface).claudeAgent;
+	await Bun.write(agentPath, `${content.trimEnd()}\n\n${versionLine}\n`);
 }

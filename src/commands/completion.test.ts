@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { installCompletion } from "./completion.ts";
+import { formatCompletionInstallFailure, installCompletion } from "./completion.ts";
 
 const originalShell = process.env.SHELL;
 const originalPsModulePath = process.env.PSModulePath;
@@ -115,5 +115,20 @@ describe("installCompletion", () => {
 				resolvePowerShellProfilePath: () => join(tmpdir(), "profile.ps1"),
 			}),
 		).rejects.toThrow("Unsupported shell: powershell");
+	});
+});
+
+describe("completion installation failure guidance", () => {
+	test.each([
+		[
+			"mini",
+			"⚠️  Shell completion installation failed:\n  no writable completion directory\n  Re-run `backlog init` later to retry shell completion setup.\n",
+		],
+		[
+			"full",
+			"⚠️  Shell completion installation failed:\n  no writable completion directory\n  Run `backlog completion install` later to retry.\n",
+		],
+	] as const)("uses %s-compatible retry instructions", (surface, expected) => {
+		expect(formatCompletionInstallFailure("no writable completion directory", surface)).toBe(expected);
 	});
 });

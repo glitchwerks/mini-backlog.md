@@ -38,7 +38,10 @@ it("CI builds an unshipped full regression bundle independently of the productio
 		});
 		const miniHelp = await exec(process.execPath, [join(mini, "cli.js"), "--help"]);
 		expect(miniHelp.stdout).toContain("mini-backlog.md");
-		expect(miniHelp.stdout).not.toMatch(/^ {2}(init|browser|help)\b/m);
+		for (const command of ["init", "instructions", "browser"]) {
+			expect(miniHelp.stdout).toMatch(new RegExp(`^ {2}${command}\\b`, "m"));
+		}
+		expect(miniHelp.stdout).not.toMatch(/^ {2}(board|help)\b/m);
 		const regression = await exec(
 			process.execPath,
 			["test", "--timeout=10000", "src/test/no-remote-preflight.test.ts"],

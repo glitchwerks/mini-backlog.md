@@ -5,6 +5,25 @@ function freezeStringLists<const T extends Record<string, readonly string[]>>(va
 
 export const MINI_CLI_OPTIONS = freezeStringLists({
 	"": ["--version"],
+	init: [
+		"--agent-instructions",
+		"--check-branches",
+		"--include-remote",
+		"--branch-days",
+		"--bypass-git-hooks",
+		"--zero-padded-ids",
+		"--default-editor",
+		"--web-port",
+		"--auto-open-browser",
+		"--install-claude-agent",
+		"--integration-mode",
+		"--backlog-dir",
+		"--config-location",
+		"--task-prefix",
+		"--no-git",
+		"--defaults",
+	],
+	instructions: ["--list"],
 	browser: ["--port", "--no-open"],
 	task: [],
 	"task create": [
@@ -82,6 +101,8 @@ export const MINI_CLI_OPTIONS = freezeStringLists({
 
 export const MINI_CLI_DESCRIPTIONS = Object.freeze({
 	"": "mini-backlog.md - restricted CLI/MCP with the full browser interface",
+	init: "initialize backlog project in the current directory (or BACKLOG_CWD when set)",
+	instructions: "show Backlog.md workflow instructions",
 	browser: "start the browser interface",
 	task: "manage tasks",
 	"task create": "create a task",
@@ -104,6 +125,9 @@ export const MINI_CLI_DESCRIPTIONS = Object.freeze({
 	mcp: "manage the MCP server",
 	"mcp start": "start the restricted MCP server",
 } as const);
+
+/** Internal command paths needed by installed integrations but omitted from public mini discovery. */
+export const MINI_INTERNAL_CLI_PATHS = Object.freeze(["completion", "completion __complete"] as const);
 
 export const MINI_MCP_TOOL_NAMES = Object.freeze([
 	"task_create",
