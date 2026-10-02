@@ -163,36 +163,40 @@ describe("CLI JSON watch", () => {
 		expect(await watch.stderr).toBe("");
 	});
 
-	it("follows tasks after root configuration switches the backlog directory", async () => {
-		await create("TASK-1");
-		const rootConfig = join(directory, "backlog.config.yml");
-		const config = await readFile(core.filesystem.configFilePath, "utf8");
-		await writeFile(rootConfig, `${config}\nbacklog_directory: backlog\n`);
-		const watch = startWatch();
-		await expectCurrent(watch);
-		await writeFile(rootConfig, `${config}\nbacklog_directory: replacement\n`);
-		await expectCurrent(watch);
-		expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks).toEqual([]);
-		core = new Core(directory);
-		await create("TASK-2");
-		await expectCurrent(watch);
-		expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks[0].id).toBe("TASK-2");
-		await core.editTask("TASK-2", { title: "Changed in replacement" });
-		await expectCurrent(watch);
-		expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks[0].title).toBe("Changed in replacement");
-		await create("TASK-3");
-		await expectCurrent(watch);
-		expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks).toHaveLength(2);
-		const task = await core.loadTaskById("TASK-2");
-		if (!task?.filePath) throw new Error("Missing replacement task");
-		await rm(task.filePath);
-		await expectCurrent(watch);
-		expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks).toHaveLength(1);
-		const count = watch.snapshots.length;
-		await writeFile(join(directory, "backlog", "tasks", "ignored.md"), "old directory edit");
-		await Bun.sleep(1300);
-		expect(watch.snapshots).toHaveLength(count);
-	});
+	for (const exists of [true, false]) {
+		it(`follows tasks after root configuration switches the backlog directory (exists: ${exists})`, async () => {
+			await create("TASK-1");
+			const rootConfig = join(directory, "backlog.config.yml");
+			const config = await readFile(core.filesystem.configFilePath, "utf8");
+			if (exists) await writeFile(rootConfig, `${config}\nbacklog_directory: backlog\n`);
+			const watch = startWatch();
+			await expectCurrent(watch);
+			// Outlast startup notifications so creating the root config must wake an idle watch itself.
+			await Bun.sleep(1300);
+			await writeFile(rootConfig, `${config}\nbacklog_directory: replacement\n`);
+			await expectCurrent(watch);
+			expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks).toEqual([]);
+			core = new Core(directory);
+			await create("TASK-2");
+			await expectCurrent(watch);
+			expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks[0].id).toBe("TASK-2");
+			await core.editTask("TASK-2", { title: "Changed in replacement" });
+			await expectCurrent(watch);
+			expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks[0].title).toBe("Changed in replacement");
+			await create("TASK-3");
+			await expectCurrent(watch);
+			expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks).toHaveLength(2);
+			const task = await core.loadTaskById("TASK-2");
+			if (!task?.filePath) throw new Error("Missing replacement task");
+			await rm(task.filePath);
+			await expectCurrent(watch);
+			expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks).toHaveLength(1);
+			const count = watch.snapshots.length;
+			await writeFile(join(directory, "backlog", "tasks", "ignored.md"), "old directory edit");
+			await Bun.sleep(1300);
+			expect(watch.snapshots).toHaveLength(count);
+		});
+	}
 
 	it("reapplies filters, sorting and limits as tasks enter and leave the result", async () => {
 		await create("TASK-1", { priority: "low", labels: ["cli"] });

@@ -3069,18 +3069,19 @@ addListWindowOptions(taskListCommand)
 		const cwd = await requireProjectRoot();
 		// Notifications cover the whole backlog, including directories created later. The periodic stat
 		// pass covers only what the list reads: tasks, completed tasks for readiness, milestones for
-		// --milestone, and the config.
+		// --milestone, and the config, including a root config created after startup.
 		await watchJson(
 			() => {
 				const filesystem = new Core(cwd).filesystem;
 				return {
-					directories: [filesystem.backlogDir, dirname(filesystem.configFilePath)],
+					directories: [filesystem.backlogDir, dirname(filesystem.configFilePath), cwd],
 					inputs: [
 						filesystem.tasksDir,
 						filesystem.completedDir,
 						filesystem.milestonesDir,
 						filesystem.archiveMilestonesDir,
 						filesystem.configFilePath,
+						join(cwd, DEFAULT_FILES.ROOT_CONFIG),
 					],
 				};
 			},

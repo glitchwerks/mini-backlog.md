@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-02 16:17'
-updated_date: '2026-10-02 17:23'
+updated_date: '2026-10-02 17:34'
 labels: []
 dependencies: []
 references:
@@ -40,6 +40,8 @@ Track GitHub issue #8: incorporate the upstream v1.53.0 release while retaining 
 1. Merge upstream release fd20f714 (v1.53.0) into the isolated branch based on fork main 9a99f1c8 (issue #8). 2. Preserve mini-specific CLI/init, launcher, JSON projections, browser and packaging in merge resolutions (README.md; PR #7). 3. Use doctor preview and supported duplicate-ID repair to retain overlapping upstream/fork task history; record any reference mappings (upstream BACK-687..689; fork PRs #2/#6/#7). 4. Match the published version 1.53.0 (upstream release URL in issue #8; tagged package.json still 1.52.0), extend surface regressions for newly excluded options, and run upstream watcher/list plus mini suites. 5. Verify TypeScript, targeted Biome, source-only build, compiled browser smoke and mini-v1.53.0 tag validation; commit and open PR closing #8 (README.md Upstream synchronization).
 
 PR9 watcher follow-up: reproduce root backlog.config.yml backlog_directory switching with a failing functional watch test; re-resolve watcher directories and stat inputs only on refresh; verify new-directory edits/additions/removals, missing directories, cleanup and idle stat-only behavior. Sources: src/cli.ts:L3068-L3090; src/commands/watch-json.ts:L135-L160; https://github.com/glitchwerks/mini-backlog.md/pull/9#discussion_r4167786294 (fetched 2026-10-02).
+
+PR9 root-config creation follow-up: reproduce adding a previously absent root config during watch startup from folder-local config, then subscribe nonrecursively to project root and stat the root-config candidate using DEFAULT_FILES.ROOT_CONFIG. Keep task-directory inputs unchanged and avoid scanning root contents. Reverify watcher lifecycle, mini surface and compiled smoke. Sources: src/cli.ts:L3068-L3093; src/utils/backlog-directory.ts:L209-L217; src/constants/index.ts:L40; https://github.com/glitchwerks/mini-backlog.md/pull/9#discussion_r4168165425 (fetched 2026-10-02).
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -60,6 +62,10 @@ PR9 watcher review reproduction: root config switched backlog_directory to a mis
 Independent reviewer returned ready with no actionable findings; parent independently reran root-config and concurrent-read regressions (2 pass, 0 fail) and TypeScript successfully. Broader 20s mini contract rerun: 126 pass, 1 platform skip, 1 timeout in rejects the excluded decision search type (20.015s), despite standalone same test passing at 13.2s. Running isolated full mini-cli-surface suite with local 60s allowance; no production timeout or test configuration changed.
 
 Isolated full mini-cli-surface rerun with local --timeout=60000: 88 pass, 0 fail; excluded decision search completed in 14.637s. All other contract suites passed in the prior combined run (126 pass with only that timeout and 1 platform skip). No test configuration was changed. Independent review ready; parent regressions/type-check passed. Review delta is ready for parent push/review coordination; full-tree CRLF lint, unrelated Windows tests and accepted Nix exception remain documented, DoD #2 remains unchecked.
+
+Second PR9 watcher feedback reproduced after settling startup notifications: creating previously absent root backlog.config.yml timed out awaiting changed list, while preexisting-root case passed. Fix adds project-root nonrecursive subscription and stat input join(cwd, DEFAULT_FILES.ROOT_CONFIG); periodic signature never reads/scans repository contents. Parameterized functional regression covers both root-config creation and modification, then replacement-directory create/edit/add/remove and obsolete path suppression. GREEN: 19 watcher tests passed, 1 Windows symlink skip; TypeScript and scoped CRLF-aware Biome passed. Full mini CLI surface --timeout=60000 passed all 88 tests (excluded decision search 16.977s); source-only build and independent compiled CLI/browser/MCP smoke passed. Accepted Nix missing ../web/index.html and prior unrelated baselines remain unchanged. DoD #2 remains unchecked.
+
+Root-config creation delta independent review returned ready with no findings. Parent independently reran both root-config functional cases to completion: 2 pass, 0 fail, exit 0 (11.17s).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -68,4 +74,6 @@ Isolated full mini-cli-surface rerun with local --timeout=60000: 88 pass, 0 fail
 Integrated upstream v1.53.0 while preserving mini restrictions, full init/instructions, browser and source-only launcher. Preserved both task histories through supported ID repair. Verified 122 mini contract tests, 51 broader tests, 41 release tests, TypeScript, scoped Biome, compiled/browser smoke and tag validation; documented full-suite Windows baselines. Submitted PR #9 closing issue #8.
 
 Addressed PR9 watcher reconfiguration feedback: paths and subscriptions now follow changed root backlog configuration while idle reconciliation remains stat-only. Verified failing functional reproduction then 18 watcher passes/1 platform skip, 88 mini CLI surface passes, remaining contract suites, TypeScript, scoped CRLF Biome, source-only build and independent compiled CLI/browser/MCP smoke. Recorded unchanged CRLF workflow test and variable local decision-search timeouts; Nix exception retained.
+
+Handled newly created root config during JSON watch: always subscribe to project-root notifications and stat root-config candidate; verified RED/GREEN absent/present-root regression, 19 watcher passes/1 skip, 88 mini surface passes, TypeScript/Biome and compiled CLI/browser/MCP smoke.
 <!-- SECTION:FINAL_SUMMARY:END -->
