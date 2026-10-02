@@ -110,6 +110,36 @@ describe("shipped mini CLI surface", () => {
 		expect(initRequired.stdout.toString()).toContain("backlog init --defaults");
 	});
 
+	it.each([
+		["overview", ["backlog search", "backlog instructions task-creation"]],
+		["task-creation", ["backlog task create", "--ac"]],
+		["task-execution", ["backlog task view", "backlog task edit", "--comment"]],
+		["task-finalization", ["--check-ac", "backlog task complete"]],
+		["init-required", ["backlog init --defaults", "backlog instructions overview"]],
+	] as const)("publishes mini-compatible %s guidance", async (guide, expectedCommands) => {
+		const result = await runMini("instructions", guide);
+		const output = result.stdout.toString();
+
+		expect(result.exitCode).toBe(0);
+		for (const expected of expectedCommands) expect(output).toContain(expected);
+		for (const excluded of [
+			"backlog doctor",
+			"backlog task <id>",
+			"--parent",
+			"--project",
+			"--dod",
+			"--doc",
+			"--ref",
+			"--plan",
+			"--append-plan",
+			"--append-notes",
+			"--check-dod",
+			"--final-summary",
+		]) {
+			expect(output).not.toContain(excluded);
+		}
+	});
+
 	it("publishes the complete production init option surface", async () => {
 		const result = await runMini("init", "--help");
 

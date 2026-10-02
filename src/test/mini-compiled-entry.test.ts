@@ -57,16 +57,7 @@ describe("compiled mini CLI entry", () => {
 
 		expect(stderr).toBe("");
 		expect(stdout).toContain("Usage: backlog [options] [command]");
-		for (const command of [
-			"init",
-			"instructions",
-			"task",
-			"search",
-			"doc",
-			"milestone",
-			"mcp",
-			"browser",
-		]) {
+		for (const command of ["init", "instructions", "task", "search", "doc", "milestone", "mcp", "browser"]) {
 			expect(stdout).toMatch(new RegExp(`^  ${command}\\b`, "m"));
 		}
 		for (const command of ["board"]) {

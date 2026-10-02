@@ -6,6 +6,8 @@ import {
 	type InstructionGuideKey,
 	type WorkflowGuideDefinition,
 } from "../mcp/workflow-guides.ts";
+import { MINI_INSTRUCTION_GUIDE_TEXT } from "../mini/instruction-guides.ts";
+import { getActiveSurfaceMode } from "../mini/runtime.ts";
 import { addHelpSchema, choiceType, renderConfiguredTaskIds } from "./help-schema.ts";
 
 type InstructionsOptions = {
@@ -85,6 +87,8 @@ export function registerInstructionsCommand(program: Command): void {
 				process.exit(1);
 			}
 
-			process.stdout.write(formatInstructionGuideMarkdown(selectedGuide.resourceText));
+			const guideText =
+				getActiveSurfaceMode() === "mini" ? MINI_INSTRUCTION_GUIDE_TEXT[selectedGuide.key] : selectedGuide.resourceText;
+			process.stdout.write(formatInstructionGuideMarkdown(guideText));
 		});
 }

@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-02 01:43'
-updated_date: '2026-10-02 02:22'
+updated_date: '2026-10-02 10:54'
 labels: []
 dependencies: []
 type: bug
@@ -39,6 +39,8 @@ Mini cannot create a new Backlog.md project or read the canonical workflow guide
 
 <!-- SECTION:PLAN:BEGIN -->
 1. Add failing mini CLI integration and policy tests for full init, all workflow guides, production short aliases, and continued rejection of excluded commands/options. 2. Extend the explicit mini command/option allowlist for init and instructions, then preserve Commander short flags and help spelling for allowed options. 3. Update README installation and restricted-surface documentation. 4. Run focused tests, the complete test suite, type-checking, formatting/lint checks, and compiled smoke verification; simplify the policy implementation after it is green.
+
+5. Add regression coverage for mini-specific lifecycle instructions, transform every exposed guide to remove unsupported commands and options while keeping full init behavior, correct the compiled-entry formatting regression, and re-run focused/CI-equivalent verification before updating the PR branch.
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -47,10 +49,14 @@ Mini cannot create a new Backlog.md project or read the canonical workflow guide
 Baseline before implementation: the focused mini CLI suite passed 58/58. The repository-wide Windows suite was stopped after reproducing unrelated pre-existing failures in src/test/board-tui-move.test.ts (multiple move persistence/timing cases and one cross-screen TUI error) and src/test/claude-agent-install.test.ts (project-manager agent content assertion). These files are outside BACK-689 scope; focused mini tests are the clean comparison baseline.
 
 Verification: 110 mini behavior and package tests passed across 9 files; TypeScript validation passed; the compiled build and browser/init/instructions smoke passed; independent review found no issues. Baseline exceptions retained: mini-source-distribution has one CRLF-sensitive Windows regex failure, repository-wide tests have unrelated board/Claude-agent failures, and repository-wide Biome reports existing CRLF working-tree diagnostics. DoD #2 remains unchecked because the exact repository-wide check does not pass on this Windows baseline.
+
+Baseline exception: the Nix package smoke currently fails during 'nix build' because the browser binary cannot find the bundled '../web/index.html'. Per user direction, this is recorded only and remains outside this fix.
+
+PR review follow-up: added mini-specific text for all five instruction guides through one central override map, with test-first coverage proving each guide uses only the restricted command/option surface and still provides a usable lifecycle. Verification: mini CLI 63/63 passed; full production CLI guidance 16/16 passed; broader mini behavior/package coverage 119 passed with the same CRLF-sensitive mini-source-distribution test failing on Windows; compiled build/package/browser smoke 8/8 passed; the project-local TypeScript compiler passed; and every changed TypeScript file passed LF-normalized Biome validation. The exact repository-wide Biome check still reports 443 CRLF working-tree diagnostics, so DoD #2 remains unchecked.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Restored full project initialization and all canonical instruction guides in mini, preserved production short aliases for every allowed option, and kept excluded commands fail-closed. Verified with 110 passing mini tests, TypeScript validation, compiled build/smoke, and independent review; unrelated Windows baseline failures are documented in Implementation Notes.
+Kept the mini CLI/MCP restricted while replacing every exposed workflow guide with concise mini-compatible guidance; full production guides and init behavior remain unchanged. Added regression coverage for all guides and fixed the Ubuntu compiled-entry formatting failure. Verified with 63 mini CLI tests, 16 full guidance tests, 119 broader mini tests plus the documented Windows-only CRLF failure, 8 compiled/package smoke tests, TypeScript, and targeted Biome.
 <!-- SECTION:FINAL_SUMMARY:END -->
