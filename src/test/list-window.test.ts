@@ -6,7 +6,6 @@ import {
 	type ListPage,
 	type ListWindow,
 	milestoneSectionsInWindow,
-	nextPageCommand,
 	parseListWindow,
 	selectListWindow,
 } from "../utils/list-window.ts";
@@ -16,11 +15,10 @@ function taskListCommand(): Command {
 	return addListWindowOptions(new Command("backlog").command("task").command("list").option("--search <query>"));
 }
 
-function windowOf(skip: number, maxCount?: number, commandArgs: string[] = []): ListWindow {
+function windowOf(skip: number, maxCount?: number): ListWindow {
 	const window = parseListWindow(
 		{ skip: String(skip), maxCount: maxCount === undefined ? undefined : String(maxCount) },
 		taskListCommand(),
-		commandArgs,
 	);
 	if (!window) throw new Error("invalid test window");
 	return window;
@@ -55,113 +53,34 @@ describe("list windows", () => {
 		expect(selectListWindow(items, windowOf(3, 2))).toMatchObject({ items: [], total: 3, cut: true, nextSkip: null });
 	});
 
-	it("prints a footer only for cut output and names the next command while items follow", () => {
+	it("prints a shell-neutral continuation hint only while more items follow", () => {
 		const items = ["a", "b", "c", "d", "e"];
-		const args = ["task", "list", "--max-count", "2", "--plain"];
 		const footer = (skip: number, maxCount: number) => {
-			const window = windowOf(skip, maxCount, args);
-			return formatListWindowFooter(selectListWindow(items, window), window);
+			return formatListWindowFooter(selectListWindow(items, windowOf(skip, maxCount)));
 		};
 
 		expect(footer(0, 5)).toBeNull();
-		expect(footer(2, 2)).toBe("Showing 3-4 of 5 items. Next: backlog task list --max-count 2 --plain --skip 4");
+		expect(footer(2, 2)).toBe(
+			"Showing 3-4 of 5 items. Next: rerun the original command with --skip 4 before any -- separator; replace any existing --skip option and keep all other arguments.",
+		);
 		expect(footer(4, 2)).toBe("Showing 5-5 of 5 items.");
 		expect(footer(9, 2)).toBe("Showing 0 of 5 items.");
 	});
 
-	it("replaces the typed skip and quotes arguments the shell would split", () => {
-		expect(nextPageCommand(windowOf(0, 3, ["task", "list", "--skip", "3", "--max-count", "3"]), 6)).toBe(
-			"backlog task list --max-count 3 --skip 6",
-		);
-		expect(
-			nextPageCommand(
-				windowOf(0, 3, ["search", "--skip=3", "it's done", "--status", "To Do", "=draft", "--priority=high"]),
-				6,
-			),
-		).toBe("backlog search 'it'\\''s done' --status 'To Do' '=draft' '--priority=high' --skip 6");
-	});
-
-	it("keeps option values that read --skip or -- and puts the new skip before --", () => {
-		const next = (args: string[]) => nextPageCommand(windowOf(0, 1, args), 1);
-
-		expect(next(["task", "list", "--search", "--skip", "--max-count", "1"])).toBe(
-			"backlog task list --search --skip --max-count 1 --skip 1",
-		);
-		expect(next(["task", "list", "--search", "--skip", "--skip", "3", "--max-count", "1"])).toBe(
-			"backlog task list --search --skip --max-count 1 --skip 1",
-		);
-		expect(next(["task", "list", "--search", "--", "--max-count", "1"])).toBe(
-			"backlog task list --search -- --max-count 1 --skip 1",
-		);
-		expect(next(["doc", "list", "--max-count", "1", "--"])).toBe("backlog doc list --max-count 1 --skip 1 --");
-		expect(next(["search", "--max-count", "1", "--", "--skip", "it"])).toBe(
-			"backlog search --max-count 1 --skip 1 -- --skip it",
-		);
-	});
-
-	it("preserves operands across ancestor options removed before subcommand parsing", () => {
-		const root = new Command("backlog").option("-c, --config <path>").option("--color [value]");
-		const task = root.command("task").option("--plain").option("--no-color");
-		const list = addListWindowOptions(task.command("list").option("-q, --search <query>"));
-		const cases = [
-			{ values: ["--search", "--plain", "--skip"], search: "--skip" },
-			{ values: ["--search", "--plain", "--plain", "--skip"], search: "--skip" },
-			{ values: ["--search", "--config", "--skip", "--skip"], search: "--skip" },
-			{ values: ["-q", "-c", "settings.yml", "--skip"], search: "--skip" },
-			{ values: ["--search", "-csettings.yml", "--skip"], search: "--skip" },
-			{ values: ["--search", "--config=settings.yml", "--skip"], search: "--skip" },
-			{ values: ["--search", "--color", "always", "--skip"], search: "--skip" },
-			{ values: ["--search", "--color", "-2", "--skip"], search: "--skip" },
-			{ values: ["--search", "--color", "--no-color", "--skip"], search: "--skip" },
-			{ values: ["--search", "--plain", "--"], search: "--" },
-			{ values: ["--search=--plain"], search: "--plain" },
-			{ values: ["--search=--skip", "--skip", "--plain", "2"], search: "--skip" },
-			{ values: ["--search", "--config", "settings.yml", "--plain", "--skip"], search: "--skip" },
-		];
-		for (const { values, search } of cases) {
-			const args = ["task", "list", ...values, "--max-count", "1", "--skip", "3"];
-			root.parse(args, { from: "user" });
-			expect(list.opts().search).toBe(search);
-			const parentOptions = [{ ...root.opts() }, { ...task.opts() }];
-			const window = parseListWindow(list.opts(), list, args);
-			if (!window) throw new Error("Missing window");
-			const next = nextPageCommand(window, 4);
-			expect(next).toContain("--max-count 1 --skip 4");
-			const words = next
-				.match(/'[^']*'|\S+/g)
-				?.slice(1)
-				.map((word) => word.replace(/^'|'$/g, ""));
-			if (!words) throw new Error("Missing next command");
-			root.parse(words, { from: "user" });
-			expect(list.opts()).toMatchObject({ search, maxCount: "1", skip: "4" });
-			expect([root.opts(), task.opts()]).toEqual(parentOptions);
-		}
-		// A numeric short option disables Commander's optional negative-number operand handling.
-		root.option("-1, --numeric-mode");
-		const args = ["task", "list", "--search", "--color", "-2", "--max-count", "1"];
-		root.parse(args, { from: "user" });
-		expect(list.opts().search).toBe("-2");
-		const window = parseListWindow(list.opts(), list, args);
-		if (!window) throw new Error("Missing window");
-		expect(nextPageCommand(window, 4)).toBe("backlog task list --search --color -2 --max-count 1 --skip 4");
-	});
-
 	it("accepts a positive max-count, a non-negative skip, and count without JSON", () => {
-		const args = ["task", "list"];
-		expect(parseListWindow({}, taskListCommand(), args)).toMatchObject({
+		expect(parseListWindow({}, taskListCommand())).toMatchObject({
 			skip: 0,
 			maxCount: undefined,
 			count: false,
 			forcesText: false,
-			commandArgs: args,
 		});
-		expect(parseListWindow({ maxCount: "5", skip: "0" }, taskListCommand(), args)).toMatchObject({
+		expect(parseListWindow({ maxCount: "5", skip: "0" }, taskListCommand())).toMatchObject({
 			skip: 0,
 			maxCount: 5,
 			count: false,
 			forcesText: true,
 		});
-		expect(parseListWindow({ count: true }, taskListCommand(), args)).toMatchObject({
+		expect(parseListWindow({ count: true }, taskListCommand())).toMatchObject({
 			count: true,
 			forcesText: true,
 		});
@@ -196,10 +115,10 @@ describe("list windows", () => {
 		try {
 			for (const options of [{ maxCount: "0" }, { maxCount: "2.5" }, { skip: "-1" }, { skip: "x" }]) {
 				process.exitCode = 0;
-				expect(parseListWindow(options, taskListCommand(), [])).toBeNull();
+				expect(parseListWindow(options, taskListCommand())).toBeNull();
 				expect(process.exitCode).toBe(1);
 			}
-			expect(parseListWindow({ count: true, json: true }, taskListCommand(), [])).toBeNull();
+			expect(parseListWindow({ count: true, json: true }, taskListCommand())).toBeNull();
 			expect(errors).toHaveBeenLastCalledWith(
 				"--count cannot be combined with --json. Try 'backlog task list --help' for options.",
 			);

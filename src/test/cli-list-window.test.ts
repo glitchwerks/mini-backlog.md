@@ -34,15 +34,18 @@ async function runJson(args: string[]) {
 	return JSON.parse(result.stdout);
 }
 
-/** Runs a list command, then every `Next:` command its footer names, and returns each output in order. */
-async function followWindows(args: string[]): Promise<string[]> {
+/** Follow numeric hints using the original arguments; the caller identifies a real operand separator. */
+async function followWindows(args: string[], beforeSeparator = args.length): Promise<string[]> {
 	const outputs: string[] = [];
 	let stdout = (await runCli(args)).stdout;
 	while (true) {
 		outputs.push(stdout);
-		const next = stdout.match(/Next: backlog (.+)$/m)?.[1];
+		const next = stdout.match(/Next: rerun the original command with --skip (\d+)/)?.[1];
 		if (!next) return outputs;
-		stdout = (await $`bun ${CLI_PATH} ${{ raw: next }}`.cwd(TEST_DIR).nothrow().quiet()).stdout.toString();
+		// Appending the actual paging option retains query operands that happen to read --skip.
+		const result = await runCli([...args.slice(0, beforeSeparator), "--skip", next, ...args.slice(beforeSeparator)]);
+		expect(result.exitCode).toBe(0);
+		stdout = result.stdout;
 	}
 }
 
@@ -82,7 +85,7 @@ describe("CLI list windows", () => {
 					id: `task-${index}`,
 					title: `Window task ${index}`,
 					// Searching for `--skip` finds tasks with an option value that reads like the skip option.
-					description: "Read in windows with --skip.",
+					description: 'Read in windows with --skip. It\'s "ready" for $VALUE and `code`.',
 					status: index === 2 ? "In Progress" : "To Do",
 				}),
 				false,
@@ -133,7 +136,7 @@ describe("CLI list windows", () => {
 		await safeCleanup(TEST_DIR);
 	});
 
-	it("pages grouped task list output through the commands its footers name", async () => {
+	it("pages grouped task output using the continuation hints", async () => {
 		const complete = await runCli(["task", "list", "--search", "Window task", "--plain"]);
 		expect(complete.stdout).not.toContain("Showing");
 		expect(printedLines(complete.stdout).filter((line) => !line.startsWith(" "))).toEqual([
@@ -145,7 +148,9 @@ describe("CLI list windows", () => {
 		const windows = await followWindows(["task", "list", "--search", "Window task", "--max-count", "2", "--plain"]);
 
 		expect(windows).toHaveLength(3);
-		expect(windows[0]).toContain("Showing 1-2 of 5 items. Next: backlog task list --search 'Window task'");
+		expect(windows[0]).toContain(
+			"Showing 1-2 of 5 items. Next: rerun the original command with --skip 2 before any -- separator;",
+		);
 		expect(windows[2]?.trimEnd().endsWith("Showing 5-5 of 5 items.")).toBe(true);
 		expect(joinGroupedWindows(windows)).toEqual(printedLines(complete.stdout));
 	});
@@ -190,7 +195,7 @@ describe("CLI list windows", () => {
 		expect(window.map((task: { id: string }) => task.id)).toEqual(complete.slice(1, 3));
 	});
 
-	it("keeps option values and a -- separator in the next command", async () => {
+	it("retains option-like query values and an operand separator when following hints", async () => {
 		const searched = ["task", "list", "--search", "--skip", "--plain"];
 		const complete = await runCli(searched);
 		expect(idsIn(complete.stdout, /TASK-\d+/g).length).toBeGreaterThan(2);
@@ -198,9 +203,13 @@ describe("CLI list windows", () => {
 			printedLines(complete.stdout),
 		);
 
-		const separated = await followWindows(["doc", "list", "--max-count", "1", "--"]);
-		expect(separated[0]).toContain("Next: backlog doc list --max-count 1 --skip 1 --");
+		const separated = await followWindows(["doc", "list", "--max-count", "1", "--"], 4);
+		expect(separated[0]).toContain("Next: rerun the original command with --skip 1 before any -- separator;");
 		expect(joinGroupedWindows(separated)).toEqual(printedLines((await runCli(["doc", "list", "--plain"])).stdout));
+		const literalSeparator = ["task", "list", "--search", "--", "--plain"];
+		expect(joinGroupedWindows(await followWindows([...literalSeparator, "--max-count", "1"]))).toEqual(
+			printedLines((await runCli(literalSeparator)).stdout),
+		);
 	});
 
 	it("keeps the search value when an ancestor flag is interleaved before it", async () => {
@@ -210,8 +219,22 @@ describe("CLI list windows", () => {
 		expect(idsIn(complete.stdout, /TASK-\d+/g)).toEqual(["TASK-1", "TASK-3", "TASK-4"]);
 		const windows = await followWindows([...args, "--max-count", "1"]);
 		expect(windows).toHaveLength(3);
-		expect(windows[0]).toContain("--max-count 1 --skip 1");
+		expect(windows[0]).toContain("Next: rerun the original command with --skip 1 before any -- separator;");
 		expect(joinGroupedWindows(windows)).toEqual(printedLines(complete.stdout));
+	});
+
+	it("keeps spaced filters and shell-sensitive query text when rerunning the original command", async () => {
+		const args = ["task", "list", "--search", 'It\'s "ready" for $VALUE and `code`.', "--status", "To Do", "--plain"];
+		const complete = await runCli(args);
+		expect(complete.exitCode).toBe(0);
+		expect(idsIn(complete.stdout, /TASK-\d+/g)).toEqual(["TASK-1", "TASK-3", "TASK-4"]);
+		const windows = await followWindows([...args, "--max-count", "1", "--skip=0"]);
+		expect(windows).toHaveLength(3);
+		expect(joinGroupedWindows(windows)).toEqual(printedLines(complete.stdout));
+		expect(windows[0]?.split("\n").find((line) => line.startsWith("Showing "))).toBe(
+			"Showing 1-1 of 3 items. Next: rerun the original command with --skip 1 before any -- separator; replace any existing --skip option and keep all other arguments.",
+		);
+		expect(windows.at(-1)).not.toContain("Next:");
 	});
 
 	it("prints only the number of listed items with --count", async () => {
@@ -247,7 +270,9 @@ describe("CLI list windows", () => {
 	it("pages search, document search, and decision results", async () => {
 		const search = await runCli(["search", "--type", "decision", "--max-count", "2", "--plain"]);
 		expect(idsIn(search.stdout, /decision-\d+/g)).toEqual(["decision-1", "decision-2"]);
-		expect(search.stdout).toContain("Showing 1-2 of 3 items. Next: backlog search --type decision --max-count 2");
+		expect(search.stdout).toContain(
+			"Showing 1-2 of 3 items. Next: rerun the original command with --skip 2 before any -- separator;",
+		);
 		expect(await runJson(["search", "--type", "decision", "--max-count", "1", "--skip", "1"])).toMatchObject({
 			results: [{ type: "decision", data: { id: "decision-2" } }],
 			total: 3,
@@ -264,7 +289,7 @@ describe("CLI list windows", () => {
 		const firstDocument = await runCli(["doc", "search", "Guide", "--max-count", "1"]);
 		expect(idsIn(firstDocument.stdout, /View: backlog doc view doc-\d+/g)).toEqual(documentViews.slice(0, 1));
 		expect(firstDocument.stdout).toContain(
-			`Showing 1-1 of ${documentViews.length} items. Next: backlog doc search Guide`,
+			`Showing 1-1 of ${documentViews.length} items. Next: rerun the original command with --skip 1 before any -- separator;`,
 		);
 		expect((await runCli(["doc", "search", "Guide", "--count"])).stdout).toBe(`${documentViews.length}\n`);
 	});
@@ -306,10 +331,13 @@ describe("CLI list windows", () => {
 		expect(help).toContain("--skip <n>");
 		expect(help).toContain("--count");
 		expect(help).toContain("max-count: Positive integer");
+		expect(help).toContain("rerun the original command");
 
 		const overview = (await runCli(["instructions", "overview"])).stdout;
 		for (const option of ["--max-count", "--skip", "--count"]) {
 			expect(overview).toContain(option);
 		}
+		expect(overview).toContain("replace any existing --skip option");
+		expect(overview).toContain("before any `--` separator");
 	});
 });

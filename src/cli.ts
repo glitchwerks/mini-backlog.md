@@ -911,7 +911,7 @@ function resolveListOutput(
 ): { outputMode: ReadOutputMode; listWindow: ListWindow } | null {
 	const readOutputMode = getReadOutputMode(options);
 	if (!readOutputMode) return null;
-	const listWindow = parseListWindow(options, command, activeArgv.slice(2));
+	const listWindow = parseListWindow(options, command);
 	if (!listWindow) return null;
 	const outputMode = readOutputMode === "interactive" && listWindow.forcesText ? "plain" : readOutputMode;
 	return { outputMode, listWindow };

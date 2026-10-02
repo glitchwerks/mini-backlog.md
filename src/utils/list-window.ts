@@ -20,12 +20,6 @@ export type ListWindow = {
 	count: boolean;
 	/** Any window option was given, so the command prints text instead of opening an interactive view. */
 	forcesText: boolean;
-	/** The typed arguments, repeated with a new `--skip` in the command for the following items. */
-	commandArgs: readonly string[];
-	/** Flags whose next argument is their value, even when it reads `--skip` or `--`. */
-	valueFlags: ReadonlySet<string>;
-	/** Arguments removed by ancestor option parsing before the running command consumes its values. */
-	ancestorArgs: ReadonlySet<number>;
 };
 
 export type ListPage<T> = {
@@ -40,13 +34,14 @@ export type ListPage<T> = {
 
 /** The help output sentence for the footer of a cut list. */
 export const LIST_WINDOW_OUTPUT_HELP =
-	"Output cut by --max-count or --skip ends with the shown range, the total, and the command for the next items";
+	"Output cut by --max-count or --skip ends with the shown range, the total, and a hint to rerun the original command with the next --skip value, keeping all other arguments";
 
 export const LIST_WINDOW_HELP_FIELDS: HelpField[] = [
 	{
 		name: "max-count",
 		type: "Positive integer",
-		description: "Print at most this many items after filtering and sorting; cut output ends with the next command",
+		description:
+			"Print at most this many items after filtering and sorting; cut output ends with the next --skip value",
 	},
 	{ name: "skip", type: "Non-negative integer", description: "Leave out this many items after filtering and sorting" },
 	{ name: "count", type: "Boolean", description: "Print only the number of items the command would list" },
@@ -84,52 +79,8 @@ function commandName(command: Command): string {
 	return names.join(" ");
 }
 
-/** Commander parses ancestors first, removing their options and operands wherever they occur. */
-function ancestorArgumentIndexes(command: Command, args: readonly string[]): ReadonlySet<number> {
-	const ancestors: Command[] = [];
-	for (let current = command.parent; current; current = current.parent) ancestors.unshift(current);
-	let remaining = args.map((_, index) => index);
-	const consumed = new Set<number>();
-	for (const [depth, ancestor] of ancestors.entries()) {
-		for (let cursor = 0; cursor < remaining.length; cursor++) {
-			const index = remaining[cursor];
-			if (index === undefined) continue;
-			const argument = args[index] ?? "";
-			if (argument === "--") break;
-			const inline = argument.startsWith("--") && argument.includes("=");
-			const attached = /^-[^-].+/.test(argument);
-			const flag = inline ? argument.slice(0, argument.indexOf("=")) : attached ? argument.slice(0, 2) : argument;
-			const option = ancestor.options.find((option) => option.long === flag || option.short === flag);
-			if (!option || ((inline || attached) && !option.required && !option.optional)) continue;
-			consumed.add(index);
-			if (!inline && !attached && (option.required || option.optional)) {
-				const valueIndex = remaining[cursor + 1];
-				const value = valueIndex === undefined ? undefined : args[valueIndex];
-				const negativeNumber =
-					/^-(\d+|\d*\.\d+)(e[+-]?\d+)?$/.test(value ?? "") &&
-					!ancestors
-						.slice(0, depth + 1)
-						.some((parent) => parent.options.some((option) => /^-\d$/.test(option.short ?? "")));
-				if (
-					valueIndex !== undefined &&
-					(option.required || !value?.startsWith("-") || value === "-" || negativeNumber)
-				) {
-					consumed.add(valueIndex);
-					cursor++;
-				}
-			}
-		}
-		remaining = remaining.filter((index) => !consumed.has(index));
-	}
-	return consumed;
-}
-
 /** Reads the window options of the running command, or reports why they are invalid and returns null. */
-export function parseListWindow(
-	options: ListWindowOptions,
-	command: Command,
-	commandArgs: readonly string[],
-): ListWindow | null {
+export function parseListWindow(options: ListWindowOptions, command: Command): ListWindow | null {
 	const helpCommand = `${commandName(command)} --help`;
 	if (options.count && options.json) {
 		return reportInvalidOption("--count cannot be combined with --json.", helpCommand);
@@ -149,13 +100,6 @@ export function parseListWindow(
 		maxCount,
 		count: Boolean(options.count),
 		forcesText: Boolean(options.count) || maxCount !== undefined || skip !== undefined,
-		commandArgs,
-		ancestorArgs: ancestorArgumentIndexes(command, commandArgs),
-		valueFlags: new Set(
-			command.options
-				.filter((option) => option.required)
-				.flatMap((option) => [option.long, option.short].filter((flag): flag is string => flag !== undefined)),
-		),
 	};
 }
 
@@ -189,54 +133,15 @@ export function milestoneSectionsInWindow(
 	};
 }
 
-function quoteShellArgument(argument: string): string {
-	return /^[\w@+:,./-]+$/.test(argument) ? argument : `'${argument.replaceAll("'", "'\\''")}'`;
-}
-
-/**
- * The typed command with its `--skip` value replaced, so running it prints the following items.
- * Option values stay as typed, and the new `--skip` goes before a `--` that ends the options.
- */
-export function nextPageCommand(window: ListWindow, nextSkip: number): string {
-	const args = window.commandArgs;
-	const kept: string[] = [];
-	let afterSeparator: readonly string[] = [];
-	const nextValueIndex = (index: number) => {
-		let next = index + 1;
-		while (window.ancestorArgs.has(next)) kept.push(args[next++] ?? "");
-		return next;
-	};
-	for (let index = 0; index < args.length; index++) {
-		const argument = args[index] ?? "";
-		if (window.ancestorArgs.has(index)) {
-			kept.push(argument);
-			continue;
-		}
-		if (argument === "--") {
-			afterSeparator = args.slice(index);
-			break;
-		}
-		if (argument === "--skip") {
-			index = nextValueIndex(index);
-			continue;
-		}
-		if (argument.startsWith("--skip=")) continue;
-		kept.push(argument);
-		if (window.valueFlags.has(argument) && index + 1 < args.length) {
-			index = nextValueIndex(index);
-			kept.push(args[index] ?? "");
-		}
-	}
-	return ["backlog", ...kept, "--skip", String(nextSkip), ...afterSeparator].map(quoteShellArgument).join(" ");
-}
-
-/** Names the printed range, the total, and the command for the following items; null for a complete list. */
-export function formatListWindowFooter(page: ListPage<unknown>, window: ListWindow): string | null {
+/** Names the printed range, total and next skip value; null for a complete list. */
+export function formatListWindowFooter(page: ListPage<unknown>): string | null {
 	if (!page.cut) return null;
 	const shown = page.items.length;
 	const range = shown > 0 ? `${page.skip + 1}-${page.skip + shown}` : "0";
 	const summary = `Showing ${range} of ${page.total} items.`;
-	return page.nextSkip === null ? summary : `${summary} Next: ${nextPageCommand(window, page.nextSkip)}`;
+	return page.nextSkip === null
+		? summary
+		: `${summary} Next: rerun the original command with --skip ${page.nextSkip} before any -- separator; replace any existing --skip option and keep all other arguments.`;
 }
 
 /**
@@ -257,6 +162,6 @@ export function printListWindow<T>(
 	if (page.items.length > 0 || page.total === 0) {
 		printItems(page.items, page);
 	}
-	const footer = formatListWindowFooter(page, window);
+	const footer = formatListWindowFooter(page);
 	if (footer) console.log(footer);
 }
