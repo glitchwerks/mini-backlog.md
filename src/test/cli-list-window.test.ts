@@ -346,5 +346,11 @@ describe("CLI list windows", () => {
 		expect(creation).toContain("replace any existing --skip option");
 		expect(creation).toContain("before any `--` separator");
 		expect(creation).not.toContain("the command for the next window");
+
+		const rootGuide = await Bun.file(new URL("../../CLI-INSTRUCTIONS.md", import.meta.url)).text();
+		expect(rootGuide).toContain("Next: rerun the original command with --skip 40 before any -- separator;");
+		expect(rootGuide).toContain("replace any existing --skip option");
+		expect(rootGuide).not.toContain("Next: backlog");
+		expect(rootGuide).not.toContain("the command that prints the following items");
 	});
 });

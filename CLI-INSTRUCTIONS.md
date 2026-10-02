@@ -94,10 +94,10 @@ Humans and agents can run `backlog instructions` for workflow guides and `backlo
 
 `task list`, `search`, `draft list`, `milestone list`, `doc list`, `doc search`, and `decision list` print every match by default. `--max-count <n>` prints at most `n` items and `--skip <n>` leaves out the first `n`, as in `git log`. Both apply after filtering, sorting, and `--limit`, in the order the output prints: `task list` groups by status unless `--sort priority` prints one flat list, plain `search` prints tasks, then documents, then decisions, and `milestone list` prints active milestones before completed ones. Each list has a stable order: tasks, drafts, and decisions break ties by ID, documents sort by title and then path, search results by score and then corpus order, and milestones follow their files and then the tasks that name them. So consecutive windows of an unchanged backlog join into the complete output without overlapping or leaving items out. With `--json`, `task list` windows its flat `tasks` array in sort order without status groups and `search` windows its results in relevance order, so read all windows of a list in one output mode. The options print text instead of opening an interactive view.
 
-Output cut by a window ends with the shown range, the total, and the command that prints the following items:
+Output cut by a window ends with the shown range and the total. When more items follow, it also includes a shell-neutral Next hint giving the next `--skip` value. Rerun the original command with that value: replace any existing --skip option or add it before any `--` separator, keeping all other arguments and their original shell quoting. The hint does not reconstruct a command for a particular shell:
 
 ```text
-Showing 21-40 of 57 items. Next: backlog task list --status 'To Do' --max-count 20 --skip 40
+Showing 21-40 of 57 items. Next: rerun the original command with --skip 40 before any -- separator; replace any existing --skip option and keep all other arguments.
 ```
 
 The last window has no `Next:` part, and a `--skip` past the end prints only `Showing 0 of 57 items.` Output that is not cut has no footer. `--count` prints only the number of items the same command would list, as `grep --count` does; it cannot be combined with `--json`. There are no short forms because `-m` already means `--milestone`. `--limit` keeps its behavior: it silently shortens the list before any window applies.
