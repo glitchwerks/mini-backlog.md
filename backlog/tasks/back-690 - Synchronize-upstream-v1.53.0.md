@@ -1,11 +1,11 @@
 ---
 id: BACK-690
 title: Synchronize upstream v1.53.0
-status: In Progress
+status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-02 16:17'
-updated_date: '2026-10-02 16:32'
+updated_date: '2026-10-02 16:34'
 labels: []
 dependencies: []
 references:
@@ -24,7 +24,7 @@ Track GitHub issue #8: incorporate the upstream v1.53.0 release while retaining 
 - [x] #1 Upstream release changes are integrated and fork task history is preserved
 - [x] #2 Mini CLI/MCP and installed guidance regressions pass
 - [x] #3 Version 1.53.0 type-check, build, compiled smoke, and tag validation pass
-- [ ] #4 A focused PR links issue #8 and records established baseline failures
+- [x] #4 A focused PR links issue #8 and records established baseline failures
 <!-- AC:END -->
 
 ## Definition of Done
@@ -48,4 +48,12 @@ Duplicate-ID repair verified no remaining active/completed collisions. Upstream 
 Verification: 122 mini CLI/MCP/task contract tests passed; 51 additional packaging/compiled entry/browser/installed guidance/init tests passed with 1 established Windows skip. TypeScript, source-only build, compiled CLI/browser smoke and mini-v1.53.0 tag validation passed. New upstream paging options remain rejected by mini, and JSON paging metadata is full-mode only. Source-only launcher watcher lifetime test passed. Fixed imported pagination test cleanup after reproducing Bun retaining process.exitCode=1 when restored to undefined; 8 unit tests now exit 0. Exact repository-wide Biome reports 453 diagnostics on this CRLF working tree; unrelated existing task-builders.ts is also reported by a CRLF-aware whole-tree probe. All changed TypeScript files receive scoped CRLF-aware validation. DoD #2 remains unchecked. Prior Ubuntu board comparison and Nix browser-asset failures remain recorded baselines, not fixes. Full suite and independent merge review are in progress. Published upstream release is v1.53.0 even though its tagged package.json still says 1.52.0; fork package follows published release.
 
 Release verification rerun: 41 upstream pagination/watcher/launcher tests passed with 2 platform skips and exit 0 after runner cleanup correction; all 13 changed TypeScript files passed CRLF-aware Biome. Full bun run test was stopped after reproducing recorded board-tui-move.test.ts move persistence/cross-screen failures and claude-agent-install.test.ts link-text fixture failure, plus cli-browser-port.test.ts Windows EBUSY cleanup. Board failing cases: selected Enter move, M confirmation, whole-set move, second-Enter collapse, cross-column order, Escape during write, and per-task partial failure; an unhandled move persistence error also occurred. No fixes to those unrelated baselines were attempted.
+
+Independent read-only merge review found no actionable defects. Release ancestry and committed artifact persistence verified. PR #9 opened with Closes #8 and all verification/baseline details: https://github.com/glitchwerks/mini-backlog.md/pull/9. Implementation is ready for review; merge and mini-v1.53.0 tag publication remain separate post-review actions.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Integrated upstream v1.53.0 while preserving mini restrictions, full init/instructions, browser and source-only launcher. Preserved both task histories through supported ID repair. Verified 122 mini contract tests, 51 broader tests, 41 release tests, TypeScript, scoped Biome, compiled/browser smoke and tag validation; documented full-suite Windows baselines. Submitted PR #9 closing issue #8.
+<!-- SECTION:FINAL_SUMMARY:END -->
