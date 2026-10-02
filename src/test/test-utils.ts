@@ -5,7 +5,7 @@
 
 import type { ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { rm } from "node:fs/promises";
+import { chmod, copyFile, mkdir, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
 import { join } from "node:path";
 import { $ } from "bun";
@@ -187,6 +187,30 @@ export async function safeCleanup(dir: string): Promise<void> {
  */
 export function isWindows(): boolean {
 	return process.platform === "win32";
+}
+
+/**
+ * Lays out a source checkout of the launcher in dir. writeBinary, when given, creates the local build binary at the
+ * path it receives. Returns the launcher script path.
+ */
+export async function createLauncherInstall(
+	dir: string,
+	writeBinary?: (path: string) => Promise<void>,
+): Promise<string> {
+	const scriptsDir = join(import.meta.dir, "..", "..", "scripts");
+	// A package.json and node_modules dir keep Bun's auto-install from resolving real packages
+	await mkdir(join(dir, "node_modules"), { recursive: true });
+	await writeFile(join(dir, "package.json"), "{}");
+	await mkdir(join(dir, "scripts"), { recursive: true });
+	await copyFile(join(scriptsDir, "cli.cjs"), join(dir, "scripts", "cli.cjs"));
+	if (writeBinary) {
+		const buildDir = join(dir, "dist");
+		await mkdir(buildDir, { recursive: true });
+		const binaryPath = join(buildDir, isWindows() ? "backlog.exe" : "backlog");
+		await writeBinary(binaryPath);
+		await chmod(binaryPath, 0o755);
+	}
+	return join(dir, "scripts", "cli.cjs");
 }
 
 /**

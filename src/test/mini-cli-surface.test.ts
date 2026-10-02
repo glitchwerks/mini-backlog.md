@@ -97,6 +97,9 @@ describe("shipped mini CLI surface", () => {
 		"--plain",
 		"help",
 		"task help",
+		...["task list", "search example", "doc list", "doc search example", "milestone list"].flatMap((command) =>
+			["--max-count 1", "--skip 1", "--count"].map((option) => `${command} ${option}`),
+		),
 	])("rejects excluded invocation: %s", async (args) => {
 		const result = await runMini(...args.split(" "));
 
