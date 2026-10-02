@@ -15,19 +15,28 @@ npm install --global --omit=optional --ignore-scripts .
 backlog --help
 ```
 
-The build produces `dist/backlog.exe` on Windows and `dist/backlog` elsewhere. The local install runs only that source-built binary and never falls back to registry platform packages. Rebuild and repeat the local install after updating your checkout. Mini requires an existing Backlog.md project; it does not provide project initialization.
+The build produces `dist/backlog.exe` on Windows and `dist/backlog` elsewhere. The local install runs only that source-built binary and never falls back to registry platform packages. Rebuild and repeat the local install after updating your checkout. Mini can initialize new Backlog.md projects while keeping its task, document, milestone, CLI-instruction, MCP, and browser surfaces restricted as documented below.
+
+Initialize a new project and load the canonical workflow guidance with:
+
+```bash
+backlog init
+backlog instructions overview
+```
 
 ## Restricted surface
 
-The CLI and MCP surfaces are fail-closed: only the operations and fields below are public, and excluded operations are absent from both discovery and invocation. The full browser is a deliberate human-facing exception, launched with `backlog browser`.
+The CLI and MCP surfaces are fail-closed: only the operations and fields below are public. Excluded operations are absent from both discovery and invocation. There is no switch that restores the full Backlog.md surface. The full browser is a deliberate human-facing exception, launched with `backlog browser`.
 
-The command table lists each public command and its explicit non-help options. `--help` remains available for every listed command.
+The command table lists each public command and its explicit non-help long options. Production short aliases remain available for every allowed option and are shown by `--help`.
 
 ## CLI operations
 
 | Command | Allowed options |
 | --- | --- |
 | `backlog` | `--version` |
+| `init` | `--agent-instructions`, `--check-branches`, `--include-remote`, `--branch-days`, `--bypass-git-hooks`, `--zero-padded-ids`, `--default-editor`, `--web-port`, `--auto-open-browser`, `--install-claude-agent`, `--integration-mode`, `--backlog-dir`, `--config-location`, `--task-prefix`, `--no-git`, `--defaults` |
+| `instructions` | `--list` |
 | `browser` | `--port`, `--no-open` |
 | `task` | — |
 | `task create` | `--description`, `--assignee`, `--status`, `--labels`, `--priority`, `--type`, `--milestone`, `--depends-on`, `--ac`, `--acceptance-criteria`, `--plain` |

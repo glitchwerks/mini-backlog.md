@@ -1,7 +1,10 @@
 import { describe, expect, it } from "bun:test";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { $ } from "bun";
 import { MINI_CLI_OPTIONS } from "../mini/surface-policy.ts";
+import { safeCleanup } from "./test-utils.ts";
 
 const MINI_CLI_PATH = join(process.cwd(), "src", "cli.ts");
 
@@ -9,23 +12,33 @@ async function runMini(...args: string[]) {
 	return await $`bun ${[MINI_CLI_PATH, ...args]}`.quiet().nothrow();
 }
 
+function optionNamesFromHelp(help: string): string[] {
+	const options = help.split("Options:\n")[1]?.split("\n\n")[0] ?? "";
+	return options
+		.split("\n")
+		.map((line) => line.match(/^ {2}(?:-\w, )?(--[\w-]+)/)?.[1])
+		.filter((option): option is string => option !== undefined)
+		.sort();
+}
+
 describe("shipped mini CLI surface", () => {
 	it("publishes only the exact root commands", async () => {
 		const result = await runMini("--help");
 		const output = result.stdout.toString();
+		const commandSection = output.split("Commands:\n")[1] ?? "";
 
 		expect(result.exitCode).toBe(0);
 		expect(
-			output
-				.split("Commands:\n")[1]
-				?.trim()
+			commandSection
 				.split("\n")
+				.filter((line) => /^ {2}\S/.test(line))
 				.map((line) => line.trim().split(/\s/)[0])
 				.sort(),
-		).toEqual(["browser", "doc", "mcp", "milestone", "search", "task"]);
-		for (const allowed of ["task", "search", "doc", "milestone", "mcp", "browser"]) expect(output).toContain(allowed);
+		).toEqual(["browser", "doc", "init", "instructions", "mcp", "milestone", "search", "task"]);
+		for (const allowed of ["init", "task", "search", "doc", "milestone", "instructions", "mcp", "browser"]) {
+			expect(output).toContain(allowed);
+		}
 		for (const hidden of [
-			"init",
 			"draft",
 			"board",
 			"decision",
@@ -35,14 +48,12 @@ describe("shipped mini CLI surface", () => {
 			"cleanup",
 			"overview",
 			"completion",
-			"instructions",
 		]) {
 			expect(output).not.toMatch(new RegExp(`\\b${hidden}\\b`));
 		}
 	});
 
 	it.each([
-		"init",
 		"draft",
 		"board",
 		"decision",
@@ -52,7 +63,6 @@ describe("shipped mini CLI surface", () => {
 		"cleanup",
 		"overview",
 		"completion",
-		"instructions",
 		"task archive TASK-1",
 		"milestone archive m-1",
 		"task create X --due-date 2026-09-14",
@@ -70,17 +80,70 @@ describe("shipped mini CLI surface", () => {
 		expect(result.stderr.toString()).not.toContain("Definition of Done");
 	});
 
-	it("publishes only the browser's approved long options", async () => {
+	it("initializes a new project with the full production init command", async () => {
+		const dir = await mkdtemp(join(tmpdir(), "mini-init-"));
+		try {
+			const result = await $`bun ${MINI_CLI_PATH} init "Mini Init" --defaults --no-git --integration-mode none`
+				.cwd(dir)
+				.quiet()
+				.nothrow();
+
+			expect(result.exitCode).toBe(0);
+			expect(await Bun.file(join(dir, "backlog", "config.yml")).exists()).toBe(true);
+			expect(result.stdout.toString()).toContain("Initialized backlog project: Mini Init");
+		} finally {
+			await safeCleanup(dir);
+		}
+	});
+
+	it("publishes every workflow guide including initialization", async () => {
+		const [index, overview, initRequired] = await Promise.all([
+			runMini("instructions"),
+			runMini("instructions", "overview"),
+			runMini("instructions", "init-required"),
+		]);
+
+		for (const result of [index, overview, initRequired]) expect(result.exitCode).toBe(0);
+		expect(index.stdout.toString()).toContain("backlog instructions task-finalization");
+		expect(index.stdout.toString()).toContain("backlog instructions init-required");
+		expect(overview.stdout.toString()).toContain("Backlog.md Overview (CLI)");
+		expect(initRequired.stdout.toString()).toContain("backlog init --defaults");
+	});
+
+	it("publishes the complete production init option surface", async () => {
+		const result = await runMini("init", "--help");
+
+		expect(result.exitCode).toBe(0);
+		expect(optionNamesFromHelp(result.stdout.toString())).toEqual(
+			[
+				"--agent-instructions",
+				"--auto-open-browser",
+				"--backlog-dir",
+				"--branch-days",
+				"--bypass-git-hooks",
+				"--check-branches",
+				"--config-location",
+				"--default-editor",
+				"--defaults",
+				"--help",
+				"--include-remote",
+				"--install-claude-agent",
+				"--integration-mode",
+				"--no-git",
+				"--task-prefix",
+				"--web-port",
+				"--zero-padded-ids",
+			].sort(),
+		);
+	});
+
+	it("publishes only the browser's approved options", async () => {
 		const result = await runMini("browser", "--help");
 		const help = result.stdout.toString();
 
 		expect(result.exitCode).toBe(0);
-		expect([...help.matchAll(/^ {2}(--[\w-]+)/gm)].map((match) => match[1]).sort()).toEqual([
-			"--help",
-			"--no-open",
-			"--port",
-		]);
-		expect(help).not.toContain("-p,");
+		expect(optionNamesFromHelp(help)).toEqual(["--help", "--no-open", "--port"]);
+		expect(help).toContain("-p, --port");
 		expect(help).not.toContain("--non-interactive");
 	});
 
@@ -116,11 +179,17 @@ describe("shipped mini CLI surface", () => {
 		expect(result.stderr.toString()).toContain("ordinal");
 	});
 
-	it("publishes only long allowed options and no excluded help concepts", async () => {
+	it("preserves production short aliases for allowed options and hides excluded help concepts", async () => {
 		const results = await Promise.all([
+			runMini("--help"),
+			runMini("browser", "--help"),
 			runMini("task", "create", "--help"),
 			runMini("task", "edit", "--help"),
 			runMini("task", "list", "--help"),
+			runMini("doc", "create", "--help"),
+			runMini("doc", "update", "--help"),
+			runMini("milestone", "add", "--help"),
+			runMini("mcp", "start", "--help"),
 			runMini("search", "--help"),
 		]);
 		const output = results.map((result) => result.stdout.toString()).join("\n");
@@ -129,18 +198,26 @@ describe("shipped mini CLI surface", () => {
 		for (const allowed of ["--description", "--assignee", "--depends-on", "--ac", "--sort", "--type"]) {
 			expect(output).toContain(allowed);
 		}
+		for (const alias of [
+			"-v, --version",
+			"-h, --help",
+			"-p, --port",
+			"-d, --description",
+			"-a, --assignee",
+			"-s, --status",
+			"-l, --labels",
+			"-m, --milestone",
+			"-t, --title",
+			"-l, --label",
+			"-p, --path",
+			"-t, --type",
+			"-d, --debug",
+		]) {
+			expect(output).toContain(alias);
+		}
 		expect(output).not.toMatch(/(^|\s)--desc(?:\s|$)/m);
 		expect(output).not.toMatch(/(^|\s)--dep(?:\s|$)/m);
-		for (const hidden of [
-			"-a,",
-			"-d,",
-			"due-date",
-			"project",
-			"Definition of Done",
-			"implementation",
-			"decision",
-			"archive",
-		]) {
+		for (const hidden of ["--due-date", "--project", "Definition of Done", "implementation", "decision", "archive"]) {
 			expect(output).not.toContain(hidden);
 		}
 	});
@@ -150,6 +227,8 @@ it.each(
 	Object.entries(MINI_CLI_OPTIONS),
 )("publishes exact options and arguments for '%s'", async (path, allowedOptions) => {
 	const argsByPath: Record<string, string[]> = {
+		init: ["[projectName]"],
+		instructions: ["[guide]"],
 		"task create": ["<title>"],
 		"task edit": ["<taskIds...>"],
 		"task view": ["<taskId>"],
@@ -166,9 +245,7 @@ it.each(
 	const result = await runMini(...(path ? path.split(" ") : []), "--help");
 	const help = result.stdout.toString();
 	expect(result.exitCode).toBe(0);
-	expect([...help.matchAll(/^ {2}(--[\w-]+)/gm)].map((match) => match[1]).sort()).toEqual(
-		[...allowedOptions, "--help"].sort(),
-	);
+	expect(optionNamesFromHelp(help)).toEqual([...allowedOptions, "--help"].sort());
 	const usage = help.split("\n")[0] ?? "";
 	expect(
 		[...usage.matchAll(/<[^>]+>|\[[^\]]+\]/g)]

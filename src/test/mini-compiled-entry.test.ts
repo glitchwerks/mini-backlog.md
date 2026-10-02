@@ -57,10 +57,19 @@ describe("compiled mini CLI entry", () => {
 
 		expect(stderr).toBe("");
 		expect(stdout).toContain("Usage: backlog [options] [command]");
-		for (const command of ["task", "search", "doc", "milestone", "mcp", "browser"]) {
+		for (const command of [
+			"init",
+			"instructions",
+			"task",
+			"search",
+			"doc",
+			"milestone",
+			"mcp",
+			"browser",
+		]) {
 			expect(stdout).toMatch(new RegExp(`^  ${command}\\b`, "m"));
 		}
-		for (const command of ["board", "init", "instructions"]) {
+		for (const command of ["board"]) {
 			expect(stdout).not.toMatch(new RegExp(`^  ${command}\\b`, "m"));
 		}
 	});
@@ -112,8 +121,10 @@ describe("compiled mini CLI entry", () => {
 			{ timeout: 10000 },
 		);
 		expect(stdout).toContain("mini-backlog.md");
-		expect(stdout).toMatch(/^ {2}browser\b/m);
-		expect(stdout).not.toMatch(/^ {2}(init|help)\b/m);
+		for (const command of ["init", "instructions", "browser"]) {
+			expect(stdout).toMatch(new RegExp(`^ {2}${command}\\b`, "m"));
+		}
+		expect(stdout).not.toMatch(/^ {2}(board|help)\b/m);
 		await expect(
 			execFileAsync("node", [join(install, "node_modules/mini-backlog.md/scripts/cli.cjs"), "board"], {
 				timeout: 10000,

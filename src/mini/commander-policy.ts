@@ -48,17 +48,16 @@ export function applyMiniCommanderPolicy(program: Command): void {
 		const options = command.options as NonNullable<Command["options"]> extends readonly (infer T)[] ? T[] : never;
 		options.splice(0, options.length, ...options.filter((option) => option.long && allowed.has(option.long)));
 		(command as Command & { _aliases: string[] })._aliases.splice(0);
-		const eventEmitter = command as Command & { removeAllListeners(event: string): void };
-		for (const event of ["beforeHelp", "afterHelp", "beforeAllHelp", "afterAllHelp"])
-			eventEmitter.removeAllListeners(event);
+		if (path !== "init" && path !== "instructions") {
+			const eventEmitter = command as Command & { removeAllListeners(event: string): void };
+			for (const event of ["beforeHelp", "afterHelp", "beforeAllHelp", "afterAllHelp"])
+				eventEmitter.removeAllListeners(event);
+		}
 		command.description(MINI_CLI_DESCRIPTIONS[path as keyof typeof MINI_CLI_DESCRIPTIONS]);
-		command.helpOption("--help", "display help for command");
+		command.helpOption("-h, --help", "display help for command");
 		command.addHelpCommand(false);
 		if (path === "task") (command.registeredArguments as Argument[]).splice(0);
 		for (const option of command.options) {
-			const longFlagIndex = option.flags.indexOf("--");
-			if (longFlagIndex >= 0) option.flags = option.flags.slice(longFlagIndex);
-			option.short = undefined;
 			const miniDescription = option.long ? optionDescriptions?.[option.long] : undefined;
 			if (miniDescription) option.description = miniDescription;
 		}
