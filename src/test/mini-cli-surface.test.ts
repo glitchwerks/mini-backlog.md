@@ -167,6 +167,23 @@ describe("shipped mini CLI surface", () => {
 		}
 	});
 
+	it.each(["none", "mcp"])("accepts disabled agent instructions with %s integration", async (integrationMode) => {
+		const dir = await mkdtemp(join(tmpdir(), `mini-init-instructions-none-${integrationMode}-`));
+		try {
+			const result =
+				await $`bun ${MINI_CLI_PATH} init "Mini Instructions Disabled" --defaults --no-git --integration-mode ${integrationMode} --agent-instructions none`
+					.cwd(dir)
+					.quiet()
+					.nothrow();
+
+			expect(result.exitCode).toBe(0);
+			expect(await Bun.file(join(dir, "backlog", "config.yml")).exists()).toBe(true);
+			expect(await Bun.file(join(dir, "AGENTS.md")).exists()).toBe(false);
+		} finally {
+			await safeCleanup(dir);
+		}
+	});
+
 	it("publishes every workflow guide including initialization", async () => {
 		const [index, overview, initRequired] = await Promise.all([
 			runMini("instructions"),

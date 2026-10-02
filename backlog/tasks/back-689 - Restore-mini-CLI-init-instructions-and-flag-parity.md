@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-02 01:43'
-updated_date: '2026-10-02 12:17'
+updated_date: '2026-10-02 12:39'
 labels: []
 dependencies: []
 type: bug
@@ -47,6 +47,8 @@ Mini cannot create a new Backlog.md project or read the canonical workflow guide
 7. Add test-first functional coverage for non-interactive mini init defaults, mini-safe Claude agent installation, and mini-safe MCP client guidance; select integration templates from the active runtime mode while preserving production templates and full init behavior; run focused integration/surface/full-mode regression verification and CI-equivalent checks before updating PR #7.
 
 8. Add failing functional coverage for the hidden mini completion endpoint and explicit false Claude-agent integration flags; preserve the completion endpoint internally while keeping public mini discovery exact, normalize the documented boolean once before conflict validation, then run focused completion/init/surface verification and CI-equivalent checks before updating PR #7.
+
+9. Add failing noninteractive init coverage for disabled agent-instruction selection under none and mcp integration, plus direct surface-aware completion retry-warning coverage; normalize instruction selection before conflict checks and keep the full-mode retry text unchanged; then run focused init/surface/full-mode verification and build/smoke before updating PR #7.
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -67,16 +69,12 @@ New unrelated CI baseline observed during PR #7 follow-up: the latest Ubuntu run
 PR #7 init-integration follow-up RED: the new tests exposed all three review findings: the init-required guide lacked a fully prompt-free command, mini init installed the production Claude template with excluded operations, and mini MCP guidance referenced unavailable workflow resources/tools. GREEN: centralized runtime-selected integration guidance now preserves the exact production templates while mini installs only allowlisted Claude/MCP guidance; the documented prompt-free command initializes a fresh directory. Verification: the 3 new regressions passed; the broader init/guidance suite passed 134 tests with 1 Windows symlink skip and 0 failures; the mini contract suite passed 45/45; the project TypeScript compiler, targeted Biome, direct build, and compiled smoke passed. Baselines retained: exact repository-wide Biome still reports 441 Windows CRLF diagnostics, the Bun package-bin shim remains locally corrupted, the unchanged Windows Claude symlink fixture remains materialized as link text, the latest Ubuntu run has only the recorded board timestamp comparison failure after 2701 passes, and the recorded Nix browser-asset failure remains. DoD #2 remains unchecked.
 
 PR #7 completion/boolean follow-up RED: the internal completion endpoint was pruned in mini and returned exit 1 for both root and option candidates; explicit --install-claude-agent false returned exit 1 with both none and mcp integration. GREEN: mini retains completion and __complete as hidden internal paths, completion discovery omits hidden commands and exposes only already-pruned mini candidates, and the Claude-agent boolean is parsed once before conflict validation and reused. Verification: 4/4 new functional cases passed; focused completion/init/full-mode/mini surface coverage passed 129/129; mini contract coverage passed 45/45; TypeScript, targeted Biome, direct build, and compiled smoke including the internal completion endpoint passed. The Windows CI platform profile was stopped after reproducing existing environment baselines only: sandbox denial creating I:/apps/mini-backlog.md/.git/backlog.md/locks/create, unavailable sh/echo executables, and resulting lock, EBUSY, and 10-second timeout cascades. Exact repository-wide Biome still has the recorded 441 Windows CRLF diagnostics, so DoD #2 remains unchecked; the recorded Ubuntu board and Nix browser-asset baselines remain.
+
+PR #7 disabled-selection/warning follow-up RED: explicit --agent-instructions none exited 1 under both none and mcp integration, and no surface-aware warning formatter existed. GREEN: agent instruction selection is normalized once before conflict validation and reused, so only selections that install files conflict; completion installation failures now keep the exact full-mode retry text while mini directs users back through init without advertising the pruned completion install command. Verification: 4/4 new regression cases passed; focused completion/init/full-mode/mini surface coverage passed 172/172; mini contract coverage passed 45/45; TypeScript, targeted Biome with preserved line-ending modes, direct build, and compiled smoke passed. Exact repository-wide Biome remains the recorded Windows CRLF baseline, so DoD #2 remains unchecked; the recorded Ubuntu board and Nix browser-asset baselines remain.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Kept the mini CLI/MCP restricted while replacing every exposed workflow guide with concise mini-compatible guidance; full production guides and init behavior remain unchanged. Added regression coverage for all guides and fixed the Ubuntu compiled-entry formatting failure. Verified with 63 mini CLI tests, 16 full guidance tests, 119 broader mini tests plus the documented Windows-only CRLF failure, 8 compiled/package smoke tests, TypeScript, and targeted Biome.
-
-Restored the mini overview task-creation decision rule requested in PR #7 review without changing other mini guides or the production guides. Added a regression test and verified 80/80 focused tests, targeted Biome, and TypeScript.
-
-Aligned mini init integrations with the restricted surface: init-required now gives a genuinely prompt-free command, mini Claude installation advertises only allowed CLI operations, and mini MCP guidance lists only shipped mini tools. Full production templates and init behavior remain unchanged. Added functional regressions and updated compiled smoke coverage.
-
-Kept shell completion installation functional in mini through a hidden internal endpoint whose candidates reflect the restricted Commander graph, without changing public root help or exposing completion installation. Explicit false Claude-agent flags now remain disabled during none and mcp init conflict validation. Added functional source and compiled-smoke coverage.
+Normalized disabled agent-instruction selections before init integration conflicts and made completion-install failure guidance surface-aware, preserving full behavior while mini avoids advertising its rejected completion install command. Verified with 172 focused tests, 45 mini contract tests, TypeScript, targeted Biome, build, and compiled smoke.
 <!-- SECTION:FINAL_SUMMARY:END -->
