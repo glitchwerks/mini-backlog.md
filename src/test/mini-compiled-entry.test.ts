@@ -76,7 +76,7 @@ describe("compiled mini CLI entry", () => {
 		});
 	});
 
-	it("passes the compiled and Nix installation smoke against a seeded mini project", async () => {
+	it("passes the compiled installation smoke against a seeded mini project", async () => {
 		const pkg = await Bun.file(join(projectRoot, "package.json")).json();
 		const { stdout } = await execFileAsync(
 			process.execPath,

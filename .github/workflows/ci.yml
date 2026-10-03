@@ -49,11 +49,6 @@ jobs:
       - name: Validate source tag
         if: startsWith(github.ref, 'refs/tags/mini-v') && matrix.os == 'ubuntu-latest'
         run: bun scripts/validate-mini-tag.ts "$GITHUB_REF_NAME"
-      - name: Verify bun2nix dependency lock
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          bun run update-nix
-          git diff --exit-code -- bun.nix
       - run: bun run check:types
         if: matrix.test_profile == 'full'
       - run: bun run check
@@ -158,17 +153,3 @@ jobs:
           path: .tmp/surfaces/candidate.*
           include-hidden-files: true
           if-no-files-found: error
-
-  nix-package:
-    name: nix-package
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: DeterminateSystems/nix-installer-action@v22
-      - name: Build and smoke-test Nix package
-        run: |
-          nix build .#mini-backlog-md --print-build-logs
-          expected_version="$(jq -r .version package.json)"
-          actual_version="$(./result/bin/backlog --version)"
-          test "$actual_version" = "$expected_version"
-          ./result/bin/backlog --help >/dev/null

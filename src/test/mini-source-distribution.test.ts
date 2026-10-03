@@ -53,6 +53,6 @@ describe("source-only distribution", () => {
 
 	it("runs ordinary CI for fork-specific source tags", async () => {
 		const workflow = await Bun.file(join(projectRoot, ".github/workflows/ci.yml")).text();
-		expect(workflow).toMatch(/push:\s*\n(?:\s+.*\n)*?\s+tags:\s*\[["']mini-v\*\.\*\.\*["']\]/);
+		expect(workflow).toMatch(/push:\s*\r?\n(?:\s+.*\r?\n)*?\s+tags:\s*\[["']mini-v\*\.\*\.\*["']\]/);
 	});
 });

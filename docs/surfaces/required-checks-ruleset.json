@@ -15,8 +15,7 @@
 					{ "context": "compile-and-smoke-test (windows-latest, bun-windows-x64-baseline)", "integration_id": 15368 },
 					{ "context": "lint-and-unit-test (ubuntu-latest)", "integration_id": 15368 },
 					{ "context": "lint-and-unit-test (macos-latest)", "integration_id": 15368 },
-					{ "context": "lint-and-unit-test (windows-latest)", "integration_id": 15368 },
-					{ "context": "nix-package", "integration_id": 15368 }
+					{ "context": "lint-and-unit-test (windows-latest)", "integration_id": 15368 }
 				]
 			}
 		},
