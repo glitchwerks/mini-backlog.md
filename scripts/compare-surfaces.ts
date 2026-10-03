@@ -256,6 +256,7 @@ export async function writeComparison(
 	report: ReturnType<typeof compareSurfaces>,
 	prefix: string,
 	inputFiles: string[],
+	candidate?: unknown,
 ) {
 	const output = resolve(prefix);
 	await mkdir(dirname(output), { recursive: true });
@@ -263,7 +264,12 @@ export async function writeComparison(
 	const inputs = await Promise.all(
 		inputFiles.map(async (path) => ({ path: pathKey(await realpath(path)), info: await stat(path) })),
 	);
+	const contents = [canonicalJson(report), renderComparison(report)];
 	const files = [`${output}.json`, `${output}.md`];
+	if (candidate !== undefined) {
+		files.push(`${output}.candidate.json`);
+		contents.push(canonicalJson(candidate));
+	}
 	for (const file of files) {
 		try {
 			const resolved = pathKey(await realpath(file));
@@ -278,8 +284,8 @@ export async function writeComparison(
 	}
 	const temporaries = files.map((path) => `${path}.${randomUUID()}.tmp`);
 	try {
-		await writeFile(temporaries[0] as string, canonicalJson(report), { flag: "wx" });
-		await writeFile(temporaries[1] as string, renderComparison(report), { flag: "wx" });
+		for (const [index, content] of contents.entries())
+			await writeFile(temporaries[index] as string, content, { flag: "wx" });
 		for (const [index, path] of files.entries()) await rename(temporaries[index] as string, path);
 	} finally {
 		await Promise.all(temporaries.map((path) => rm(path, { force: true })));

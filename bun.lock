@@ -34,6 +34,7 @@
         "react-tooltip": "6.0.8",
         "tailwindcss": "4.3.2",
         "typescript": "7.0.2",
+        "zod": "4.4.3",
       },
     },
   },

@@ -373,6 +373,11 @@ async function withFixture<T>(target: CaptureTarget, use: (fixture: CaptureTarge
 	}
 }
 
+/** Capture discovery and representative responses without using the caller's project. */
+export async function captureIsolatedSurface(target: CaptureTarget) {
+	return withFixture(target, (fixture) => captureSurface(fixture, true));
+}
+
 /** Run the fixed representative profile only in a newly allocated disposable project. */
 export async function captureResponses(target: CaptureTarget) {
 	return withFixture(target, async (fixture) => {

@@ -36,3 +36,15 @@ The committed JSON/Markdown reports retain additions, removals and changes to sc
 `--fail-on-drift` exits nonzero after writing the report when differences exist. Without it, differences are review evidence and do not fail the command. Report outputs cannot overwrite the supplied input manifests. Reports contain no capture time; repeated comparisons of the same inputs produce identical content. These reports describe observed differences and do not automatically classify them as acceptable or breaking.
 
 Use the three report pairs separately: upstream changes explain new source work; upstream-to-mini shows the fork's deliberate difference; mini-to-candidate checks whether synchronization preserved mini. Git diffs may explain implementation changes, but the reports derive public surfaces from runtime captures (issue #12; PR #9).
+
+## Compiled candidate check
+
+From the repository root, after building mini:
+
+```bash
+bun scripts/check-mini-surface.ts --binary dist/backlog --label mini-candidate --revision <source-commit> --output .tmp/surfaces/candidate
+```
+
+Use `dist/backlog.exe` on Windows. The check initializes disposable discovery and response projects using the same profile, protects the input baseline, and writes `.candidate.json`, `.json` and `.md` artifacts. Drift exits nonzero after writing review evidence; incomplete baselines and capture failures exit nonzero without publishing new artifacts. Previously written files at that prefix remain on capture failure, so use a fresh prefix per attempt when retaining historical evidence. It defaults to `mini-v1.53.0.json`; `--baseline` selects another explicitly reviewed baseline (issue #13).
+
+The existing CI compile jobs check their actual mini binaries on Linux, macOS and Windows and upload these artifacts. These discovery/response checks supplement invocation rejection, metadata preservation, browser and upstream regression tests; they do not approve product changes or replace those tests. The fork's internal full-mode harness remains confined to upstream regressions (issues #10–#13; PR #9).

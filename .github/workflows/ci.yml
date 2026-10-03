@@ -144,6 +144,20 @@ jobs:
           VER="$(jq -r .version package.json)"
           chmod +x "$FILE"
           bun scripts/smoke-compiled-build.ts "$FILE" "$VER"
+      - name: Check mini runtime surface
+        id: surface
+        shell: bash
+        run: |
+          FILE="backlog-test${{ contains(matrix.target,'windows') && '.exe' || '' }}"
+          bun scripts/check-mini-surface.ts --binary "$FILE" --label "mini-${{ matrix.target }}" --revision "$GITHUB_SHA" --output .tmp/surfaces/candidate
+      - name: Upload runtime surface review artifacts
+        if: always() && (steps.surface.outcome == 'success' || steps.surface.outcome == 'failure')
+        uses: actions/upload-artifact@v7
+        with:
+          name: mini-runtime-surface-${{ matrix.os }}
+          path: .tmp/surfaces/candidate.*
+          include-hidden-files: true
+          if-no-files-found: error
 
   nix-package:
     name: nix-package
