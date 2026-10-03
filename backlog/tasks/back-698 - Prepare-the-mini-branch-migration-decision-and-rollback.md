@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@codex'
 created_date: '2026-10-03 17:19'
-updated_date: '2026-10-03 17:33'
+updated_date: '2026-10-03 20:35'
 labels: []
 dependencies:
   - BACK-697
@@ -48,4 +48,6 @@ Prepared an additive branch/default/PR-base/CI/install/tag migration and rollbac
 Independent review found no actionable proposal, evidence, citation or ruleset schema errors. All seven proposed check contexts and GitHub Actions app 15368 were verified against PR #15 check-runs. Candidate snapshot equals the baseline; report identity matches the retained merge. The three clean temporary capture/demo worktrees were removed after explicit path and status checks; active and unrelated worktrees remain. The required-check payload is a review proposal, not an applied ruleset.
 
 Persistence audit after commit 9ccb5069: git ls-tree HEAD -- docs/surfaces verifies the inventory, proposed ruleset, upstream-based candidate snapshot and both reports; git ls-tree HEAD -- docs/superpowers/plans/2026-10-03-mini-branch-migration-plan.md verifies the proposal. All six required migration artifacts are committed. The earlier 18 capture/comparison/gate artifacts are also present in HEAD. git merge-base --is-ancestor bc1134f26c5226460c2cd5efd5d7875bbfbf2c6d HEAD succeeds. Deliverables reconcile with git diff main...HEAD --stat. Implementation branch is local and unpublished after baf842ef pending the PR #15 closure clarification.
+
+The user approved restoring the initiative publication path. Primary branch codex/mini-surface-sync was restored at 1b369ba5 and replacement draft PR #17 opened; committed work was pushed to its existing source branch only after verifying the new PR remained open. The proposal now cites PR #17 and retains the original inventory as historical evidence. This approval does not apply the permanent upstream/mini/default/ruleset migration.
 <!-- SECTION:NOTES:END -->
