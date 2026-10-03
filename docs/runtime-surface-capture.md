@@ -30,11 +30,15 @@ From this repository with its development dependencies installed:
 
 ```bash
 bun scripts/capture-surface.ts --target target.json --output manifest.json
+# Include representative operation responses:
+bun scripts/capture-surface.ts --target target.json --output manifest.json --responses
 ```
 
 The collector runs `--version`, traverses public CLI `--help`, and starts the same executable with `mcp start` for MCP discovery. It never imports that build's internal modules. Select a real upstream build for upstream captures: this fork's internal full-mode test entry contains fork changes and is not a pristine upstream substitute.
 
 Output is published atomically after every discovery step succeeds. Failed captures leave any previous output intact. Invalid targets, failed launches, timeouts, malformed help, pagination loops, duplicate discovery identities, and discovery limits cause a nonzero exit.
+
+With `--responses`, the collector allocates a new temporary directory and initializes it through the selected executable's public `init` command. It fixes the project name, task prefix, padding, branch checks, remote inclusion, and integration settings. All mutations run there, never in the target's `cwd`. The temporary project and MCP process are cleaned up on success and failure. The executable and source entry points must remain resolvable from this new directory.
 
 ## Manifest
 
@@ -48,8 +52,14 @@ Object keys and discovery collections are sorted deterministically. Arrays withi
 
 The help parser supports Backlog's current English Commander help layout and fails on unsupported syntax. Traversal is limited to 500 commands and 20 path components; each MCP discovery collection is limited to 500 pages.
 
+`--responses` emits manifest version 2, adding `surface.responses` with `profileVersion: 1` and named probes. Use the same manifest and profile versions for comparisons. Discovery-only captures remain version 1; they cannot supply a response baseline.
+
+The fixed profile reads empty, sparse, and populated task lists; task details with nullable metadata, dependencies, acceptance criteria, and anonymous/authored comments; search JSON; plain task/document/milestone output; and all 15 mini MCP operations, including completion. Documents are created and updated, and a milestone is added, renamed, and removed through MCP. Fixture IDs come from public responses and the CLI allocator.
+
+Each probe records JSON field paths (root `$`, array elements `*`, escaped property names), observed type unions, and whether a property is absent in any observed object at its parent path. This is **observed optionality**, not a schema guarantee. Values are omitted, including generated IDs, timestamps, and paths; their fields and types remain. MCP envelopes are retained structurally, with advertised response content block types. Plain text records column-zero field and section labels and the distinct combinations observed; it does not infer types or preserve prose. Errors, malformed JSON, or unsupported fixture operations abort the capture without replacing its output.
+
 ## Limits
 
 Discovery describes advertised commands and schemas. It does not prove that hidden invocations are rejected or that operations behave correctly. Keep existing contract, invocation-rejection, metadata-preservation, browser, and regression tests.
 
-Representative operation response shapes, an approved mini baseline, comparison reports, and the sync gate are separate milestone issues #11, #12, and #13. No manifest is automatically approved. Browser HTTP routes and instruction-guide content are not enumerated by version 1. No branch layout, release version, or tag changes are performed by capture.
+Representative probes do not prove every behavior, response variant, formatted value, or text layout. Empty collections cannot reveal element fields until populated. Browser HTTP routes and instruction-guide content are not enumerated. Keep behavioral and metadata tests; the manifest supplements them. An approved mini baseline, comparison reports, and the sync gate are separate milestone issues #12 and #13. No manifest is automatically approved. No branch layout, release version, or tag changes are performed by capture.

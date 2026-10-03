@@ -1,8 +1,11 @@
-import { stat } from "node:fs/promises";
-import { isAbsolute } from "node:path";
+import { mkdtemp, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { isAbsolute, join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { getDefaultEnvironment, StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { ListToolsResultSchema } from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod";
+import { inspectToolResponse, observeShape, textOutline } from "./response-shapes.ts";
 
 export interface CaptureTarget {
 	command: string[];
@@ -254,7 +257,7 @@ export async function collectPages<T>(
 	throw new Error("MCP discovery exceeded its page limit.");
 }
 
-async function discoverMcp(target: CaptureTarget) {
+async function withMcp<T>(target: CaptureTarget, action: (client: Client) => Promise<T>): Promise<T> {
 	const command = target.command[0];
 	if (!command) throw new Error("Missing target command.");
 	const transport = new StdioClientTransport({
@@ -269,6 +272,16 @@ async function discoverMcp(target: CaptureTarget) {
 	const options = { timeout: target.timeoutMs };
 	try {
 		await client.connect(transport, options);
+		return await action(client);
+	} finally {
+		await client.close();
+		await transport.close();
+	}
+}
+
+async function discoverMcp(target: CaptureTarget) {
+	return withMcp(target, async (client) => {
+		const options = { timeout: target.timeoutMs };
 		const capabilities = client.getServerCapabilities();
 		const tools = capabilities?.tools
 			? await collectPages(
@@ -312,26 +325,169 @@ async function discoverMcp(target: CaptureTarget) {
 				)
 			: [];
 		return { server: client.getServerVersion(), surface: { tools, resources, resourceTemplates, prompts } };
-	} finally {
-		await client.close();
-		await transport.close();
-	}
+	});
 }
 
-export async function captureSurface(target: CaptureTarget) {
+export async function captureSurface(target: CaptureTarget, responses = false) {
 	const validated = await validateTarget(target);
 	const cliVersion = (await runCli(validated, ["--version"])).trim();
 	if (!cliVersion || cliVersion.includes("\n")) throw new Error("Invalid CLI version output.");
 	const cli = await discoverCli(validated);
 	const mcp = await discoverMcp(validated);
 	return {
-		manifestVersion: 1,
+		manifestVersion: responses ? 2 : 1,
 		identity: {
 			label: target.label,
 			...(target.revision === undefined ? {} : { revision: target.revision }),
 			cliVersion,
 			mcpServer: mcp.server,
 		},
-		surface: { cli, mcp: mcp.surface },
+		surface: { cli, mcp: mcp.surface, ...(responses ? { responses: await captureResponses(validated) } : {}) },
 	};
+}
+
+/** Run the fixed representative profile only in a newly allocated disposable project. */
+export async function captureResponses(target: CaptureTarget) {
+	const validated = await validateTarget(target);
+	const cwd = await mkdtemp(join(tmpdir(), "backlog-response-fixture-"));
+	const fixture = { ...validated, cwd };
+	const samples = new Map<string, { values: unknown[]; texts: string[]; contentTypes: Set<string> }>();
+	function record(name: string, value: unknown, texts: string[] = [], contentTypes: string[] = []): void {
+		const sample = samples.get(name) ?? { values: [], texts: [], contentTypes: new Set<string>() };
+		sample.values.push(value);
+		sample.texts.push(...texts);
+		for (const type of contentTypes) sample.contentTypes.add(type);
+		samples.set(name, sample);
+	}
+	async function cli(name: string, args: string[], json = false) {
+		const text = await runCli(fixture, args);
+		const value = json ? JSON.parse(text) : text;
+		record(`cli.${name}`, value, json ? [] : [text]);
+		return value;
+	}
+	try {
+		await runCli(fixture, [
+			"init",
+			"Surface fixture",
+			"--defaults",
+			"--no-git",
+			"--integration-mode",
+			"none",
+			"--agent-instructions",
+			"none",
+			"--check-branches",
+			"false",
+			"--include-remote",
+			"false",
+			"--task-prefix",
+			"surface",
+			"--zero-padded-ids",
+			"0",
+		]);
+		await withMcp(fixture, async (client) => {
+			async function call(name: string, args: Record<string, unknown> = {}, probeName = name.replace(/_/g, ".")) {
+				const raw = await client.request(
+					{ method: "tools/call", params: { name, arguments: args } },
+					z.object({}).passthrough(),
+					{ timeout: fixture.timeoutMs },
+				);
+				const result = inspectToolResponse(raw);
+				record(`mcp.${probeName}`, result.value, result.texts, result.contentTypes);
+				return result.texts.join("\n");
+			}
+			await cli("task.list.json", ["task", "list", "--json"], true);
+			await call("task_list");
+			await call("document_list");
+			await call("milestone_list");
+			await call("task_create", { title: "Surface sample" });
+			const list = await cli("task.list.json", ["task", "list", "--json"], true);
+			const id = list?.tasks?.find((task: { title?: string }) => task.title === "Surface sample")?.id;
+			if (typeof id !== "string" || !id)
+				throw new Error("Response fixture task ID missing from public task list JSON.");
+			async function taskReads() {
+				await cli("task.view.json", ["task", "view", id, "--json"], true);
+				await cli("task.view.plain", ["task", "view", id, "--plain"]);
+				await cli("task.list.json", ["task", "list", "--json"], true);
+				await cli("search.json", ["search", "Surface", "--json"], true);
+				await call("task_view", { id });
+				await call("task_list");
+				await call("task_search", { query: "Surface" });
+			}
+			await taskReads();
+			await cli("task.create.plain", ["task", "create", "Surface dependency", "--plain"]);
+			const dependencyList = await cli("task.list.json", ["task", "list", "--json"], true);
+			const dependency = dependencyList?.tasks?.find(
+				(task: { title?: string }) => task.title === "Surface dependency",
+			)?.id;
+			if (typeof dependency !== "string" || !dependency) throw new Error("Response fixture dependency ID missing.");
+			await call("milestone_add", { name: "Surface milestone", description: "Surface description" });
+			await call("task_edit", {
+				id,
+				description: "Surface description",
+				priority: "high",
+				type: "bug",
+				labels: ["surface"],
+				assignee: ["@surface"],
+				milestone: "Surface milestone",
+				acceptanceCriteriaAdd: ["Surface criterion"],
+				dependencies: [dependency],
+				commentsAppend: ["Surface anonymous comment"],
+			});
+			await taskReads();
+			await call("task_edit", {
+				id,
+				commentsAppend: ["Surface authored comment"],
+				commentAuthor: "@surface",
+				acceptanceCriteriaCheck: [1],
+			});
+			await taskReads();
+			const created = await call("document_create", { title: "Surface document", content: "Surface content" });
+			const docId = created.match(/Document (doc-[\w.-]+) - /)?.[1];
+			if (!docId) throw new Error("Response fixture document ID missing from public document response.");
+			const documentId: string = docId;
+			async function documentReads() {
+				await call("document_view", { id: documentId });
+				await call("document_list");
+				await call("document_search", { query: "Surface" });
+				await cli("doc.view.plain", ["doc", "view", documentId, "--plain"]);
+				await cli("doc.list.plain", ["doc", "list", "--plain"]);
+				await cli("search.json", ["search", "Surface", "--json"], true);
+			}
+			await documentReads();
+			await call("document_update", {
+				id: docId,
+				content: "Surface updated content",
+				tags: ["surface"],
+				type: "guide",
+			});
+			await documentReads();
+			await call("milestone_list");
+			await cli("milestone.list.plain", ["milestone", "list", "--plain"]);
+			await call("milestone_rename", { from: "Surface milestone", to: "Surface renamed" });
+			await call("milestone_list");
+			await call("milestone_remove", { name: "Surface renamed", taskHandling: "clear" });
+			await call("task_edit", { id, status: "Done" });
+			await call("task_complete", { id });
+		});
+		return {
+			profileVersion: 1,
+			probes: Object.fromEntries(
+				[...samples.entries()]
+					.sort(([a], [b]) => (a < b ? -1 : 1))
+					.map(([name, sample]) => [
+						name,
+						{
+							fields: observeShape(sample.values),
+							labels: [...new Set(sample.texts.flatMap(textOutline))].sort(),
+							textForms: [...new Set(sample.texts.map((text) => JSON.stringify(textOutline(text))))]
+								.sort()
+								.map((text) => JSON.parse(text)),
+							contentTypes: [...sample.contentTypes].sort(),
+						},
+					]),
+			),
+		};
+	} finally {
+		await rm(cwd, { recursive: true, force: true });
+	}
 }

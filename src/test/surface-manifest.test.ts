@@ -217,6 +217,24 @@ describe("runtime surface capture command", () => {
 		]);
 	}, 60_000);
 
+	it("keeps previous output when discovery succeeds but response setup fails", async () => {
+		const result = await runCapture();
+		expect(result.exitCode).toBe(0);
+		const before = await readFile(result.output, "utf8");
+		const child = Bun.spawn(
+			[process.execPath, captureScript, "--target", result.target, "--output", result.output, "--responses"],
+			{ stdout: "pipe", stderr: "pipe" },
+		);
+		const [code, errors] = await Promise.all([
+			child.exited,
+			new Response(child.stderr).text(),
+			new Response(child.stdout).text(),
+		]);
+		expect(code).toBe(1);
+		expect(errors).toContain("init");
+		expect(await readFile(result.output, "utf8")).toBe(before);
+	}, 20000);
+
 	it.each(["hangCli", "hangMcp"])("bounds %s and cleans up the launched process", async (problem) => {
 		const directory = await mkdtemp(join(tmpdir(), "surface-process-"));
 		directories.push(directory);
