@@ -1,0 +1,2745 @@
+{
+	"after": {
+		"cliVersion": "1.53.0",
+		"label": "mini-v1.53.0 candidate demonstration",
+		"mcpServer": {
+			"name": "backlog.md",
+			"version": "1.53.0"
+		},
+		"revision": "baf842ef6cadcd5a3197bde22cddea47d4a2bb1e"
+	},
+	"before": {
+		"cliVersion": "1.52.0",
+		"label": "upstream tag v1.53.0",
+		"mcpServer": {
+			"name": "backlog.md",
+			"version": "1.52.0"
+		},
+		"revision": "fd20f71493fb4eda44b021aa89f257956f17fb71"
+	},
+	"changes": [
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--update-instructions": {
+						"argument": null,
+						"flags": ["--update-instructions"]
+					}
+				},
+				"path": ["agents"]
+			},
+			"kind": "removed",
+			"path": "/cli/agents"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--layout,-l": {
+						"argument": "<layout>",
+						"flags": ["--layout", "-l"]
+					},
+					"--milestones,-m": {
+						"argument": null,
+						"flags": ["--milestones", "-m"]
+					},
+					"--vertical": {
+						"argument": null,
+						"flags": ["--vertical"]
+					}
+				},
+				"path": ["board"]
+			},
+			"kind": "removed",
+			"path": "/cli/board"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["[filename]"],
+				"options": {
+					"--export-version": {
+						"argument": "<version>",
+						"flags": ["--export-version"]
+					},
+					"--force": {
+						"argument": null,
+						"flags": ["--force"]
+					},
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--readme": {
+						"argument": null,
+						"flags": ["--readme"]
+					}
+				},
+				"path": ["board", "export"]
+			},
+			"kind": "removed",
+			"path": "/cli/board export"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--layout,-l": {
+						"argument": "<layout>",
+						"flags": ["--layout", "-l"]
+					},
+					"--milestones,-m": {
+						"argument": null,
+						"flags": ["--milestones", "-m"]
+					},
+					"--vertical": {
+						"argument": null,
+						"flags": ["--vertical"]
+					}
+				},
+				"path": ["board", "view"]
+			},
+			"kind": "removed",
+			"path": "/cli/board view"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--non-interactive"]
+			},
+			"kind": "removed",
+			"path": "/cli/browser/options/--non-interactive"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["cleanup"]
+			},
+			"kind": "removed",
+			"path": "/cli/cleanup"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["completion"]
+			},
+			"kind": "removed",
+			"path": "/cli/completion"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["<line>", "<point>"],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["completion", "__complete"]
+			},
+			"kind": "removed",
+			"path": "/cli/completion __complete"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["[command]"],
+				"options": {},
+				"path": ["completion", "help"]
+			},
+			"kind": "removed",
+			"path": "/cli/completion help"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--shell": {
+						"argument": "<shell>",
+						"flags": ["--shell"]
+					}
+				},
+				"path": ["completion", "install"]
+			},
+			"kind": "removed",
+			"path": "/cli/completion install"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["config"]
+			},
+			"kind": "removed",
+			"path": "/cli/config"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["<key>"],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["config", "get"]
+			},
+			"kind": "removed",
+			"path": "/cli/config get"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["config", "list"]
+			},
+			"kind": "removed",
+			"path": "/cli/config list"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["<key>", "<value>"],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["config", "set"]
+			},
+			"kind": "removed",
+			"path": "/cli/config set"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["decision"]
+			},
+			"kind": "removed",
+			"path": "/cli/decision"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["<title>"],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--plain": {
+						"argument": null,
+						"flags": ["--plain"]
+					},
+					"--status,-s": {
+						"argument": "<status>",
+						"flags": ["--status", "-s"]
+					}
+				},
+				"path": ["decision", "create"]
+			},
+			"kind": "removed",
+			"path": "/cli/decision create"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["[command]"],
+				"options": {},
+				"path": ["decision", "help"]
+			},
+			"kind": "removed",
+			"path": "/cli/decision help"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--count": {
+						"argument": null,
+						"flags": ["--count"]
+					},
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--json": {
+						"argument": null,
+						"flags": ["--json"]
+					},
+					"--max-count": {
+						"argument": "<n>",
+						"flags": ["--max-count"]
+					},
+					"--plain": {
+						"argument": null,
+						"flags": ["--plain"]
+					},
+					"--skip": {
+						"argument": "<n>",
+						"flags": ["--skip"]
+					}
+				},
+				"path": ["decision", "list"]
+			},
+			"kind": "removed",
+			"path": "/cli/decision list"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["[command]"],
+				"options": {},
+				"path": ["doc", "help"]
+			},
+			"kind": "removed",
+			"path": "/cli/doc help"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--count"]
+			},
+			"kind": "removed",
+			"path": "/cli/doc list/options/--count"
+		},
+		{
+			"before": {
+				"argument": "<n>",
+				"flags": ["--max-count"]
+			},
+			"kind": "removed",
+			"path": "/cli/doc list/options/--max-count"
+		},
+		{
+			"before": {
+				"argument": "<n>",
+				"flags": ["--skip"]
+			},
+			"kind": "removed",
+			"path": "/cli/doc list/options/--skip"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--count"]
+			},
+			"kind": "removed",
+			"path": "/cli/doc search/options/--count"
+		},
+		{
+			"before": {
+				"argument": "<n>",
+				"flags": ["--max-count"]
+			},
+			"kind": "removed",
+			"path": "/cli/doc search/options/--max-count"
+		},
+		{
+			"before": {
+				"argument": "<n>",
+				"flags": ["--skip"]
+			},
+			"kind": "removed",
+			"path": "/cli/doc search/options/--skip"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--fix": {
+						"argument": null,
+						"flags": ["--fix"]
+					},
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--yes": {
+						"argument": null,
+						"flags": ["--yes"]
+					}
+				},
+				"path": ["doctor"]
+			},
+			"kind": "removed",
+			"path": "/cli/doctor"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["[taskId]"],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--plain": {
+						"argument": null,
+						"flags": ["--plain"]
+					}
+				},
+				"path": ["draft"]
+			},
+			"kind": "removed",
+			"path": "/cli/draft"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["<taskId>"],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["draft", "archive"]
+			},
+			"kind": "removed",
+			"path": "/cli/draft archive"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["<title>"],
+				"options": {
+					"--assignee,-a": {
+						"argument": "<assignees>",
+						"flags": ["--assignee", "-a"]
+					},
+					"--desc": {
+						"argument": "<text>",
+						"flags": ["--desc"]
+					},
+					"--description,-d": {
+						"argument": "<text>",
+						"flags": ["--description", "-d"]
+					},
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--labels,-l": {
+						"argument": "<labels>",
+						"flags": ["--labels", "-l"]
+					},
+					"--status,-s": {
+						"argument": "<status>",
+						"flags": ["--status", "-s"]
+					}
+				},
+				"path": ["draft", "create"]
+			},
+			"kind": "removed",
+			"path": "/cli/draft create"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["[taskId]"],
+				"options": {
+					"--ac": {
+						"argument": "<criteria>",
+						"flags": ["--ac"]
+					},
+					"--acceptance-criteria": {
+						"argument": "<criteria>",
+						"flags": ["--acceptance-criteria"]
+					},
+					"--add-label": {
+						"argument": "<labels>",
+						"flags": ["--add-label"]
+					},
+					"--add-ref": {
+						"argument": "<reference>",
+						"flags": ["--add-ref"]
+					},
+					"--append-final-summary": {
+						"argument": "<text>",
+						"flags": ["--append-final-summary"]
+					},
+					"--append-notes": {
+						"argument": "<text>",
+						"flags": ["--append-notes"]
+					},
+					"--append-plan": {
+						"argument": "<text>",
+						"flags": ["--append-plan"]
+					},
+					"--assignee,-a": {
+						"argument": "<assignees>",
+						"flags": ["--assignee", "-a"]
+					},
+					"--check-ac": {
+						"argument": "<index>",
+						"flags": ["--check-ac"]
+					},
+					"--check-dod": {
+						"argument": "<index>",
+						"flags": ["--check-dod"]
+					},
+					"--clear-ac": {
+						"argument": null,
+						"flags": ["--clear-ac"]
+					},
+					"--clear-deps": {
+						"argument": null,
+						"flags": ["--clear-deps"]
+					},
+					"--clear-docs": {
+						"argument": null,
+						"flags": ["--clear-docs"]
+					},
+					"--clear-due-date": {
+						"argument": null,
+						"flags": ["--clear-due-date"]
+					},
+					"--clear-final-summary": {
+						"argument": null,
+						"flags": ["--clear-final-summary"]
+					},
+					"--clear-labels": {
+						"argument": null,
+						"flags": ["--clear-labels"]
+					},
+					"--clear-milestone": {
+						"argument": null,
+						"flags": ["--clear-milestone"]
+					},
+					"--clear-refs": {
+						"argument": null,
+						"flags": ["--clear-refs"]
+					},
+					"--comment": {
+						"argument": "<text>",
+						"flags": ["--comment"]
+					},
+					"--comment-author": {
+						"argument": "<author>",
+						"flags": ["--comment-author"]
+					},
+					"--dep": {
+						"argument": "<taskIds>",
+						"flags": ["--dep"]
+					},
+					"--depends-on": {
+						"argument": "<taskIds>",
+						"flags": ["--depends-on"]
+					},
+					"--desc": {
+						"argument": "<text>",
+						"flags": ["--desc"]
+					},
+					"--description,-d": {
+						"argument": "<text>",
+						"flags": ["--description", "-d"]
+					},
+					"--doc": {
+						"argument": "<documentation>",
+						"flags": ["--doc"]
+					},
+					"--dod": {
+						"argument": "<item>",
+						"flags": ["--dod"]
+					},
+					"--due-date": {
+						"argument": "<date>",
+						"flags": ["--due-date"]
+					},
+					"--final-summary": {
+						"argument": "<text>",
+						"flags": ["--final-summary"]
+					},
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--label,-l": {
+						"argument": "<labels>",
+						"flags": ["--label", "-l"]
+					},
+					"--milestone,-m": {
+						"argument": "<milestone>",
+						"flags": ["--milestone", "-m"]
+					},
+					"--modified-file": {
+						"argument": "<path>",
+						"flags": ["--modified-file"]
+					},
+					"--notes": {
+						"argument": "<text>",
+						"flags": ["--notes"]
+					},
+					"--ordinal": {
+						"argument": "<number>",
+						"flags": ["--ordinal"]
+					},
+					"--plain": {
+						"argument": null,
+						"flags": ["--plain"]
+					},
+					"--plan": {
+						"argument": "<text>",
+						"flags": ["--plan"]
+					},
+					"--priority": {
+						"argument": "<priority>",
+						"flags": ["--priority"]
+					},
+					"--project": {
+						"argument": "<project>",
+						"flags": ["--project"]
+					},
+					"--ref": {
+						"argument": "<reference>",
+						"flags": ["--ref"]
+					},
+					"--remove-ac": {
+						"argument": "<index>",
+						"flags": ["--remove-ac"]
+					},
+					"--remove-dod": {
+						"argument": "<index>",
+						"flags": ["--remove-dod"]
+					},
+					"--remove-label": {
+						"argument": "<labels>",
+						"flags": ["--remove-label"]
+					},
+					"--remove-ref": {
+						"argument": "<reference>",
+						"flags": ["--remove-ref"]
+					},
+					"--status,-s": {
+						"argument": "<status>",
+						"flags": ["--status", "-s"]
+					},
+					"--title,-t": {
+						"argument": "<title>",
+						"flags": ["--title", "-t"]
+					},
+					"--type": {
+						"argument": "<type>",
+						"flags": ["--type"]
+					},
+					"--uncheck-ac": {
+						"argument": "<index>",
+						"flags": ["--uncheck-ac"]
+					},
+					"--uncheck-dod": {
+						"argument": "<index>",
+						"flags": ["--uncheck-dod"]
+					}
+				},
+				"path": ["draft", "edit"]
+			},
+			"kind": "removed",
+			"path": "/cli/draft edit"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--count": {
+						"argument": null,
+						"flags": ["--count"]
+					},
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--max-count": {
+						"argument": "<n>",
+						"flags": ["--max-count"]
+					},
+					"--plain": {
+						"argument": null,
+						"flags": ["--plain"]
+					},
+					"--skip": {
+						"argument": "<n>",
+						"flags": ["--skip"]
+					},
+					"--sort": {
+						"argument": "<field>",
+						"flags": ["--sort"]
+					}
+				},
+				"path": ["draft", "list"]
+			},
+			"kind": "removed",
+			"path": "/cli/draft list"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["<taskId>"],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["draft", "promote"]
+			},
+			"kind": "removed",
+			"path": "/cli/draft promote"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["<taskId>"],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					"--plain": {
+						"argument": null,
+						"flags": ["--plain"]
+					}
+				},
+				"path": ["draft", "view"]
+			},
+			"kind": "removed",
+			"path": "/cli/draft view"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["[command]"],
+				"options": {},
+				"path": ["help"]
+			},
+			"kind": "removed",
+			"path": "/cli/help"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["[command]"],
+				"options": {},
+				"path": ["mcp", "help"]
+			},
+			"kind": "removed",
+			"path": "/cli/mcp help"
+		},
+		{
+			"after": [],
+			"before": ["milestones"],
+			"kind": "changed",
+			"path": "/cli/milestone/aliases"
+		},
+		{
+			"before": {
+				"argument": "<date>",
+				"flags": ["--due-date"]
+			},
+			"kind": "removed",
+			"path": "/cli/milestone add/options/--due-date"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["<name>"],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["milestone", "archive"]
+			},
+			"kind": "removed",
+			"path": "/cli/milestone archive"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["[command]"],
+				"options": {},
+				"path": ["milestone", "help"]
+			},
+			"kind": "removed",
+			"path": "/cli/milestone help"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--count"]
+			},
+			"kind": "removed",
+			"path": "/cli/milestone list/options/--count"
+		},
+		{
+			"before": {
+				"argument": "<n>",
+				"flags": ["--max-count"]
+			},
+			"kind": "removed",
+			"path": "/cli/milestone list/options/--max-count"
+		},
+		{
+			"before": {
+				"argument": "<n>",
+				"flags": ["--skip"]
+			},
+			"kind": "removed",
+			"path": "/cli/milestone list/options/--skip"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--clear-due-date"]
+			},
+			"kind": "removed",
+			"path": "/cli/milestone rename/options/--clear-due-date"
+		},
+		{
+			"before": {
+				"argument": "<date>",
+				"flags": ["--due-date"]
+			},
+			"kind": "removed",
+			"path": "/cli/milestone rename/options/--due-date"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": [],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["overview"]
+			},
+			"kind": "removed",
+			"path": "/cli/overview"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--count"]
+			},
+			"kind": "removed",
+			"path": "/cli/search/options/--count"
+		},
+		{
+			"before": {
+				"argument": "<n>",
+				"flags": ["--max-count"]
+			},
+			"kind": "removed",
+			"path": "/cli/search/options/--max-count"
+		},
+		{
+			"before": {
+				"argument": "<path>",
+				"flags": ["--modified-file"]
+			},
+			"kind": "removed",
+			"path": "/cli/search/options/--modified-file"
+		},
+		{
+			"before": {
+				"argument": "<project>",
+				"flags": ["--project"]
+			},
+			"kind": "removed",
+			"path": "/cli/search/options/--project"
+		},
+		{
+			"before": {
+				"argument": "<n>",
+				"flags": ["--skip"]
+			},
+			"kind": "removed",
+			"path": "/cli/search/options/--skip"
+		},
+		{
+			"after": [],
+			"before": ["tasks"],
+			"kind": "changed",
+			"path": "/cli/task/aliases"
+		},
+		{
+			"after": [],
+			"before": ["[taskId]"],
+			"kind": "changed",
+			"path": "/cli/task/arguments"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--json"]
+			},
+			"kind": "removed",
+			"path": "/cli/task/options/--json"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--plain"]
+			},
+			"kind": "removed",
+			"path": "/cli/task/options/--plain"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["<taskId>"],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["task", "archive"]
+			},
+			"kind": "removed",
+			"path": "/cli/task archive"
+		},
+		{
+			"after": ["<title>"],
+			"before": ["[title]"],
+			"kind": "changed",
+			"path": "/cli/task create/arguments"
+		},
+		{
+			"before": {
+				"argument": "<taskIds>",
+				"flags": ["--dep"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--dep"
+		},
+		{
+			"before": {
+				"argument": "<text>",
+				"flags": ["--desc"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--desc"
+		},
+		{
+			"before": {
+				"argument": "<documentation>",
+				"flags": ["--doc"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--doc"
+		},
+		{
+			"before": {
+				"argument": "<item>",
+				"flags": ["--dod"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--dod"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--draft"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--draft"
+		},
+		{
+			"before": {
+				"argument": "<date>",
+				"flags": ["--due-date"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--due-date"
+		},
+		{
+			"before": {
+				"argument": "<text>",
+				"flags": ["--final-summary"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--final-summary"
+		},
+		{
+			"before": {
+				"argument": "<path>",
+				"flags": ["--modified-file"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--modified-file"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--no-dod-defaults"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--no-dod-defaults"
+		},
+		{
+			"before": {
+				"argument": "<text>",
+				"flags": ["--notes"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--notes"
+		},
+		{
+			"before": {
+				"argument": "<number>",
+				"flags": ["--ordinal"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--ordinal"
+		},
+		{
+			"before": {
+				"argument": "<taskId>",
+				"flags": ["--parent", "-p"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--parent,-p"
+		},
+		{
+			"before": {
+				"argument": "<text>",
+				"flags": ["--plan"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--plan"
+		},
+		{
+			"before": {
+				"argument": "<project>",
+				"flags": ["--project"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--project"
+		},
+		{
+			"before": {
+				"argument": "<reference>",
+				"flags": ["--ref"]
+			},
+			"kind": "removed",
+			"path": "/cli/task create/options/--ref"
+		},
+		{
+			"before": {
+				"aliases": [],
+				"arguments": ["<taskId>"],
+				"options": {
+					"--help,-h": {
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				},
+				"path": ["task", "demote"]
+			},
+			"kind": "removed",
+			"path": "/cli/task demote"
+		},
+		{
+			"after": ["<taskIds...>"],
+			"before": ["[taskIds...]"],
+			"kind": "changed",
+			"path": "/cli/task edit/arguments"
+		},
+		{
+			"before": {
+				"argument": "<reference>",
+				"flags": ["--add-ref"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--add-ref"
+		},
+		{
+			"before": {
+				"argument": "<text>",
+				"flags": ["--append-final-summary"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--append-final-summary"
+		},
+		{
+			"before": {
+				"argument": "<text>",
+				"flags": ["--append-notes"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--append-notes"
+		},
+		{
+			"before": {
+				"argument": "<text>",
+				"flags": ["--append-plan"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--append-plan"
+		},
+		{
+			"before": {
+				"argument": "<index>",
+				"flags": ["--check-dod"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--check-dod"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--clear-docs"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--clear-docs"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--clear-due-date"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--clear-due-date"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--clear-final-summary"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--clear-final-summary"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--clear-refs"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--clear-refs"
+		},
+		{
+			"before": {
+				"argument": "<taskIds>",
+				"flags": ["--dep"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--dep"
+		},
+		{
+			"before": {
+				"argument": "<text>",
+				"flags": ["--desc"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--desc"
+		},
+		{
+			"before": {
+				"argument": "<documentation>",
+				"flags": ["--doc"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--doc"
+		},
+		{
+			"before": {
+				"argument": "<item>",
+				"flags": ["--dod"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--dod"
+		},
+		{
+			"before": {
+				"argument": "<date>",
+				"flags": ["--due-date"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--due-date"
+		},
+		{
+			"before": {
+				"argument": "<text>",
+				"flags": ["--final-summary"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--final-summary"
+		},
+		{
+			"before": {
+				"argument": "<path>",
+				"flags": ["--modified-file"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--modified-file"
+		},
+		{
+			"before": {
+				"argument": "<text>",
+				"flags": ["--notes"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--notes"
+		},
+		{
+			"before": {
+				"argument": "<number>",
+				"flags": ["--ordinal"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--ordinal"
+		},
+		{
+			"before": {
+				"argument": "<text>",
+				"flags": ["--plan"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--plan"
+		},
+		{
+			"before": {
+				"argument": "<project>",
+				"flags": ["--project"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--project"
+		},
+		{
+			"before": {
+				"argument": "<reference>",
+				"flags": ["--ref"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--ref"
+		},
+		{
+			"before": {
+				"argument": "<index>",
+				"flags": ["--remove-dod"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--remove-dod"
+		},
+		{
+			"before": {
+				"argument": "<reference>",
+				"flags": ["--remove-ref"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--remove-ref"
+		},
+		{
+			"before": {
+				"argument": "<index>",
+				"flags": ["--uncheck-dod"]
+			},
+			"kind": "removed",
+			"path": "/cli/task edit/options/--uncheck-dod"
+		},
+		{
+			"before": {
+				"argument": null,
+				"flags": ["--count"]
+			},
+			"kind": "removed",
+			"path": "/cli/task list/options/--count"
+		},
+		{
+			"before": {
+				"argument": "<n>",
+				"flags": ["--max-count"]
+			},
+			"kind": "removed",
+			"path": "/cli/task list/options/--max-count"
+		},
+		{
+			"before": {
+				"argument": "<taskId>",
+				"flags": ["--parent", "-p"]
+			},
+			"kind": "removed",
+			"path": "/cli/task list/options/--parent,-p"
+		},
+		{
+			"before": {
+				"argument": "<project>",
+				"flags": ["--project"]
+			},
+			"kind": "removed",
+			"path": "/cli/task list/options/--project"
+		},
+		{
+			"before": {
+				"argument": "<n>",
+				"flags": ["--skip"]
+			},
+			"kind": "removed",
+			"path": "/cli/task list/options/--skip"
+		},
+		{
+			"before": {
+				"description": "When to create tasks and the basic workflow",
+				"mimeType": "text/markdown",
+				"name": "Backlog Workflow Overview",
+				"uri": "backlog://workflow/overview"
+			},
+			"kind": "removed",
+			"path": "/mcp/resources/backlog:~1~1workflow~1overview"
+		},
+		{
+			"before": {
+				"description": "How to search, scope, and create tasks",
+				"mimeType": "text/markdown",
+				"name": "Task Creation Guide",
+				"uri": "backlog://workflow/task-creation"
+			},
+			"kind": "removed",
+			"path": "/mcp/resources/backlog:~1~1workflow~1task-creation"
+		},
+		{
+			"before": {
+				"description": "How to plan, update, and work through tasks",
+				"mimeType": "text/markdown",
+				"name": "Task Execution Guide",
+				"uri": "backlog://workflow/task-execution"
+			},
+			"kind": "removed",
+			"path": "/mcp/resources/backlog:~1~1workflow~1task-execution"
+		},
+		{
+			"before": {
+				"description": "How to verify, summarize, and finish work",
+				"mimeType": "text/markdown",
+				"name": "Task Finalization Guide",
+				"uri": "backlog://workflow/task-finalization"
+			},
+			"kind": "removed",
+			"path": "/mcp/resources/backlog:~1~1workflow~1task-finalization"
+		},
+		{
+			"before": {
+				"annotations": {
+					"destructiveHint": false,
+					"readOnlyHint": true,
+					"title": "Get DoD Defaults"
+				},
+				"description": "Get project Definition of Done default checklist items from config",
+				"inputSchema": {
+					"additionalProperties": false,
+					"properties": {},
+					"required": [],
+					"type": "object"
+				},
+				"name": "definition_of_done_defaults_get"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/definition_of_done_defaults_get"
+		},
+		{
+			"before": {
+				"annotations": {
+					"destructiveHint": false,
+					"idempotentHint": true,
+					"title": "Set DoD Defaults"
+				},
+				"description": "Replace project Definition of Done default checklist items in config",
+				"inputSchema": {
+					"additionalProperties": false,
+					"properties": {
+						"items": {
+							"description": "Project-level Definition of Done defaults (replaces existing defaults). New tasks inherit these unless disabled. Items must not contain commas.",
+							"items": {
+								"maxLength": 500,
+								"type": "string"
+							},
+							"maxItems": 100,
+							"type": "array"
+						}
+					},
+					"required": ["items"],
+					"type": "object"
+				},
+				"name": "definition_of_done_defaults_upsert"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/definition_of_done_defaults_upsert"
+		},
+		{
+			"before": {
+				"annotations": {
+					"destructiveHint": false,
+					"readOnlyHint": true,
+					"title": "Backlog Instructions"
+				},
+				"description": "Retrieve Backlog.md workflow guidance in markdown format. Defaults to the overview when no instruction is selected.",
+				"inputSchema": {
+					"additionalProperties": false,
+					"properties": {
+						"instruction": {
+							"enum": ["overview", "task-creation", "task-execution", "task-finalization"],
+							"type": "string"
+						}
+					},
+					"required": [],
+					"type": "object"
+				},
+				"name": "get_backlog_instructions"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/get_backlog_instructions"
+		},
+		{
+			"before": {
+				"description": "Optional milestone due date such as 2026-08-10; a due date names a day and carries no time",
+				"maxLength": 64,
+				"type": "string"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/milestone_add/inputSchema/properties/dueDate"
+		},
+		{
+			"before": {
+				"annotations": {
+					"destructiveHint": true,
+					"title": "Archive Milestone"
+				},
+				"description": "Archive a milestone by moving it to backlog/archive/milestones",
+				"inputSchema": {
+					"additionalProperties": false,
+					"properties": {
+						"name": {
+							"description": "Milestone name or ID to archive (case-insensitive match)",
+							"maxLength": 100,
+							"minLength": 1,
+							"type": "string"
+						}
+					},
+					"required": ["name"],
+					"type": "object"
+				},
+				"name": "milestone_archive"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/milestone_archive"
+		},
+		{
+			"before": {
+				"description": "Set the milestone due date such as 2026-08-10, or pass null to clear it",
+				"maxLength": 64,
+				"type": ["string", "null"]
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/milestone_rename/inputSchema/properties/dueDate"
+		},
+		{
+			"before": {
+				"annotations": {
+					"destructiveHint": true,
+					"title": "Archive Task"
+				},
+				"description": "Archive a Backlog.md task",
+				"inputSchema": {
+					"additionalProperties": false,
+					"properties": {
+						"id": {
+							"maxLength": 50,
+							"minLength": 1,
+							"type": "string"
+						}
+					},
+					"required": ["id"],
+					"type": "object"
+				},
+				"name": "task_archive"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_archive"
+		},
+		{
+			"before": {
+				"description": "Task-specific Definition of Done items to append for this task only. Do not copy project defaults here.",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_create/inputSchema/properties/definitionOfDoneAdd"
+		},
+		{
+			"before": {
+				"description": "Disable project-level Definition of Done defaults for this task creation. Use definition_of_done_defaults_upsert to change project defaults.",
+				"type": "boolean"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_create/inputSchema/properties/disableDefinitionOfDoneDefaults"
+		},
+		{
+			"before": {
+				"description": "Documentation URLs or file paths for understanding this task",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_create/inputSchema/properties/documentation"
+		},
+		{
+			"before": {
+				"description": "Optional task due date. Use a date such as 2026-08-10. A due date names a day and carries no time.",
+				"maxLength": 64,
+				"type": "string"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_create/inputSchema/properties/dueDate"
+		},
+		{
+			"before": {
+				"description": "Final summary for PR-style completion notes. Write this only when the task is complete.",
+				"maxLength": 20000,
+				"type": "string"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_create/inputSchema/properties/finalSummary"
+		},
+		{
+			"before": {
+				"description": "Project-root-relative file paths modified by this task",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_create/inputSchema/properties/modifiedFiles"
+		},
+		{
+			"before": {
+				"description": "Optional non-negative ordering value for manual task ordering. Lower values sort earlier. Prefer spaced integers such as 1000, 2000, 3000 to leave room for inserts.",
+				"minimum": 0,
+				"type": "number"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_create/inputSchema/properties/ordinal"
+		},
+		{
+			"before": {
+				"description": "Existing parent task ID for a subtask. Do not pass milestone IDs here; use milestone instead.",
+				"maxLength": 50,
+				"type": "string"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_create/inputSchema/properties/parentTaskId"
+		},
+		{
+			"before": {
+				"description": "Reference URLs or file paths related to this task",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_create/inputSchema/properties/references"
+		},
+		{
+			"after": "Edit task title, description, status, priority, type, milestone, labels, assignees, dependencies, comments, and acceptance criteria",
+			"before": "Edit a Backlog.md task, including metadata (status, priority, type, project), implementation plan/notes, dependencies, acceptance criteria, and task-specific Definition of Done items",
+			"kind": "changed",
+			"path": "/mcp/tools/task_edit/description"
+		},
+		{
+			"before": {
+				"description": "Add documentation URLs or file paths",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/addDocumentation"
+		},
+		{
+			"before": {
+				"description": "Add reference URLs or file paths",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/addReferences"
+		},
+		{
+			"before": {
+				"description": "Task-specific Definition of Done items to add for this task only. Use definition_of_done_defaults_upsert to change project defaults.",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"maxItems": 50,
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/definitionOfDoneAdd"
+		},
+		{
+			"before": {
+				"description": "Mark task-specific Definition of Done items as complete by 1-based index on this task.",
+				"items": {
+					"minimum": 1,
+					"type": "number"
+				},
+				"maxItems": 50,
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/definitionOfDoneCheck"
+		},
+		{
+			"before": {
+				"description": "Remove task-specific Definition of Done items by 1-based index on this task.",
+				"items": {
+					"minimum": 1,
+					"type": "number"
+				},
+				"maxItems": 50,
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/definitionOfDoneRemove"
+		},
+		{
+			"before": {
+				"description": "Mark task-specific Definition of Done items as incomplete by 1-based index on this task.",
+				"items": {
+					"minimum": 1,
+					"type": "number"
+				},
+				"maxItems": 50,
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/definitionOfDoneUncheck"
+		},
+		{
+			"before": {
+				"description": "Set documentation URLs or file paths (replaces existing)",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/documentation"
+		},
+		{
+			"before": {
+				"description": "Set the task due date, or pass null to clear it. Use a date such as 2026-08-10. A due date names a day and carries no time.",
+				"maxLength": 64,
+				"type": ["string", "null"]
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/dueDate"
+		},
+		{
+			"before": {
+				"description": "Final summary for PR-style completion notes. Write this only when the task is complete.",
+				"maxLength": 20000,
+				"type": "string"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/finalSummary"
+		},
+		{
+			"before": {
+				"items": {
+					"maxLength": 5000,
+					"type": "string"
+				},
+				"maxItems": 20,
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/finalSummaryAppend"
+		},
+		{
+			"before": {
+				"type": "boolean"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/finalSummaryClear"
+		},
+		{
+			"before": {
+				"maxLength": 10000,
+				"type": "string"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/implementationNotes"
+		},
+		{
+			"before": {
+				"description": "Set project-root-relative modified file paths (replaces existing)",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/modifiedFiles"
+		},
+		{
+			"before": {
+				"items": {
+					"maxLength": 5000,
+					"type": "string"
+				},
+				"maxItems": 20,
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/notesAppend"
+		},
+		{
+			"before": {
+				"type": "boolean"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/notesClear"
+		},
+		{
+			"before": {
+				"maxLength": 20000,
+				"type": "string"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/notesSet"
+		},
+		{
+			"before": {
+				"description": "Set task ordinal for manual ordering. Lower values sort earlier. Prefer spaced integers such as 1000, 2000, 3000 to leave room for inserts.",
+				"minimum": 0,
+				"type": "number"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/ordinal"
+		},
+		{
+			"before": {
+				"items": {
+					"maxLength": 5000,
+					"type": "string"
+				},
+				"maxItems": 20,
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/planAppend"
+		},
+		{
+			"before": {
+				"type": "boolean"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/planClear"
+		},
+		{
+			"before": {
+				"maxLength": 20000,
+				"type": "string"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/planSet"
+		},
+		{
+			"before": {
+				"description": "Set reference URLs or file paths (replaces existing)",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/references"
+		},
+		{
+			"before": {
+				"description": "Remove documentation URLs or file paths",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/removeDocumentation"
+		},
+		{
+			"before": {
+				"description": "Remove reference URLs or file paths",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_edit/inputSchema/properties/removeReferences"
+		},
+		{
+			"after": "List tasks with optional status, type, assignee, unassigned, milestone, labels, search, ready, and limit filters",
+			"before": "List Backlog.md tasks with optional filtering by status, type, project, assignee (or unassigned: true for tasks with no assignee), milestone, labels, and search",
+			"kind": "changed",
+			"path": "/mcp/tools/task_list/description"
+		},
+		{
+			"after": "Search tasks by query, status, task type, and priority",
+			"before": "Search Backlog.md tasks by title, description, task type, project, and modified file path filters",
+			"kind": "changed",
+			"path": "/mcp/tools/task_search/description"
+		},
+		{
+			"before": {
+				"description": "Filter tasks by case-insensitive substring match against modified file paths",
+				"items": {
+					"maxLength": 500,
+					"type": "string"
+				},
+				"type": "array"
+			},
+			"kind": "removed",
+			"path": "/mcp/tools/task_search/inputSchema/properties/modifiedFiles"
+		},
+		{
+			"before": {
+				"optional": true,
+				"path": "$/results/*/data/dueDate",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.search.json/fields/$~1results~1*~1data~1dueDate"
+		},
+		{
+			"before": {
+				"optional": true,
+				"path": "$/results/*/data/isReady",
+				"types": ["boolean"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.search.json/fields/$~1results~1*~1data~1isReady"
+		},
+		{
+			"before": {
+				"optional": true,
+				"path": "$/results/*/data/modifiedFiles",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.search.json/fields/$~1results~1*~1data~1modifiedFiles"
+		},
+		{
+			"before": {
+				"optional": true,
+				"path": "$/results/*/data/ordinal",
+				"types": ["number"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.search.json/fields/$~1results~1*~1data~1ordinal"
+		},
+		{
+			"before": {
+				"optional": true,
+				"path": "$/results/*/data/parentTaskId",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.search.json/fields/$~1results~1*~1data~1parentTaskId"
+		},
+		{
+			"before": {
+				"optional": true,
+				"path": "$/results/*/data/project",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.search.json/fields/$~1results~1*~1data~1project"
+		},
+		{
+			"before": {
+				"optional": true,
+				"path": "$/results/*/data/references",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.search.json/fields/$~1results~1*~1data~1references"
+		},
+		{
+			"before": {
+				"optional": true,
+				"path": "$/results/*/data/reporter",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.search.json/fields/$~1results~1*~1data~1reporter"
+		},
+		{
+			"after": ["Acceptance Criteria", "Created", "Description", "Status"],
+			"before": ["Acceptance Criteria", "Created", "Definition of Done", "Description", "File", "Ordinal", "Status"],
+			"kind": "changed",
+			"path": "/responses/probes/cli.task.create.plain/labels"
+		},
+		{
+			"after": [["Acceptance Criteria", "Created", "Description", "Status"]],
+			"before": [["Acceptance Criteria", "Created", "Definition of Done", "Description", "File", "Ordinal", "Status"]],
+			"kind": "changed",
+			"path": "/responses/probes/cli.task.create.plain/textForms"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/tasks/*/dueDate",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.list.json/fields/$~1tasks~1*~1dueDate"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/tasks/*/isReady",
+				"types": ["boolean"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.list.json/fields/$~1tasks~1*~1isReady"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/tasks/*/modifiedFiles",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.list.json/fields/$~1tasks~1*~1modifiedFiles"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/tasks/*/ordinal",
+				"types": ["number"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.list.json/fields/$~1tasks~1*~1ordinal"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/tasks/*/parentTaskId",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.list.json/fields/$~1tasks~1*~1parentTaskId"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/tasks/*/project",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.list.json/fields/$~1tasks~1*~1project"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/tasks/*/references",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.list.json/fields/$~1tasks~1*~1references"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/tasks/*/reporter",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.list.json/fields/$~1tasks~1*~1reporter"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/definitionOfDone",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1definitionOfDone"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph",
+				"types": ["object"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/edges",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1edges"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/edges/*",
+				"types": ["object"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1edges~1*"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/edges/*/from",
+				"types": ["string"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1edges~1*~1from"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/edges/*/to",
+				"types": ["string"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1edges~1*~1to"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/nodes",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1nodes"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/nodes/*",
+				"types": ["object"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1nodes~1*"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/nodes/*/completed",
+				"types": ["boolean"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1nodes~1*~1completed"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/nodes/*/dependencyDepth",
+				"types": ["number"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1nodes~1*~1dependencyDepth"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/nodes/*/dependentDepth",
+				"types": ["null", "number"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1nodes~1*~1dependentDepth"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/nodes/*/id",
+				"types": ["string"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1nodes~1*~1id"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/nodes/*/state",
+				"types": ["string"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1nodes~1*~1state"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/nodes/*/status",
+				"types": ["string"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1nodes~1*~1status"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/nodes/*/title",
+				"types": ["string"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1nodes~1*~1title"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dependencyGraph/root",
+				"types": ["string"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dependencyGraph~1root"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/documentation",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1documentation"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/dueDate",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1dueDate"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/finalSummary",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1finalSummary"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/implementationNotes",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1implementationNotes"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/implementationPlan",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1implementationPlan"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/isReady",
+				"types": ["boolean"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1isReady"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/modifiedFiles",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1modifiedFiles"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/ordinal",
+				"types": ["number"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1ordinal"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/parentTaskId",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1parentTaskId"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/path",
+				"types": ["string"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1path"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/project",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1project"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/readiness",
+				"types": ["object"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1readiness"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/readiness/blockingDependencies",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1readiness~1blockingDependencies"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/readiness/blockingDependencies/*",
+				"types": ["string"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1readiness~1blockingDependencies~1*"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/readiness/isBlocked",
+				"types": ["boolean"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1readiness~1isBlocked"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/readiness/isReady",
+				"types": ["boolean"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1readiness~1isReady"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/readiness/missingDependencies",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1readiness~1missingDependencies"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/references",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1references"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/reporter",
+				"types": ["null"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1reporter"
+		},
+		{
+			"before": {
+				"optional": false,
+				"path": "$/task/subtasks",
+				"types": ["array"]
+			},
+			"kind": "removed",
+			"path": "/responses/probes/cli.task.view.json/fields/$~1task~1subtasks"
+		},
+		{
+			"after": [
+				"Acceptance Criteria",
+				"Assignee",
+				"Comments",
+				"Created",
+				"Dependencies",
+				"Description",
+				"Labels",
+				"Milestone",
+				"Priority",
+				"Status",
+				"Type",
+				"Updated"
+			],
+			"before": [
+				"Acceptance Criteria",
+				"Assignee",
+				"Comments",
+				"Created",
+				"Definition of Done",
+				"Dependency Graph",
+				"Description",
+				"File",
+				"Labels",
+				"Milestone",
+				"Ordinal",
+				"Priority",
+				"Status",
+				"Type",
+				"Updated"
+			],
+			"kind": "changed",
+			"path": "/responses/probes/cli.task.view.plain/labels"
+		},
+		{
+			"after": [
+				[
+					"Acceptance Criteria",
+					"Assignee",
+					"Comments",
+					"Created",
+					"Dependencies",
+					"Description",
+					"Labels",
+					"Milestone",
+					"Priority",
+					"Status",
+					"Type",
+					"Updated"
+				],
+				["Acceptance Criteria", "Created", "Description", "Status"]
+			],
+			"before": [
+				[
+					"Acceptance Criteria",
+					"Assignee",
+					"Comments",
+					"Created",
+					"Definition of Done",
+					"Dependency Graph",
+					"Description",
+					"File",
+					"Labels",
+					"Milestone",
+					"Ordinal",
+					"Priority",
+					"Status",
+					"Type",
+					"Updated"
+				],
+				["Acceptance Criteria", "Created", "Definition of Done", "Description", "File", "Ordinal", "Status"]
+			],
+			"kind": "changed",
+			"path": "/responses/probes/cli.task.view.plain/textForms"
+		},
+		{
+			"after": ["Hint", "Milestones (count)", "Milestones found on tasks without files (count)"],
+			"before": [
+				"Archived milestone values still on tasks (count)",
+				"Hint",
+				"Milestones (count)",
+				"Milestones found on tasks without files (count)"
+			],
+			"kind": "changed",
+			"path": "/responses/probes/mcp.milestone.list/labels"
+		},
+		{
+			"after": [["Hint", "Milestones (count)", "Milestones found on tasks without files (count)"]],
+			"before": [
+				[
+					"Archived milestone values still on tasks (count)",
+					"Hint",
+					"Milestones (count)",
+					"Milestones found on tasks without files (count)"
+				]
+			],
+			"kind": "changed",
+			"path": "/responses/probes/mcp.milestone.list/textForms"
+		},
+		{
+			"after": ["Updated 1 local task"],
+			"before": ["Renamed milestone file", "Updated 1 local task"],
+			"kind": "changed",
+			"path": "/responses/probes/mcp.milestone.rename/labels"
+		},
+		{
+			"after": [["Updated 1 local task"]],
+			"before": [["Renamed milestone file", "Updated 1 local task"]],
+			"kind": "changed",
+			"path": "/responses/probes/mcp.milestone.rename/textForms"
+		},
+		{
+			"after": [
+				"Acceptance Criteria",
+				"Assignee",
+				"Comments",
+				"Created",
+				"Dependencies",
+				"Description",
+				"Labels",
+				"Priority",
+				"Status",
+				"Type",
+				"Updated"
+			],
+			"before": [
+				"Acceptance Criteria",
+				"Assignee",
+				"Comments",
+				"Created",
+				"Definition of Done",
+				"Dependency Graph",
+				"Description",
+				"File",
+				"Labels",
+				"Ordinal",
+				"Priority",
+				"Status",
+				"Type",
+				"Updated"
+			],
+			"kind": "changed",
+			"path": "/responses/probes/mcp.task.complete/labels"
+		},
+		{
+			"after": [
+				[
+					"Acceptance Criteria",
+					"Assignee",
+					"Comments",
+					"Created",
+					"Dependencies",
+					"Description",
+					"Labels",
+					"Priority",
+					"Status",
+					"Type",
+					"Updated"
+				]
+			],
+			"before": [
+				[
+					"Acceptance Criteria",
+					"Assignee",
+					"Comments",
+					"Created",
+					"Definition of Done",
+					"Dependency Graph",
+					"Description",
+					"File",
+					"Labels",
+					"Ordinal",
+					"Priority",
+					"Status",
+					"Type",
+					"Updated"
+				]
+			],
+			"kind": "changed",
+			"path": "/responses/probes/mcp.task.complete/textForms"
+		},
+		{
+			"after": ["Acceptance Criteria", "Created", "Description", "Status"],
+			"before": ["Acceptance Criteria", "Created", "Definition of Done", "Description", "File", "Ordinal", "Status"],
+			"kind": "changed",
+			"path": "/responses/probes/mcp.task.create/labels"
+		},
+		{
+			"after": [["Acceptance Criteria", "Created", "Description", "Status"]],
+			"before": [["Acceptance Criteria", "Created", "Definition of Done", "Description", "File", "Ordinal", "Status"]],
+			"kind": "changed",
+			"path": "/responses/probes/mcp.task.create/textForms"
+		},
+		{
+			"after": [
+				"Acceptance Criteria",
+				"Assignee",
+				"Comments",
+				"Created",
+				"Dependencies",
+				"Description",
+				"Labels",
+				"Milestone",
+				"Priority",
+				"Status",
+				"Type",
+				"Updated"
+			],
+			"before": [
+				"Acceptance Criteria",
+				"Assignee",
+				"Comments",
+				"Created",
+				"Definition of Done",
+				"Dependency Graph",
+				"Description",
+				"File",
+				"Labels",
+				"Milestone",
+				"Ordinal",
+				"Priority",
+				"Status",
+				"Type",
+				"Updated"
+			],
+			"kind": "changed",
+			"path": "/responses/probes/mcp.task.edit/labels"
+		},
+		{
+			"after": [
+				[
+					"Acceptance Criteria",
+					"Assignee",
+					"Comments",
+					"Created",
+					"Dependencies",
+					"Description",
+					"Labels",
+					"Milestone",
+					"Priority",
+					"Status",
+					"Type",
+					"Updated"
+				],
+				[
+					"Acceptance Criteria",
+					"Assignee",
+					"Comments",
+					"Created",
+					"Dependencies",
+					"Description",
+					"Labels",
+					"Priority",
+					"Status",
+					"Type",
+					"Updated"
+				]
+			],
+			"before": [
+				[
+					"Acceptance Criteria",
+					"Assignee",
+					"Comments",
+					"Created",
+					"Definition of Done",
+					"Dependency Graph",
+					"Description",
+					"File",
+					"Labels",
+					"Milestone",
+					"Ordinal",
+					"Priority",
+					"Status",
+					"Type",
+					"Updated"
+				],
+				[
+					"Acceptance Criteria",
+					"Assignee",
+					"Comments",
+					"Created",
+					"Definition of Done",
+					"Dependency Graph",
+					"Description",
+					"File",
+					"Labels",
+					"Ordinal",
+					"Priority",
+					"Status",
+					"Type",
+					"Updated"
+				]
+			],
+			"kind": "changed",
+			"path": "/responses/probes/mcp.task.edit/textForms"
+		},
+		{
+			"after": [
+				"Acceptance Criteria",
+				"Assignee",
+				"Comments",
+				"Created",
+				"Dependencies",
+				"Description",
+				"Labels",
+				"Milestone",
+				"Priority",
+				"Status",
+				"Type",
+				"Updated"
+			],
+			"before": [
+				"Acceptance Criteria",
+				"Assignee",
+				"Comments",
+				"Created",
+				"Definition of Done",
+				"Dependency Graph",
+				"Description",
+				"File",
+				"Labels",
+				"Milestone",
+				"Ordinal",
+				"Priority",
+				"Status",
+				"Type",
+				"Updated"
+			],
+			"kind": "changed",
+			"path": "/responses/probes/mcp.task.view/labels"
+		},
+		{
+			"after": [
+				[
+					"Acceptance Criteria",
+					"Assignee",
+					"Comments",
+					"Created",
+					"Dependencies",
+					"Description",
+					"Labels",
+					"Milestone",
+					"Priority",
+					"Status",
+					"Type",
+					"Updated"
+				],
+				["Acceptance Criteria", "Created", "Description", "Status"]
+			],
+			"before": [
+				[
+					"Acceptance Criteria",
+					"Assignee",
+					"Comments",
+					"Created",
+					"Definition of Done",
+					"Dependency Graph",
+					"Description",
+					"File",
+					"Labels",
+					"Milestone",
+					"Ordinal",
+					"Priority",
+					"Status",
+					"Type",
+					"Updated"
+				],
+				["Acceptance Criteria", "Created", "Definition of Done", "Description", "File", "Ordinal", "Status"]
+			],
+			"kind": "changed",
+			"path": "/responses/probes/mcp.task.view/textForms"
+		}
+	],
+	"manifestVersion": 2,
+	"reportVersion": 1
+}

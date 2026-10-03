@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-03 16:10'
-updated_date: '2026-10-03 16:27'
+updated_date: '2026-10-03 17:02'
 labels: []
 dependencies:
   - BACK-694
@@ -44,6 +44,8 @@ Discovery alone misses changes to actual returned fields. Probe representative p
 
 <!-- SECTION:NOTES:BEGIN -->
 Verified 43 focused tests passed and one POSIX-only test skipped. TypeScript and scoped CRLF-aware Biome checks passed. Both independent review findings fixed and follow-up clear. Direct full suite remains running; bun run test has the existing dependency-local launcher remap failure. Whole-tree Biome limitation remains recorded in PR #15. GitHub issue #11 stays open until final integration.
+
+Full local suite did not complete: failures and stalled MCP stdio test documented in GitHub #16. GitHub Windows/macOS jobs passed on baf842ef; Linux board and Nix browser failures remain. Subsequent actual upstream probes required omitting redundant agent-instructions when integration-mode is none; repeated mini response shape stays identical.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

@@ -373,8 +373,6 @@ export async function captureResponses(target: CaptureTarget) {
 			"--no-git",
 			"--integration-mode",
 			"none",
-			"--agent-instructions",
-			"none",
 			"--check-branches",
 			"false",
 			"--include-remote",
