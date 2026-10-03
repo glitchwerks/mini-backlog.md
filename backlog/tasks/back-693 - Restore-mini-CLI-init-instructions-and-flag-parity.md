@@ -1,11 +1,11 @@
 ---
-id: BACK-689
+id: BACK-693
 title: 'Restore mini CLI init, instructions, and flag parity'
 status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-02 01:43'
-updated_date: '2026-10-02 13:31'
+updated_date: '2026-10-02 16:27'
 labels: []
 dependencies: []
 type: bug
@@ -79,6 +79,8 @@ PR #7 disabled-selection/warning follow-up RED: explicit --agent-instructions no
 PR #7 post-init guidance follow-up RED: real mini init output still advertised the excluded backlog config command in its advanced-settings summary, while full-mode characterization confirmed the established production summary and missing-remote warning. GREEN: mini now omits the optional advanced-settings customization hint and its missing-remote advisory recommends only the supported git remote action; full strings remain exact. Verification: the 2 exact CLI regressions passed; broader init/full-mode/mini coverage passed 149/149; mini contract coverage passed 45/45; TypeScript, targeted Biome with preserved line endings, direct build, and compiled/browser smoke passed. Existing Windows CRLF Biome, Ubuntu board comparison, and Nix browser-asset baselines remain unchanged, so DoD #2 stays unchecked.
 
 PR #7 active-status guidance follow-up RED: functional mini init installed a Claude agent template containing the unconfigured literal -s "In Progress" instead of the lifecycle guide's configuration-neutral convention. GREEN: the installed mini template now uses -s "<active status>" and the regression explicitly rejects the literal default; production guidance remains untouched. Verification: the exact regression passed; broader guidance/init/mini/full coverage passed 166 tests with 1 established Windows-only skip; mini contract coverage passed 45/45; TypeScript, targeted Biome, direct build, and compiled/browser smoke passed. The separate full Claude install suite reproduced only its recorded Windows symlink-fixture baseline (4 pass, 1 known failure). Existing Windows CRLF Biome, Ubuntu board comparison, and Nix browser-asset baselines remain unchanged, so DoD #2 stays unchecked.
+
+Upstream v1.53.0 sync (issue #8): doctor safely reassigned this fork task from BACK-689 to BACK-693 to preserve both task records. Historical BACK-689 references in the notes above refer to this PR #7 task, not the upstream idle-watcher task retaining BACK-689.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

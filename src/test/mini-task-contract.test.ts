@@ -235,6 +235,21 @@ describe("mini task outputs", () => {
 		expect(Object.keys(search.results[0]?.data ?? {}).sort()).toEqual([...MINI_TASK_SUMMARY_FIELDS].sort());
 		expect(JSON.stringify(search)).not.toContain("Hidden decision");
 	});
+
+	it("keeps upstream pagination metadata outside mini JSON envelopes", () => {
+		const task = { ...taskDetailFixture(), isReady: false } as TaskListItem;
+		const page = { items: [task], total: 3, nextSkip: 1, cut: true, skip: 0 };
+		expect(Object.keys(taskListJson([task], "mini", page)).sort()).toEqual(["kind", "schemaVersion", "tasks"]);
+		expect(
+			Object.keys(
+				searchJson([{ type: "task", score: 1, task }], "C:/project", "C:/project/backlog/docs", "mini", page),
+			).sort(),
+		).toEqual(["kind", "results", "schemaVersion"]);
+		expect(taskListJson([task], "full", page)).toMatchObject({ total: 3, nextSkip: 1 });
+		expect(
+			searchJson([{ type: "task", score: 1, task }], "C:/project", "C:/project/backlog/docs", "full", page),
+		).toMatchObject({ total: 3, nextSkip: 1 });
+	});
 });
 
 describe("mini MCP task routing", () => {

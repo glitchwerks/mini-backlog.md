@@ -1,34 +1,64 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Core } from "../index.ts";
 import type { Task } from "../types/index.ts";
 import { getTestCliPath } from "./test-cli.ts";
-import { createUniqueTestDir, initializeFilesystemTestProject, safeCleanup, waitUntil } from "./test-utils.ts";
+import {
+	createLauncherInstall,
+	createUniqueTestDir,
+	getPlatformTimeout,
+	initializeFilesystemTestProject,
+	isWindows,
+	safeCleanup,
+	waitUntil,
+	withTimeout,
+} from "./test-utils.ts";
 
 const CLI = getTestCliPath();
+const WATCH = ["task", "list", "--json", "--watch"];
 let directory: string;
 let core: Core;
 const processes: ReturnType<typeof startWatch>[] = [];
 
-function startWatch(args: string[] = []): {
+function startWatch(args: string[] = []) {
+	return follow(
+		Bun.spawn(["bun", CLI, ...WATCH, ...args], {
+			cwd: directory,
+			stdin: "ignore",
+			stdout: "pipe",
+			stderr: "pipe",
+		}),
+	);
+}
+
+/** Start the watch from a throwaway process that hands it stdout and stderr, as a script or agent harness would. */
+function startWatchFrom(command: string[]) {
+	const starter = `Bun.spawn(${JSON.stringify(command)}, { stdio: ["ignore", "inherit", "inherit"] })`;
+	return follow(
+		Bun.spawn(["bun", "-e", starter], {
+			cwd: directory,
+			stdin: "ignore",
+			stdout: "pipe",
+			stderr: "pipe",
+			// A POSIX process group lets cleanup stop anything the starter left behind.
+			detached: !isWindows(),
+		}),
+	);
+}
+
+function follow(child: Bun.Subprocess<"ignore", "pipe", "pipe">): {
 	process: Bun.Subprocess<"ignore", "pipe", "pipe">;
 	snapshots: string[];
 	stderr: Promise<string>;
 	reading: Promise<void>;
 } {
-	const process = Bun.spawn(["bun", CLI, "task", "list", "--json", "--watch", ...args], {
-		cwd: directory,
-		stdin: "ignore",
-		stdout: "pipe",
-		stderr: "pipe",
-	});
 	const snapshots: string[] = [];
-	const stderr = new Response(process.stderr).text();
+	const stderr = new Response(child.stderr).text();
 	const reading = (async () => {
 		const decoder = new TextDecoder();
 		let buffer = "";
-		for await (const chunk of process.stdout) {
+		for await (const chunk of child.stdout) {
 			buffer += decoder.decode(chunk, { stream: true });
 			// The existing pretty-printed envelope ends with an unindented closing brace.
 			let end = buffer.indexOf("\n}\n");
@@ -39,7 +69,7 @@ function startWatch(args: string[] = []): {
 			}
 		}
 	})();
-	const result = { process, snapshots, stderr, reading };
+	const result = { process: child, snapshots, stderr, reading };
 	processes.push(result);
 	return result;
 }
@@ -133,6 +163,41 @@ describe("CLI JSON watch", () => {
 		expect(await watch.stderr).toBe("");
 	});
 
+	for (const exists of [true, false]) {
+		it(`follows tasks after root configuration switches the backlog directory (exists: ${exists})`, async () => {
+			await create("TASK-1");
+			const rootConfig = join(directory, "backlog.config.yml");
+			const config = await readFile(core.filesystem.configFilePath, "utf8");
+			if (exists) await writeFile(rootConfig, `${config}\nbacklog_directory: backlog\n`);
+			const watch = startWatch();
+			await expectCurrent(watch);
+			// Outlast startup notifications so creating the root config must wake an idle watch itself.
+			await Bun.sleep(1300);
+			await writeFile(rootConfig, `${config}\nbacklog_directory: replacement\n`);
+			await expectCurrent(watch);
+			expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks).toEqual([]);
+			core = new Core(directory);
+			await create("TASK-2");
+			await expectCurrent(watch);
+			expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks[0].id).toBe("TASK-2");
+			await core.editTask("TASK-2", { title: "Changed in replacement" });
+			await expectCurrent(watch);
+			expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks[0].title).toBe("Changed in replacement");
+			await create("TASK-3");
+			await expectCurrent(watch);
+			expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks).toHaveLength(2);
+			const task = await core.loadTaskById("TASK-2");
+			if (!task?.filePath) throw new Error("Missing replacement task");
+			await rm(task.filePath);
+			await expectCurrent(watch);
+			expect(JSON.parse(watch.snapshots.at(-1) ?? "").tasks).toHaveLength(1);
+			const count = watch.snapshots.length;
+			await writeFile(join(directory, "backlog", "tasks", "ignored.md"), "old directory edit");
+			await Bun.sleep(1300);
+			expect(watch.snapshots).toHaveLength(count);
+		});
+	}
+
 	it("reapplies filters, sorting and limits as tasks enter and leave the result", async () => {
 		await create("TASK-1", { priority: "low", labels: ["cli"] });
 		await create("TASK-2", { priority: "high", status: "Done", labels: ["cli"] });
@@ -215,6 +280,43 @@ describe("CLI JSON watch", () => {
 			if (!exited) child.kill("SIGKILL");
 			await exit;
 		}
+	});
+
+	async function expectWatchToEndWithItsStarter(command: string[]) {
+		const watch = startWatchFrom(command);
+		const tasks = () => JSON.parse(watch.snapshots.at(-1) ?? "{}").tasks?.length;
+		try {
+			await waitUntil(() => tasks() === 0, "initial watch response", 5000);
+			// Outlive at least one liveness check, then keep following changes.
+			await Bun.sleep(1100);
+			await create("TASK-1");
+			await waitUntil(() => tasks() === 1, "watch response after a task change", 5000);
+			watch.process.kill("SIGKILL");
+			await watch.process.exited;
+			// End of output means no starter, launcher or watch process holds it any longer.
+			await withTimeout(watch.reading, "watch exit after its starter was killed", getPlatformTimeout(5000));
+			expect(await watch.stderr).toBe("");
+		} finally {
+			if (!isWindows()) {
+				try {
+					process.kill(-watch.process.pid, "SIGKILL");
+				} catch {
+					// Nothing was left behind.
+				}
+			}
+		}
+	}
+
+	it("ends when the process that started it is killed", async () => {
+		await expectWatchToEndWithItsStarter(["bun", CLI, ...WATCH]);
+	});
+
+	it("ends with the launcher when the process that started the npm launcher is killed", async () => {
+		// The platform binary is this Bun, so the launched binary runs the CLI path it is given.
+		const launcher = await createLauncherInstall(join(directory, "launcher"), (path) =>
+			copyFile(process.execPath, path),
+		);
+		await expectWatchToEndWithItsStarter(["node", launcher, CLI, ...WATCH]);
 	});
 
 	it("requires JSON and rejects invalid options without writing a snapshot", async () => {
