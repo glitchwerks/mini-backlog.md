@@ -94,6 +94,14 @@ The MCP server starts with `backlog mcp start`. Workflow and Definition-of-Done 
 
 ## Upstream synchronization
 
+Capture a selected build's CLI/MCP discovery surface with `bun scripts/capture-surface.ts --target target.json --output manifest.json`. Add `--responses` to probe representative task, document, and milestone responses in a newly allocated disposable project. The target specifies an executable/argument array and an isolated initialized project directory. Capture uses public CLI help and MCP discovery; Git is not required. See [Runtime surface capture](docs/runtime-surface-capture.md) for the target format and comparison limits.
+
+Compare snapshots with `bun scripts/compare-surfaces.ts --before baseline.json --after candidate.json --output docs/surfaces/reports/candidate --fail-on-drift`. Capturing a candidate does not replace or approve the baseline. See [Runtime baseline and three comparisons](docs/surfaces/README.md) for the identified builds, deliberate restrictions and review procedure.
+
+Check a compiled mini candidate in one command: `bun scripts/check-mini-surface.ts --binary dist/backlog.exe --label mini-candidate --revision <source-commit> --output .tmp/surfaces/candidate`. Use `dist/backlog` on Linux/macOS. The check initializes disposable projects, compares discovery and representative responses against `docs/surfaces/mini-v1.53.0.json`, saves the candidate plus JSON/Markdown reports, and fails on drift. `--baseline` selects another explicitly reviewed baseline. CI runs this check against each compiled mini binary and uploads the review artifacts; it never accepts a baseline change automatically.
+
+Prepare syncs on a temporary branch from mini's current integration branch (`main` today), merge the selected upstream release into that branch, and resolve the restrictions there. Review upstream-to-upstream, upstream-to-mini and approved-mini-to-candidate reports alongside the existing behavioral tests. Merge the reviewed candidate while retaining upstream merge ancestry. A clean upstream mirror and permanent `mini` branch remain the proposal tracked in #14.
+
 For development, `bun run check:types` checks TypeScript, `bun run check` checks formatting and lint, and `bun run test` runs the tests. CI bundles upstream regressions with `BACKLOG_BUILD_OUTDIR=<temporary-directory> bun scripts/build-test-cli.ts` and sets `BACKLOG_TEST_CLI_BUNDLE` to that directory's `full-cli-entry.js`. This test harness is not shipped. `bun run build` always builds mini. `bun scripts/smoke-compiled-build.ts <binary-path> <version>` exercises the same mini smoke used by CI and Nix.
 
 Full CLI regression lists emit a shell-neutral `Next:` hint with the next `--skip` value. Rerun the original command, replacing or adding the paging option before any `--` separator and keeping all other arguments and their shell quoting. Mini continues to exclude `--max-count`, `--skip`, and `--count`.

@@ -1,0 +1,192 @@
+{
+	"after": {
+		"cliVersion": "1.52.0",
+		"label": "upstream tag v1.53.0",
+		"mcpServer": {
+			"name": "backlog.md",
+			"version": "1.52.0"
+		},
+		"revision": "fd20f71493fb4eda44b021aa89f257956f17fb71"
+	},
+	"before": {
+		"cliVersion": "1.51.0",
+		"label": "upstream tag v1.52.0",
+		"mcpServer": {
+			"name": "backlog.md",
+			"version": "1.51.0"
+		},
+		"revision": "39912b864053dcdd1fafc458aacde43ffd616a0c"
+	},
+	"changes": [
+		{
+			"after": {
+				"argument": null,
+				"flags": ["--count"]
+			},
+			"kind": "added",
+			"path": "/cli/decision list/options/--count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--max-count"]
+			},
+			"kind": "added",
+			"path": "/cli/decision list/options/--max-count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--skip"]
+			},
+			"kind": "added",
+			"path": "/cli/decision list/options/--skip"
+		},
+		{
+			"after": {
+				"argument": null,
+				"flags": ["--count"]
+			},
+			"kind": "added",
+			"path": "/cli/doc list/options/--count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--max-count"]
+			},
+			"kind": "added",
+			"path": "/cli/doc list/options/--max-count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--skip"]
+			},
+			"kind": "added",
+			"path": "/cli/doc list/options/--skip"
+		},
+		{
+			"after": {
+				"argument": null,
+				"flags": ["--count"]
+			},
+			"kind": "added",
+			"path": "/cli/doc search/options/--count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--max-count"]
+			},
+			"kind": "added",
+			"path": "/cli/doc search/options/--max-count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--skip"]
+			},
+			"kind": "added",
+			"path": "/cli/doc search/options/--skip"
+		},
+		{
+			"after": {
+				"argument": null,
+				"flags": ["--count"]
+			},
+			"kind": "added",
+			"path": "/cli/draft list/options/--count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--max-count"]
+			},
+			"kind": "added",
+			"path": "/cli/draft list/options/--max-count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--skip"]
+			},
+			"kind": "added",
+			"path": "/cli/draft list/options/--skip"
+		},
+		{
+			"after": {
+				"argument": null,
+				"flags": ["--count"]
+			},
+			"kind": "added",
+			"path": "/cli/milestone list/options/--count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--max-count"]
+			},
+			"kind": "added",
+			"path": "/cli/milestone list/options/--max-count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--skip"]
+			},
+			"kind": "added",
+			"path": "/cli/milestone list/options/--skip"
+		},
+		{
+			"after": {
+				"argument": null,
+				"flags": ["--count"]
+			},
+			"kind": "added",
+			"path": "/cli/search/options/--count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--max-count"]
+			},
+			"kind": "added",
+			"path": "/cli/search/options/--max-count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--skip"]
+			},
+			"kind": "added",
+			"path": "/cli/search/options/--skip"
+		},
+		{
+			"after": {
+				"argument": null,
+				"flags": ["--count"]
+			},
+			"kind": "added",
+			"path": "/cli/task list/options/--count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--max-count"]
+			},
+			"kind": "added",
+			"path": "/cli/task list/options/--max-count"
+		},
+		{
+			"after": {
+				"argument": "<n>",
+				"flags": ["--skip"]
+			},
+			"kind": "added",
+			"path": "/cli/task list/options/--skip"
+		}
+	],
+	"manifestVersion": 2,
+	"reportVersion": 1
+}
