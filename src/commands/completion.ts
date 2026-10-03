@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Command } from "commander";
 import { getCompletions } from "../completions/helper.ts";
+import type { SurfaceMode } from "../mini/runtime.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -22,6 +23,19 @@ type CompletionInstallOptions = {
 	homeDir?: string;
 	resolvePowerShellProfilePath?: PowerShellProfileResolver;
 };
+
+/** Formats completion installation failures with a retry path available on the active surface. */
+export function formatCompletionInstallFailure(error: string, surface: SurfaceMode = "full"): string {
+	const indentedError = error
+		.split("\n")
+		.map((line) => `  ${line}`)
+		.join("\n");
+	const retryInstruction =
+		surface === "mini"
+			? "Re-run `backlog init` later to retry shell completion setup."
+			: "Run `backlog completion install` later to retry.";
+	return `⚠️  Shell completion installation failed:\n${indentedError}\n  ${retryInstruction}\n`;
+}
 
 function getScriptFilename(shell: Shell): string {
 	const scriptFiles: Record<Shell, string> = {

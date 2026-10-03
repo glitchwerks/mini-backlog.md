@@ -190,29 +190,27 @@ export function isWindows(): boolean {
 }
 
 /**
- * Lays out an npm install of the launcher in dir. writeBinary, when given, creates the platform package binary at the
+ * Lays out a source checkout of the launcher in dir. writeBinary, when given, creates the local build binary at the
  * path it receives. Returns the launcher script path.
  */
 export async function createLauncherInstall(
 	dir: string,
 	writeBinary?: (path: string) => Promise<void>,
 ): Promise<string> {
-	const { getCandidatePackageNames } = require("../../scripts/resolveBinary.cjs");
 	const scriptsDir = join(import.meta.dir, "..", "..", "scripts");
 	// A package.json and node_modules dir keep Bun's auto-install from resolving real packages
 	await mkdir(join(dir, "node_modules"), { recursive: true });
 	await writeFile(join(dir, "package.json"), "{}");
-	for (const file of ["cli.cjs", "resolveBinary.cjs"]) {
-		await copyFile(join(scriptsDir, file), join(dir, file));
-	}
+	await mkdir(join(dir, "scripts"), { recursive: true });
+	await copyFile(join(scriptsDir, "cli.cjs"), join(dir, "scripts", "cli.cjs"));
 	if (writeBinary) {
-		const packageDir = join(dir, "node_modules", getCandidatePackageNames()[0]);
-		await mkdir(packageDir, { recursive: true });
-		const binaryPath = join(packageDir, isWindows() ? "backlog.exe" : "backlog");
+		const buildDir = join(dir, "dist");
+		await mkdir(buildDir, { recursive: true });
+		const binaryPath = join(buildDir, isWindows() ? "backlog.exe" : "backlog");
 		await writeBinary(binaryPath);
 		await chmod(binaryPath, 0o755);
 	}
-	return join(dir, "cli.cjs");
+	return join(dir, "scripts", "cli.cjs");
 }
 
 /**

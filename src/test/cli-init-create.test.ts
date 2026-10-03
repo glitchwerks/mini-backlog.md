@@ -180,19 +180,26 @@ describe("CLI Integration", () => {
 			expect(output).toContain("Skipping agent instruction files per selection.");
 		});
 
-		it("should print minimal summary when advanced settings are skipped", async () => {
+		it("should preserve full post-init customization and missing-remote guidance", async () => {
 			await $`git init -b main`.cwd(TEST_DIR).quiet();
 
-			const output = await $`bun ${CLI_PATH} init SummaryProj --defaults --agent-instructions none`
+			const result = await $`bun ${CLI_PATH} init SummaryProj --defaults --agent-instructions none`
 				.cwd(TEST_DIR)
-				.text();
+				.quiet()
+				.nothrow();
+			const output = result.stdout.toString();
+			const warnings = result.stderr.toString();
 
+			expect(result.exitCode).toBe(0);
 			expect(output).toContain("Initialization Summary");
 			expect(output).toContain("Project Name: SummaryProj");
 			expect(output).toContain("AI Integration: CLI instructions");
-			expect(output).toContain("Advanced settings: unchanged");
+			expect(output).toContain("Advanced settings: unchanged (run `backlog config` to customize)");
 			expect(output).not.toContain("Remote operations:");
 			expect(output).not.toContain("Zero-padded IDs:");
+			expect(warnings).toContain(
+				"Warning: remoteOperations is enabled but no git remotes are configured. Remote features will be skipped until a remote is added (e.g., 'git remote add origin <url>') or disable remoteOperations via 'backlog config set remoteOperations false'.",
+			);
 		});
 
 		it("should support MCP integration mode via flag", async () => {

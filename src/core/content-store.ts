@@ -1389,9 +1389,10 @@ export class ContentStore {
 		const originalSaveDocument = this.filesystem.saveDocument;
 		const originalSaveDecision = this.filesystem.saveDecision;
 
-		this.filesystem.saveTask = (async (task: Task): Promise<string> => {
+		this.filesystem.saveTask = (async (...args: Parameters<FileSystem["saveTask"]>): Promise<string> => {
+			const [task] = args;
 			const owner: PublicationOwner = { root: this.currentRoot() };
-			const result = await originalSaveTask.call(this.filesystem, task);
+			const result = await originalSaveTask.apply(this.filesystem, args);
 			const savedTask = { ...normalizeTaskIdentity(parseTask(await Bun.file(result).text())), filePath: result };
 			await this.updateTaskFromDisk(task.id, owner, savedTask);
 			return result;

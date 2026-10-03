@@ -1,3 +1,4 @@
+import { pickSchemaProperties } from "../../utils/schema-generators.ts";
 import type { JsonSchema } from "../../validation/validators.ts";
 
 export const milestoneListSchema: JsonSchema = {
@@ -99,3 +100,6 @@ export const milestoneArchiveSchema: JsonSchema = {
 	required: ["name"],
 	additionalProperties: false,
 };
+
+export const miniMilestoneAddSchema = pickSchemaProperties(milestoneAddSchema, ["name", "description"]);
+export const miniMilestoneRenameSchema = pickSchemaProperties(milestoneRenameSchema, ["from", "to", "updateTasks"]);

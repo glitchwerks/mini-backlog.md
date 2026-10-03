@@ -1,3 +1,4 @@
+import type { SurfaceMode } from "../../../mini/runtime.ts";
 import type { McpServer } from "../../server.ts";
 import type { McpToolHandler } from "../../types.ts";
 import { createSimpleValidatedTool } from "../../validation/tool-wrapper.ts";
@@ -9,10 +10,14 @@ import {
 	milestoneListSchema,
 	milestoneRemoveSchema,
 	milestoneRenameSchema,
+	miniMilestoneAddSchema,
+	miniMilestoneRenameSchema,
 } from "./schemas.ts";
 
-export function registerMilestoneTools(server: McpServer): void {
-	const handlers = new MilestoneHandlers(server);
+export function registerMilestoneTools(server: McpServer, surface: SurfaceMode = "full"): void {
+	const handlers = new MilestoneHandlers(server, surface);
+	const addSchema = surface === "mini" ? miniMilestoneAddSchema : milestoneAddSchema;
+	const renameSchema = surface === "mini" ? miniMilestoneRenameSchema : milestoneRenameSchema;
 
 	const listTool: McpToolHandler = createSimpleValidatedTool(
 		{
@@ -29,10 +34,10 @@ export function registerMilestoneTools(server: McpServer): void {
 		{
 			name: "milestone_add",
 			description: "Add a milestone by creating a milestone file",
-			inputSchema: milestoneAddSchema,
+			inputSchema: addSchema,
 			annotations: { title: "Add Milestone", destructiveHint: false },
 		},
-		milestoneAddSchema,
+		addSchema,
 		async (input) => handlers.addMilestone(input as MilestoneAddArgs),
 	);
 
@@ -40,10 +45,10 @@ export function registerMilestoneTools(server: McpServer): void {
 		{
 			name: "milestone_rename",
 			description: "Rename a milestone file and optionally update local tasks",
-			inputSchema: milestoneRenameSchema,
+			inputSchema: renameSchema,
 			annotations: { title: "Rename Milestone", destructiveHint: false },
 		},
-		milestoneRenameSchema,
+		renameSchema,
 		async (input) => handlers.renameMilestone(input as MilestoneRenameArgs),
 	);
 
@@ -58,20 +63,21 @@ export function registerMilestoneTools(server: McpServer): void {
 		async (input) => handlers.removeMilestone(input as MilestoneRemoveArgs),
 	);
 
-	const archiveTool: McpToolHandler = createSimpleValidatedTool(
-		{
-			name: "milestone_archive",
-			description: "Archive a milestone by moving it to backlog/archive/milestones",
-			inputSchema: milestoneArchiveSchema,
-			annotations: { title: "Archive Milestone", destructiveHint: true },
-		},
-		milestoneArchiveSchema,
-		async (input) => handlers.archiveMilestone(input as MilestoneArchiveArgs),
-	);
-
 	server.addTool(listTool);
 	server.addTool(addTool);
 	server.addTool(renameTool);
 	server.addTool(removeTool);
-	server.addTool(archiveTool);
+	if (surface === "full") {
+		const archiveTool: McpToolHandler = createSimpleValidatedTool(
+			{
+				name: "milestone_archive",
+				description: "Archive a milestone by moving it to backlog/archive/milestones",
+				inputSchema: milestoneArchiveSchema,
+				annotations: { title: "Archive Milestone", destructiveHint: true },
+			},
+			milestoneArchiveSchema,
+			async (input) => handlers.archiveMilestone(input as MilestoneArchiveArgs),
+		);
+		server.addTool(archiveTool);
+	}
 }

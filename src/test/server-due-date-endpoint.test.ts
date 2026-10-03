@@ -167,7 +167,7 @@ describe("BacklogServer due date endpoints", () => {
 				jsonRequest("/api/milestones", "POST", { title: "Internal failure", dueDate: "2026-09-01" }),
 			);
 			expect(response.status).toBe(500);
-			expect(await response.json()).toEqual({ error: "Failed to create milestone" });
+			expect(await response.json()).toEqual({ error: "simulated storage failure", code: "INTERNAL_ERROR" });
 		} finally {
 			filesystem.createMilestone = createMilestone;
 			console.error = consoleError;

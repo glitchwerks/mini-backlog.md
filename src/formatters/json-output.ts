@@ -1,5 +1,7 @@
 import { isAbsolute, join, relative } from "node:path";
 import type { TaskDetail, TaskListItem } from "../core/task-detail.ts";
+import type { SurfaceMode } from "../mini/runtime.ts";
+import { type MiniTaskSummaryJson, toMiniTaskDetailsJson, toMiniTaskSummaryJson } from "../mini/task-output.ts";
 import type {
 	Decision,
 	DecisionSearchResult,
@@ -8,6 +10,7 @@ import type {
 	Task,
 	TaskSearchResult,
 } from "../types/index.ts";
+import { isLocalEditableTask } from "../types/index.ts";
 import type { DependencyGraph } from "../utils/dependency-graph.ts";
 import type { ListPage } from "../utils/list-window.ts";
 import type { TaskReadiness } from "../utils/readiness.ts";
@@ -98,10 +101,16 @@ type DecisionSummaryJson = {
 	date: string | null;
 };
 
-type SearchResultJson =
+type FullSearchResultJson =
 	| { type: "task"; data: TaskSummaryJson }
 	| { type: "document"; data: DocumentSummaryJson }
 	| { type: "decision"; data: DecisionSummaryJson };
+
+type MiniSearchResultJson =
+	| { type: "task"; data: MiniTaskSummaryJson }
+	| { type: "document"; data: DocumentSummaryJson };
+
+type SearchResultJson = FullSearchResultJson | MiniSearchResultJson;
 
 function nullable(value: string | undefined): string | null {
 	return value ?? null;
@@ -221,15 +230,49 @@ function cutListJson(page: ListPage<unknown> | undefined): { total?: number; nex
 	return page?.cut ? { total: page.total, nextSkip: page.nextSkip } : {};
 }
 
-export function taskListJson(tasks: TaskListItem[], page?: ListPage<unknown>) {
-	return { schemaVersion: 1, kind: "task-list" as const, tasks: tasks.map(toTaskSummaryJson), ...cutListJson(page) };
+export function taskListJson(tasks: TaskListItem[]): {
+	schemaVersion: number;
+	kind: "task-list";
+	tasks: TaskSummaryJson[];
+};
+export function taskListJson(
+	tasks: TaskListItem[],
+	surface: "mini",
+	page?: ListPage<unknown>,
+): { schemaVersion: number; kind: "task-list"; tasks: MiniTaskSummaryJson[] };
+export function taskListJson(
+	tasks: TaskListItem[],
+	surface: SurfaceMode,
+	page?: ListPage<unknown>,
+): { schemaVersion: number; kind: "task-list"; tasks: Array<TaskSummaryJson | MiniTaskSummaryJson> };
+export function taskListJson(tasks: TaskListItem[], surface: SurfaceMode = "full", page?: ListPage<unknown>) {
+	return {
+		schemaVersion: 1,
+		kind: "task-list" as const,
+		tasks: tasks.map(surface === "mini" ? toMiniTaskSummaryJson : toTaskSummaryJson),
+		...(surface === "full" ? cutListJson(page) : {}),
+	};
 }
 
-export function taskViewJson(task: TaskDetail, projectRoot: string) {
+export function taskViewJson(
+	task: TaskDetail,
+	projectRoot: string,
+): { schemaVersion: number; kind: "task-view"; task: TaskDetailsJson };
+export function taskViewJson(
+	task: TaskDetail,
+	projectRoot: string,
+	surface: "mini",
+): { schemaVersion: number; kind: "task-view"; task: ReturnType<typeof toMiniTaskDetailsJson> };
+export function taskViewJson(
+	task: TaskDetail,
+	projectRoot: string,
+	surface: SurfaceMode,
+): { schemaVersion: number; kind: "task-view"; task: TaskDetailsJson | ReturnType<typeof toMiniTaskDetailsJson> };
+export function taskViewJson(task: TaskDetail, projectRoot: string, surface: SurfaceMode = "full") {
 	return {
 		schemaVersion: 1,
 		kind: "task-view" as const,
-		task: toTaskDetailsJson(task, projectRoot),
+		task: surface === "mini" ? toMiniTaskDetailsJson(task) : toTaskDetailsJson(task, projectRoot),
 	};
 }
 
@@ -260,21 +303,53 @@ export function searchJson(
 	results: SearchResultInput[],
 	projectRoot: string,
 	docsDir: string,
+): { schemaVersion: number; kind: "search"; results: FullSearchResultJson[] };
+export function searchJson(
+	results: SearchResultInput[],
+	projectRoot: string,
+	docsDir: string,
+	surface: "mini",
+	page?: ListPage<unknown>,
+): { schemaVersion: number; kind: "search"; results: MiniSearchResultJson[] };
+export function searchJson(
+	results: SearchResultInput[],
+	projectRoot: string,
+	docsDir: string,
+	surface: SurfaceMode,
+	page?: ListPage<unknown>,
+): { schemaVersion: number; kind: "search"; results: SearchResultJson[] };
+export function searchJson(
+	results: SearchResultInput[],
+	projectRoot: string,
+	docsDir: string,
+	surface: SurfaceMode = "full",
 	page?: ListPage<unknown>,
 ) {
 	const publicResults: SearchResultJson[] = [];
 	for (const result of results) {
 		if (result.type === "task") {
-			publicResults.push({ type: "task", data: toTaskSummaryJson(result.task) });
+			if (isLocalEditableTask(result.task)) {
+				publicResults.push({
+					type: "task",
+					data: surface === "mini" ? toMiniTaskSummaryJson(result.task) : toTaskSummaryJson(result.task),
+				});
+			}
 			continue;
 		}
 		if (result.type === "document") {
 			publicResults.push({ type: "document", data: toDocumentSummaryJson(result.document, projectRoot, docsDir) });
 			continue;
 		}
-		publicResults.push({ type: "decision", data: toDecisionSummaryJson(result.decision) });
+		if (surface === "full") {
+			publicResults.push({ type: "decision", data: toDecisionSummaryJson(result.decision) });
+		}
 	}
-	return { schemaVersion: 1, kind: "search" as const, results: publicResults, ...cutListJson(page) };
+	return {
+		schemaVersion: 1,
+		kind: "search" as const,
+		results: publicResults,
+		...(surface === "full" ? cutListJson(page) : {}),
+	};
 }
 
 export function formatJson(value: unknown): string {

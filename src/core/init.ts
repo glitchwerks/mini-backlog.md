@@ -6,6 +6,7 @@ import {
 	installClaudeAgent,
 } from "../agent-instructions.ts";
 import { DEFAULT_INIT_CONFIG } from "../constants/index.ts";
+import type { SurfaceMode } from "../mini/runtime.ts";
 import type { BacklogConfig } from "../types/index.ts";
 import { normalizeProjectBacklogDirectory } from "../utils/backlog-directory.ts";
 import {
@@ -73,6 +74,8 @@ export interface InitializeProjectOptions {
 	};
 	/** Existing config for re-initialization */
 	existingConfig?: BacklogConfig | null;
+	/** Runtime surface whose installed agent guidance must describe only available operations. */
+	surfaceMode?: SurfaceMode;
 }
 
 export interface InitializeProjectResult {
@@ -113,6 +116,7 @@ export async function initializeProject(
 		advancedConfig = {},
 		existingConfig,
 		filesystemOnly = false,
+		surfaceMode = "full",
 	} = options;
 
 	const isReInitialization = !!existingConfig;
@@ -264,7 +268,7 @@ export async function initializeProject(
 				}
 
 				mcpResults[client] = await runMcpClientCommand(client);
-				await ensureMcpGuidelines(projectRoot, MCP_CLIENT_INSTRUCTION_MAP[client]);
+				await ensureMcpGuidelines(projectRoot, MCP_CLIENT_INSTRUCTION_MAP[client], surfaceMode);
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
 				mcpResults[client] = `Failed: ${message}`;
@@ -291,7 +295,7 @@ export async function initializeProject(
 	// Handle Claude agent installation
 	if (integrationMode === "cli" && installClaudeAgentFlag) {
 		try {
-			await installClaudeAgent(projectRoot);
+			await installClaudeAgent(projectRoot, surfaceMode);
 			mcpResults.claudeAgent = "Installed to .claude/agents/";
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);

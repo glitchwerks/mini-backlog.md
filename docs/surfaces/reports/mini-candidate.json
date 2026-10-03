@@ -1,0 +1,23 @@
+{
+	"after": {
+		"cliVersion": "1.53.0",
+		"label": "mini-v1.53.0 candidate demonstration",
+		"mcpServer": {
+			"name": "backlog.md",
+			"version": "1.53.0"
+		},
+		"revision": "baf842ef6cadcd5a3197bde22cddea47d4a2bb1e"
+	},
+	"before": {
+		"cliVersion": "1.53.0",
+		"label": "mini-v1.53.0 baseline",
+		"mcpServer": {
+			"name": "backlog.md",
+			"version": "1.53.0"
+		},
+		"revision": "baf842ef6cadcd5a3197bde22cddea47d4a2bb1e"
+	},
+	"changes": [],
+	"manifestVersion": 2,
+	"reportVersion": 1
+}

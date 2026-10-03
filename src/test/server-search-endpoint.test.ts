@@ -630,8 +630,9 @@ Milestone: m-0
 			}),
 		});
 		expect(conflictCreate.status).toBe(400);
-		const conflictPayload = (await conflictCreate.json()) as { error?: string };
-		expect(conflictPayload.error).toContain("already exists");
+		const conflictPayload = (await conflictCreate.json()) as { error?: string; code?: string };
+		expect(conflictPayload.error).toContain("Milestone alias conflict");
+		expect(conflictPayload.code).toBe("VALIDATION_ERROR");
 
 		const numericAliasConflict = await fetch(`http://127.0.0.1:${serverPort}/api/milestones`, {
 			method: "POST",

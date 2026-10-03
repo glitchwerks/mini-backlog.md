@@ -1,5 +1,5 @@
 ---
-id: BACK-688
+id: BACK-692
 title: Stop task list watchers when the process that started them exits
 status: Done
 assignee:

@@ -59,14 +59,15 @@ export function filesSignature(inputs: string[]): string {
 
 /** Stream the canonical read's bytes. Notifications are hints; a periodic stat pass repairs missed events. */
 export async function watchJson(
-	directories: string[],
-	inputs: string[],
+	paths: { directories: string[]; inputs: string[] } | (() => { directories: string[]; inputs: string[] }),
 	read: () => Promise<string | undefined>,
 	output: Writable = process.stdout,
 ): Promise<void> {
 	const controller = new AbortController();
 	const { signal } = controller;
 	const watchers: FSWatcher[] = [];
+	let directories: string[] = [];
+	let inputs: string[] = [];
 	let seen: string | undefined;
 	let failure: Error | undefined;
 	let pending = true;
@@ -77,6 +78,29 @@ export async function watchJson(
 	const refresh = () => {
 		pending = true;
 		wake?.();
+	};
+	const resolvePaths = () => {
+		const next = typeof paths === "function" ? paths() : paths;
+		inputs = next.inputs;
+		if (
+			JSON.stringify(next.directories) === JSON.stringify(directories) &&
+			watchers.length === new Set(directories).size
+		)
+			return;
+		for (const watcher of watchers.splice(0)) watcher.close();
+		directories = next.directories;
+		for (const directory of new Set(directories)) {
+			try {
+				const watcher = watch(directory, { recursive: directory === directories[0] }, refresh);
+				watcher.on("error", (error) => {
+					if (watchers.includes(watcher)) fail(error);
+				});
+				watchers.push(watcher);
+			} catch (error) {
+				// A newly configured backlog may not exist yet; the stat pass discovers its tasks later.
+				if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+			}
+		}
 	};
 	const stop = () => {
 		if (signal.aborted) return;
@@ -122,12 +146,6 @@ export async function watchJson(
 	output.on("error", onOutputError);
 	output.on("close", stop);
 	try {
-		// Register before reading so changes during startup always schedule another pass.
-		for (const directory of new Set(directories)) {
-			const watcher = watch(directory, { recursive: directory === directories[0] }, refresh);
-			watcher.on("error", fail);
-			watchers.push(watcher);
-		}
 		// A killed starter cannot stop the watch, so end with it like a termination request. A full read
 		// can be expensive in large projects, so an idle watch otherwise only compares stats.
 		timer = setInterval(() => {
@@ -136,6 +154,8 @@ export async function watchJson(
 		}, 1000);
 		while (!signal.aborted) {
 			pending = false;
+			// Register before reading so changes during startup or reconfiguration schedule another pass.
+			resolvePaths();
 			// Taken before reading: a change during the read differs from it and schedules another pass.
 			seen = filesSignature(inputs);
 			const value = await read();

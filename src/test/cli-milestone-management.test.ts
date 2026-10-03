@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdir, rm } from "node:fs/promises";
 import { $ } from "bun";
+import { MilestoneOperations } from "../core/milestone-operations.ts";
 import { Core } from "../index.ts";
 import { MilestoneHandlers } from "../mcp/tools/milestones/handlers.ts";
 import type { CallToolResult } from "../mcp/types.ts";
@@ -219,20 +220,66 @@ describe("CLI milestone management", () => {
 
 	it("matches MCP milestone handler output for shared mutation operations", async () => {
 		const mcpDir = createUniqueTestDir("test-cli-milestone-mcp-parity");
-		cleanupDirs.push(mcpDir);
+		const coreDir = createUniqueTestDir("test-cli-milestone-core-parity");
+		cleanupDirs.push(mcpDir, coreDir);
 		const mcpCore = await setupProject(mcpDir, "MCP Milestone Parity Project");
+		const directCore = await setupProject(coreDir, "Core Milestone Parity Project");
+		const operations = new MilestoneOperations(directCore, { includeExtendedSummary: true });
+		const cliCore = new Core(TEST_DIR);
 		const mcpHandlers = new MilestoneHandlers(mcpCore);
+
+		const assertPersistedParity = async () => {
+			const snapshots = await Promise.all(
+				[cliCore, mcpCore, directCore].map(async (core) => ({
+					active: (await core.filesystem.listMilestones()).map(({ id, title, description, dueDate }) => ({
+						id,
+						title,
+						description,
+						dueDate,
+					})),
+					archived: (await core.filesystem.listArchivedMilestones()).map(({ id, title }) => ({ id, title })),
+					tasks: (await core.filesystem.listTasks()).map(({ id, title, milestone }) => ({ id, title, milestone })),
+				})),
+			);
+			expect(snapshots[1]).toEqual(snapshots[0]);
+			expect(snapshots[2]).toEqual(snapshots[0]);
+		};
 
 		const cliAdd = await $`bun ${cliPath} milestone add "Parity A"`.cwd(TEST_DIR).quiet();
 		const mcpAdd = await mcpHandlers.addMilestone({ name: "Parity A" });
+		const coreAdd = await operations.add({ name: "Parity A" });
 		expect(cliAdd.stdout.toString().trim()).toBe(toolText(mcpAdd).trim());
+		expect(coreAdd.message).toBe(toolText(mcpAdd));
+		for (const core of [cliCore, mcpCore, directCore]) {
+			await core.createTask(
+				{
+					id: "TASK-1",
+					title: "Parity task",
+					status: "To Do",
+					assignee: [],
+					createdDate: "2026-09-19",
+					labels: [],
+					dependencies: [],
+					milestone: "Parity A",
+				},
+				false,
+			);
+		}
+		await assertPersistedParity();
 
 		const cliRename = await $`bun ${cliPath} milestone rename "Parity A" "Parity B"`.cwd(TEST_DIR).quiet();
 		const mcpRename = await mcpHandlers.renameMilestone({ from: "Parity A", to: "Parity B" });
+		const coreRename = await operations.rename({ from: "Parity A", to: "Parity B" });
 		expect(normalizeRenamePaths(cliRename.stdout.toString())).toBe(normalizeRenamePaths(toolText(mcpRename)));
+		expect(normalizeRenamePaths(coreRename.message)).toBe(normalizeRenamePaths(toolText(mcpRename)));
+		expect(coreRename.updatedTaskIds).toEqual(["TASK-1"]);
+		await assertPersistedParity();
 
 		const cliRemove = await $`bun ${cliPath} milestone remove "Parity B" --task-handling keep`.cwd(TEST_DIR).quiet();
 		const mcpRemove = await mcpHandlers.removeMilestone({ name: "Parity B", taskHandling: "keep" });
+		const coreRemove = await operations.remove({ name: "Parity B", taskHandling: "keep" });
 		expect(cliRemove.stdout.toString().trim()).toBe(toolText(mcpRemove).trim());
+		expect(coreRemove.message).toBe(toolText(mcpRemove));
+		await assertPersistedParity();
 	});
 });

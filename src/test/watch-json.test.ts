@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
 import { mkdir, rm, symlink, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Writable } from "node:stream";
@@ -37,8 +38,7 @@ describe("JSON watch lifecycle", () => {
 		let calls = 0;
 		let release: (() => void) | undefined;
 		watching = watchJson(
-			[directory],
-			[directory],
+			{ directories: [directory], inputs: [directory] },
 			async () => {
 				const captured = state;
 				if (++calls === 1)
@@ -61,9 +61,12 @@ describe("JSON watch lifecycle", () => {
 		const writes: string[] = [];
 		output = collect(writes);
 		let reads = 0;
+		let resolutions = 0;
 		watching = watchJson(
-			[directory],
-			[directory],
+			() => {
+				resolutions++;
+				return { directories: [directory], inputs: [directory] };
+			},
 			async () => {
 				reads++;
 				return "snapshot";
@@ -72,10 +75,51 @@ describe("JSON watch lifecycle", () => {
 		);
 		await waitUntil(() => writes.length === 1, "initial output");
 		const settled = reads;
+		const settledResolutions = resolutions;
 		// Spans more than two reconciliation passes.
 		await Bun.sleep(2500);
 		expect(reads).toBe(settled);
+		expect(resolutions).toBe(settledResolutions);
 		expect(writes).toEqual(["snapshot"]);
+	});
+
+	it("replaces obsolete subscriptions and reconciles config changes during a read", async () => {
+		const oldTasks = join(directory, "old", "tasks");
+		const newTasks = join(directory, "new", "tasks");
+		const config = join(directory, "config.yml");
+		await mkdir(oldTasks, { recursive: true });
+		await mkdir(newTasks, { recursive: true });
+		await writeFile(config, oldTasks);
+		const writes: string[] = [];
+		output = collect(writes);
+		let reads = 0;
+		let release: (() => void) | undefined;
+		watching = watchJson(
+			() => {
+				const tasks = readFileSync(config, "utf8");
+				return { directories: [tasks, directory], inputs: [tasks, config] };
+			},
+			async () => {
+				const tasks = readFileSync(config, "utf8");
+				if (++reads === 1)
+					await new Promise<void>((resolve) => {
+						release = resolve;
+					});
+				return filesSignature([tasks]);
+			},
+			output,
+		);
+		await waitUntil(() => release !== undefined, "initial read started");
+		await writeFile(config, newTasks);
+		release?.();
+		await waitUntil(() => writes.at(-1) === newTasks, "reconfigured output");
+		await writeFile(join(newTasks, "task.md"), "new task");
+		await waitUntil(() => writes.at(-1)?.includes("task.md\0") === true, "new directory edit");
+		await Bun.sleep(200);
+		const settled = reads;
+		await writeFile(join(oldTasks, "ignored.md"), "obsolete task");
+		await Bun.sleep(1200);
+		expect(reads).toBe(settled);
 	});
 
 	it("compares the read's files and directory entries one level deep", async () => {
@@ -161,8 +205,7 @@ describe("JSON watch lifecycle", () => {
 		let state = "initial";
 		let reads = 0;
 		watching = watchJson(
-			[directory],
-			[directory],
+			{ directories: [directory], inputs: [directory] },
 			async () => {
 				reads++;
 				return state;
@@ -190,7 +233,7 @@ describe("JSON watch lifecycle", () => {
 			},
 		});
 		const before = process.listenerCount("SIGTERM");
-		watching = watchJson([directory], [directory], async () => "snapshot", output);
+		watching = watchJson({ directories: [directory], inputs: [directory] }, async () => "snapshot", output);
 		await waitUntil(() => started, "blocked write");
 		output.destroy();
 		await watching;
@@ -205,7 +248,7 @@ describe("JSON watch lifecycle", () => {
 					callback(Object.assign(new Error(code), { code }));
 				},
 			});
-			const promise = watchJson([directory], [directory], async () => "snapshot", output);
+			const promise = watchJson({ directories: [directory], inputs: [directory] }, async () => "snapshot", output);
 			if (code === "EPIPE") await promise;
 			else await expect(promise).rejects.toThrow("EIO");
 		}
@@ -216,8 +259,7 @@ describe("JSON watch lifecycle", () => {
 		output = collect(writes);
 		await expect(
 			watchJson(
-				[directory],
-				[directory],
+				{ directories: [directory], inputs: [directory] },
 				async () => {
 					throw new Error("read failed");
 				},

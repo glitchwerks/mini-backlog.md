@@ -1,30 +1,18 @@
 #!/usr/bin/env node
 
 const { spawn } = require("node:child_process");
+const { existsSync } = require("node:fs");
 const { constants: osConstants } = require("node:os");
-const { getCandidatePackageNames, isRosettaTranslated, resolveBinaryPath } = require("./resolveBinary.cjs");
+const { join } = require("node:path");
 
 function printInstallHelp() {
 	console.error(`Detected: ${process.platform}-${process.arch} (Node ${process.version})`);
-	if (process.platform === "darwin") {
-		const rosetta = isRosettaTranslated();
-		console.error(`Rosetta translation: ${rosetta ? "yes" : "no"}`);
-		if (rosetta) {
-			console.error(
-				"Your Node/Bun runs as x64 under Rosetta on an Apple Silicon Mac, so the wrong CPU variant may have been installed.",
-			);
-		}
-		console.error("To fix on macOS:");
-		console.error("  - Compare architectures: `node -p process.arch` vs `uname -m` (arm64 = Apple Silicon hardware).");
-		console.error(
-			"  - Homebrew: use the native brew (`which brew`; /opt/homebrew = arm64, /usr/local = Intel), then `brew reinstall backlog-md`.",
-		);
-		console.error("  - npm on Apple Silicon: `arch -arm64 npm i -g backlog.md`");
-		console.error("  - Bun on Apple Silicon: `arch -arm64 bun add -g backlog.md`");
-		console.error("More details: https://github.com/MrLesk/Backlog.md#apple-silicon-macos");
-	} else {
-		console.error("Reinstall backlog.md so the platform package matching this architecture gets installed.");
-	}
+	console.error("Build and install mini-backlog.md from source:");
+	console.error("https://github.com/glitchwerks/mini-backlog.md#install-from-this-fork");
+	console.error("From the fork checkout:");
+	console.error("  bun install --frozen-lockfile");
+	console.error("  bun run build");
+	console.error("Then: npm install --global --omit=optional --ignore-scripts .");
 }
 
 /**
@@ -57,28 +45,17 @@ function handleSpawnError(binaryPath, error) {
 }
 
 function main() {
-	let binaryPath;
-	try {
-		binaryPath = resolveBinaryPath();
-	} catch {
-		console.error(`Binary package not installed for ${process.platform}-${process.arch}.`);
-		console.error(`Tried packages: ${getCandidatePackageNames().join(", ")}`);
+	const binary = `backlog${process.platform === "win32" ? ".exe" : ""}`;
+	const binaryPath = join(__dirname, "..", "dist", binary);
+	if (!existsSync(binaryPath)) {
+		console.error(`Source build not found at ${binaryPath}.`);
 		printInstallHelp();
 		process.exit(1);
 	}
 
 	// Clean up unexpected args some global shims pass (e.g. bun) like the binary path itself
 	const rawArgs = process.argv.slice(2);
-	const cleanedArgs = rawArgs.filter((arg) => {
-		if (arg === binaryPath) return false;
-		// Filter any accidental deep path to our platform package binary
-		try {
-			const pattern = /node_modules[/\\]backlog\.md-(darwin|linux|windows)-[^/\\]+[/\\]backlog(\.exe)?$/i;
-			return !pattern.test(arg);
-		} catch {
-			return true;
-		}
-	});
+	const cleanedArgs = rawArgs.filter((arg) => arg !== binaryPath);
 
 	// Spawn failures can surface as a synchronous throw (e.g. ENOEXEC) or as an 'error' event
 	let child;

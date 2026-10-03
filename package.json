@@ -1,23 +1,18 @@
 {
-  "name": "backlog.md",
-  "version": "1.52.0",
+  "name": "mini-backlog.md",
+  "version": "1.53.0",
+  "private": true,
   "type": "module",
   "module": "src/cli.ts",
   "files": [
     "scripts/*.cjs",
+    "dist/backlog",
+    "dist/backlog.exe",
     "README.md",
     "LICENSE"
   ],
   "bin": {
     "backlog": "scripts/cli.cjs"
-  },
-  "optionalDependencies": {
-    "backlog.md-darwin-arm64": "*",
-    "backlog.md-darwin-x64": "*",
-    "backlog.md-linux-arm64": "*",
-    "backlog.md-linux-x64": "*",
-    "backlog.md-windows-arm64": "*",
-    "backlog.md-windows-x64": "*"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.3",
@@ -48,7 +43,8 @@
     "react-router-dom": "7.18.1",
     "react-tooltip": "6.0.8",
     "tailwindcss": "4.3.2",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "zod": "4.4.3"
   },
   "scripts": {
     "test": "bun test --timeout=10000",
@@ -77,12 +73,12 @@
   "author": "Alex Gavrilescu (https://github.com/MrLesk)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MrLesk/Backlog.md.git"
+    "url": "git+https://github.com/glitchwerks/mini-backlog.md.git"
   },
   "bugs": {
-    "url": "https://github.com/MrLesk/Backlog.md/issues"
+    "url": "https://github.com/glitchwerks/mini-backlog.md/issues"
   },
-  "homepage": "https://backlog.md",
+  "homepage": "https://github.com/glitchwerks/mini-backlog.md#readme",
   "keywords": [
     "cli",
     "markdown",

@@ -1,9 +1,26 @@
 import { DEFAULT_STATUSES } from "../../constants/index.ts";
+import {
+	MINI_TASK_CREATE_PROPERTIES,
+	MINI_TASK_EDIT_PROPERTIES,
+	MINI_TASK_LIST_PROPERTIES,
+	MINI_TASK_SEARCH_PROPERTIES,
+} from "../../mini/surface-policy.ts";
 import type { BacklogConfig } from "../../types/index.ts";
 import { getPriorityLabels } from "../../utils/priority-config.ts";
 import { getProjectValues } from "../../utils/project-config.ts";
 import { getTaskTypeValues } from "../../utils/task-type-config.ts";
 import type { JsonSchema } from "../validation/validators.ts";
+
+/** Project an object schema to an explicit property allowlist without mutating the source schema. */
+export function pickSchemaProperties(schema: JsonSchema, names: readonly string[]): JsonSchema {
+	const allowed = new Set(names);
+	return {
+		...schema,
+		properties: Object.fromEntries(Object.entries(schema.properties ?? {}).filter(([name]) => allowed.has(name))),
+		required: (schema.required ?? []).filter((name) => allowed.has(name)),
+		additionalProperties: false,
+	};
+}
 
 /**
  * Builds the accepted task status values used by MCP schemas and public CLI help.
@@ -566,3 +583,16 @@ export function generateTaskSearchSchema(config: Pick<BacklogConfig, "priorities
 		additionalProperties: false,
 	};
 }
+
+export const generateMiniTaskCreateSchema = (config: BacklogConfig): JsonSchema =>
+	pickSchemaProperties(generateTaskCreateSchema(config), MINI_TASK_CREATE_PROPERTIES);
+
+export const generateMiniTaskEditSchema = (config: BacklogConfig): JsonSchema =>
+	pickSchemaProperties(generateTaskEditSchema(config), MINI_TASK_EDIT_PROPERTIES);
+
+export const generateMiniTaskListSchema = (config: Pick<BacklogConfig, "types" | "projects">): JsonSchema =>
+	pickSchemaProperties(generateTaskListSchema(config), MINI_TASK_LIST_PROPERTIES);
+
+export const generateMiniTaskSearchSchema = (
+	config: Pick<BacklogConfig, "priorities" | "types" | "projects">,
+): JsonSchema => pickSchemaProperties(generateTaskSearchSchema(config), MINI_TASK_SEARCH_PROPERTIES);
