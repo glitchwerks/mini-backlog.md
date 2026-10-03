@@ -94,6 +94,8 @@ The MCP server starts with `backlog mcp start`. Workflow and Definition-of-Done 
 
 ## Upstream synchronization
 
+Capture a selected build's CLI/MCP discovery surface with `bun scripts/capture-surface.ts --target target.json --output manifest.json`. The target specifies an executable/argument array and an isolated initialized project directory. Capture uses public CLI help and MCP discovery; Git is not required. See [Runtime surface capture](docs/runtime-surface-capture.md) for the target format and comparison limits.
+
 For development, `bun run check:types` checks TypeScript, `bun run check` checks formatting and lint, and `bun run test` runs the tests. CI bundles upstream regressions with `BACKLOG_BUILD_OUTDIR=<temporary-directory> bun scripts/build-test-cli.ts` and sets `BACKLOG_TEST_CLI_BUNDLE` to that directory's `full-cli-entry.js`. This test harness is not shipped. `bun run build` always builds mini. `bun scripts/smoke-compiled-build.ts <binary-path> <version>` exercises the same mini smoke used by CI and Nix.
 
 Full CLI regression lists emit a shell-neutral `Next:` hint with the next `--skip` value. Rerun the original command, replacing or adding the paging option before any `--` separator and keeping all other arguments and their shell quoting. Mini continues to exclude `--max-count`, `--skip`, and `--count`.
