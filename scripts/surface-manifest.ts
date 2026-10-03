@@ -346,25 +346,10 @@ export async function captureSurface(target: CaptureTarget, responses = false) {
 	};
 }
 
-/** Run the fixed representative profile only in a newly allocated disposable project. */
-export async function captureResponses(target: CaptureTarget) {
+async function withFixture<T>(target: CaptureTarget, use: (fixture: CaptureTarget) => Promise<T>): Promise<T> {
 	const validated = await validateTarget(target);
 	const cwd = await mkdtemp(join(tmpdir(), "backlog-response-fixture-"));
 	const fixture = { ...validated, cwd };
-	const samples = new Map<string, { values: unknown[]; texts: string[]; contentTypes: Set<string> }>();
-	function record(name: string, value: unknown, texts: string[] = [], contentTypes: string[] = []): void {
-		const sample = samples.get(name) ?? { values: [], texts: [], contentTypes: new Set<string>() };
-		sample.values.push(value);
-		sample.texts.push(...texts);
-		for (const type of contentTypes) sample.contentTypes.add(type);
-		samples.set(name, sample);
-	}
-	async function cli(name: string, args: string[], json = false) {
-		const text = await runCli(fixture, args);
-		const value = json ? JSON.parse(text) : text;
-		record(`cli.${name}`, value, json ? [] : [text]);
-		return value;
-	}
 	try {
 		await runCli(fixture, [
 			"init",
@@ -382,6 +367,29 @@ export async function captureResponses(target: CaptureTarget) {
 			"--zero-padded-ids",
 			"0",
 		]);
+		return await use(fixture);
+	} finally {
+		await rm(cwd, { recursive: true, force: true });
+	}
+}
+
+/** Run the fixed representative profile only in a newly allocated disposable project. */
+export async function captureResponses(target: CaptureTarget) {
+	return withFixture(target, async (fixture) => {
+		const samples = new Map<string, { values: unknown[]; texts: string[]; contentTypes: Set<string> }>();
+		function record(name: string, value: unknown, texts: string[] = [], contentTypes: string[] = []): void {
+			const sample = samples.get(name) ?? { values: [], texts: [], contentTypes: new Set<string>() };
+			sample.values.push(value);
+			sample.texts.push(...texts);
+			for (const type of contentTypes) sample.contentTypes.add(type);
+			samples.set(name, sample);
+		}
+		async function cli(name: string, args: string[], json = false) {
+			const text = await runCli(fixture, args);
+			const value = json ? JSON.parse(text) : text;
+			record(`cli.${name}`, value, json ? [] : [text]);
+			return value;
+		}
 		await withMcp(fixture, async (client) => {
 			async function call(name: string, args: Record<string, unknown> = {}, probeName = name.replace(/_/g, ".")) {
 				const raw = await client.request(
@@ -485,7 +493,5 @@ export async function captureResponses(target: CaptureTarget) {
 					]),
 			),
 		};
-	} finally {
-		await rm(cwd, { recursive: true, force: true });
-	}
+	});
 }
