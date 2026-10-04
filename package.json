@@ -43,7 +43,8 @@
     "react-router-dom": "7.18.1",
     "react-tooltip": "6.0.8",
     "tailwindcss": "4.3.2",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "zod": "4.4.3"
   },
   "scripts": {
     "test": "bun test --timeout=10000",
@@ -55,8 +56,7 @@
     "prepare": "husky",
     "build": "bun scripts/build.ts",
     "cli": "bun src/cli.ts",
-    "mcp": "bun src/cli.ts mcp start",
-    "update-nix": "bunx bun2nix@2.1.1 -o bun.nix"
+    "mcp": "bun src/cli.ts mcp start"
   },
   "lint-staged": {
     "package.json": [
