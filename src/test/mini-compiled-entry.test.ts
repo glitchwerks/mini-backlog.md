@@ -46,6 +46,11 @@ async function runCommand(args: string[], cwd: string, timeout: number, env?: No
 		for (const reader of readers) void reader.cancel(timeoutError).catch(() => {});
 	}
 	const timeoutError = new Error(`Command timed out after ${timeout}ms: ${args[0]}`);
+	let parentExited = false;
+	const exitCode = child.exited.then((code) => {
+		parentExited = true;
+		return code;
+	});
 	let timedOut = false;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	const deadline = new Promise<never>((_, reject) => {
@@ -53,11 +58,13 @@ async function runCommand(args: string[], cwd: string, timeout: number, env?: No
 			timedOut = true;
 			try {
 				if (process.platform === "win32") {
-					// .cmd launchers leave Node descendants holding the output pipes open.
-					await execFileAsync("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
-						timeout: 5_000,
-						windowsHide: true,
-					}).catch(() => child.kill("SIGKILL"));
+					// An exited parent's PID can belong to an unrelated process now.
+					if (!parentExited) {
+						await execFileAsync("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
+							timeout: 5_000,
+							windowsHide: true,
+						}).catch(() => child.kill("SIGKILL"));
+					}
 				} else {
 					try {
 						process.kill(-child.pid, "SIGKILL");
@@ -74,12 +81,12 @@ async function runCommand(args: string[], cwd: string, timeout: number, env?: No
 		}, timeout);
 	});
 	try {
-		const [stdout, stderr, exitCode] = await Promise.race([
-			Promise.all([readOutput(readers[0]), readOutput(readers[1]), child.exited]),
+		const [stdout, stderr, code] = await Promise.race([
+			Promise.all([readOutput(readers[0]), readOutput(readers[1]), exitCode]),
 			deadline,
 		]);
 		if (timedOut) throw timeoutError;
-		return { stdout, stderr, exitCode };
+		return { stdout, stderr, exitCode: code };
 	} finally {
 		clearTimeout(timer);
 		if (timedOut) cancelOutput();
@@ -137,19 +144,22 @@ setInterval(() => { if (${exitsEarly} && fs.existsSync(process.argv[3])) process
 		);
 		let watchdog: ReturnType<typeof setTimeout> | undefined;
 		try {
-			try {
-				const result = (await Promise.race([
-					runCommand(["node", script, pidFile, heartbeatFile], buildDirectory, 2_000),
-					new Promise((_, reject) => {
-						watchdog = setTimeout(() => reject(new Error("Descendant pipes did not close")), 7_000);
-					}),
-				])) as { exitCode: number };
+			const outcome = await Promise.race([
+				runCommand(["node", script, pidFile, heartbeatFile], buildDirectory, 2_000),
+				new Promise((_, reject) => {
+					watchdog = setTimeout(() => reject(new Error("Descendant pipes did not close")), 7_000);
+				}),
+			]).then(
+				(result) => ({ result: result as { exitCode: number } }),
+				(error: unknown) => ({ error }),
+			);
+			if ("result" in outcome) {
 				// Bun may terminate descendants immediately when their parent exits.
 				expect(exitsEarly).toBe(true);
-				expect(result.exitCode).toBe(0);
-			} catch (error) {
-				expect(error).toBeInstanceOf(Error);
-				expect((error as Error).message).toContain("Command timed out after 2000ms");
+				expect(outcome.result.exitCode).toBe(0);
+			} else {
+				expect(outcome.error).toBeInstanceOf(Error);
+				expect((outcome.error as Error).message).toContain("Command timed out after 2000ms");
 			}
 			expect(await Bun.file(pidFile).exists()).toBe(true);
 			const heartbeat = await Bun.file(heartbeatFile).text();
@@ -168,6 +178,8 @@ setInterval(() => { if (${exitsEarly} && fs.existsSync(process.argv[3])) process
 	it("releases output readers when an exited command leaves its pipes open", async () => {
 		const child = Bun.spawn(["node", "-e", "process.exit(0)"], { stdout: "pipe", stderr: "pipe" });
 		await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited]);
+		const expiredPid = child.pid;
+		let expiredPidReads = 0;
 		let cancelled = 0;
 		const stdout = new ReadableStream({
 			cancel: () => {
@@ -181,7 +193,16 @@ setInterval(() => { if (${exitsEarly} && fs.existsSync(process.argv[3])) process
 		});
 		// Windows Bun currently closes these pipes on parent exit. Replay retained pipes
 		// on a real exited child so that behavior cannot hide a missing drain deadline.
-		Object.defineProperties(child, { stdout: { value: stdout }, stderr: { value: stderr } });
+		Object.defineProperties(child, {
+			stdout: { value: stdout },
+			stderr: { value: stderr },
+			pid: {
+				get: () => {
+					expiredPidReads++;
+					return expiredPid;
+				},
+			},
+		});
 		const spawn = spyOn(Bun, "spawn").mockReturnValueOnce(child);
 		let watchdog: ReturnType<typeof setTimeout> | undefined;
 		try {
@@ -197,6 +218,7 @@ setInterval(() => { if (${exitsEarly} && fs.existsSync(process.argv[3])) process
 			expect(cancelled).toBe(2);
 			expect(stdout.locked).toBe(false);
 			expect(stderr.locked).toBe(false);
+			if (process.platform === "win32") expect(expiredPidReads).toBe(0);
 		} finally {
 			clearTimeout(watchdog);
 			spawn.mockRestore();

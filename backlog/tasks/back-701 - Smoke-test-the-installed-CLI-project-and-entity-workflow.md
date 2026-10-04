@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-04 12:44'
-updated_date: '2026-10-04 14:34'
+updated_date: '2026-10-04 14:44'
 labels: []
 dependencies: []
 references:
@@ -46,6 +46,8 @@ CI run 37203607977 at 85918d56 proved the installed workflow on Linux (21.7 s), 
 Addressed PR #26 review feedback by invoking npm-generated node_modules/.bin/backlog.cmd on Windows or backlog on POSIX for every workflow step. Shared subprocess helper now terminates the exact Windows process tree or isolated POSIX process group; a real descendant-output timeout regression test protects pipe cleanup. Portable single-line Markdown verifies document persistence through the Windows command shim. Negative probes caught a missing npm shim, a hung installed command, and a success-without-persistence document update; restored fixtures passed 15 focused tests / 91 assertions, TypeScript, and scoped Biome. Updated independent review found no actionable issues. Fresh final-head CI is required before merge; both earlier full Linux failures were the same timestamp flake in #16.
 
 PR #26 early-parent-exit follow-up: raced process/output completion against a bounded deadline and explicitly cancelled/released stdout and stderr readers even if the parent PID is already gone. A retained-pipe replay failed the previous helper with its independent watchdog and passes the fix. Real hung-parent and early-exiting-parent descendants stop their heartbeat before cleanup assertions. Windows Bun currently terminates early-parent descendants automatically; the helper now independently bounds output draining. Verified 17 focused tests, an additional reader-lock assertion run, TypeScript, and CRLF-aware scoped Biome. Repository-wide local formatting differs because of existing mixed line endings; final-head CI supplies the Linux format gate. Independent review found no actionable issues.
+
+Final review follow-up: skip Windows taskkill once parent exit is observed to avoid targeting a reused PID; retained-pipe regression asserts no expired PID lookup on Windows. Captured subprocess outcome separates execution failures from test assertions. Final local verification passed 17 tests / 102 assertions, TypeScript, and scoped Biome. PR #26 generated task-comment formatting suggestion is a separate existing CLI serializer behavior awaiting maintainer disposition.
 <!-- SECTION:NOTES:END -->
 
 ## Comments
