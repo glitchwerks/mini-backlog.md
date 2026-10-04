@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-03 16:29'
-updated_date: '2026-10-03 17:02'
+updated_date: '2026-10-04 00:55'
 labels: []
 dependencies:
   - BACK-695
@@ -44,6 +44,8 @@ Synchronizations need separate answers for upstream changes, deliberate mini exc
 
 <!-- SECTION:NOTES:BEGIN -->
 Baseline reviewed against README CLI options, 15 MCP tools, task MCP input and summary/detail fields; conformance exact. True upstream tags compiled without overrides and retained observed version mismatch. Three reports show 21 upstream changes, 217 upstream-to-mini differences and zero independent mini candidate drift. Ten comparison tests passed, one Windows symlink skip; hardlink protection verified. TypeScript/scoped CRLF-aware Biome passed; independent review findings fixed and follow-up clear. Explicit baseline approval occurs through reviewed PR merge; no auto replacement. Full local suite failed/stalled in unrelated cases recorded in #16.
+
+The explicit approval boundary was satisfied by the user-authorized reviewed merge of PR #19 into main at 5e38dda1. GitHub #12 closed with its baseline criterion checked. All six CI jobs passed on reviewed head 92529920 in run 37165864478; baseline inputs and reports are committed.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
