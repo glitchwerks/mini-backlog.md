@@ -20,6 +20,23 @@ function parseNpmPackOutput(output: string): Array<{ filename: string; files: Ar
 	throw new Error("npm pack did not emit a JSON array");
 }
 
+async function runNpm(cwd: string, ...args: string[]): Promise<string> {
+	const child = Bun.spawn(["npm", ...args], {
+		cwd,
+		stdout: "pipe",
+		stderr: "pipe",
+		timeout: 30_000,
+		killSignal: "SIGKILL",
+	});
+	const [stdout, stderr, exitCode] = await Promise.all([
+		new Response(child.stdout).text(),
+		new Response(child.stderr).text(),
+		child.exited,
+	]);
+	expect(exitCode, `npm ${args[0]} failed: ${stderr}`).toBe(0);
+	return stdout;
+}
+
 it("parses npm pack JSON after a non-JSON preamble", () => {
 	expect(
 		parseNpmPackOutput('npm notice preparing package\n.[{not json}\n[\n  {"filename":"mini.tgz","files":[]}\n]\n'),
@@ -87,40 +104,142 @@ describe("compiled mini CLI entry", () => {
 		expect(stdout).toContain("Compiled browser smoke checks passed");
 	}, 60000);
 
-	it("installs a local source package containing this mini binary without platform dependencies", async () => {
+	it("installs the mini CLI and initializes, reads instructions, and creates and edits project entities", async () => {
 		const source = join(buildDirectory, "source");
 		const install = join(buildDirectory, "installed");
 		await mkdir(join(source, "dist"), { recursive: true });
 		await cp(executable, join(source, "dist", process.platform === "win32" ? "backlog.exe" : "backlog"));
 		await cp(join(projectRoot, "scripts"), join(source, "scripts"), { recursive: true });
 		await cp(join(projectRoot, "package.json"), join(source, "package.json"));
-		const { $ } = await import("bun");
-		const packed =
-			await $`npm pack --json --ignore-scripts --cache ${join(buildDirectory, "npm-cache")} --pack-destination ${buildDirectory}`
-				.cwd(source)
-				.quiet();
-		const pack = parseNpmPackOutput(packed.stdout.toString())[0];
+		const cache = join(buildDirectory, "npm-cache");
+		const packed = await runNpm(
+			source,
+			"pack",
+			"--json",
+			"--ignore-scripts",
+			"--cache",
+			cache,
+			"--pack-destination",
+			buildDirectory,
+		);
+		const pack = parseNpmPackOutput(packed)[0];
 		if (!pack) throw new Error("npm pack emitted an empty JSON array");
 		expect(pack.files.map((file: { path: string }) => file.path)).toContain(
 			`dist/backlog${process.platform === "win32" ? ".exe" : ""}`,
 		);
 		expect(pack.files.map((file: { path: string }) => file.path)).not.toContain("src/test/full-cli-entry.ts");
-		await $`npm install --offline --prefix ${install} --cache ${join(buildDirectory, "npm-cache")} --omit=optional --ignore-scripts --no-audit --no-fund ${join(buildDirectory, pack.filename)}`.quiet();
-		const { stdout } = await execFileAsync(
-			"node",
-			[join(install, "node_modules/mini-backlog.md/scripts/cli.cjs"), "--help"],
-			{ timeout: 10000 },
+		await runNpm(
+			source,
+			"install",
+			"--offline",
+			"--prefix",
+			install,
+			"--cache",
+			cache,
+			"--omit=optional",
+			"--ignore-scripts",
+			"--no-audit",
+			"--no-fund",
+			join(buildDirectory, pack.filename),
 		);
+		const workspace = join(buildDirectory, "installed project");
+		await mkdir(workspace);
+		const env = { ...process.env, BACKLOG_CWD: workspace };
+		const launcher = join(install, "node_modules/mini-backlog.md/scripts/cli.cjs");
+		async function backlog(...args: string[]): Promise<string> {
+			const result = await execFileAsync("node", [launcher, ...args], { cwd: workspace, env, timeout: 10_000 });
+			expect(result.stderr, `backlog ${args.join(" ")}`).toBe("");
+			return result.stdout;
+		}
+		await execFileAsync("git", ["init"], { cwd: workspace, timeout: 10_000 });
+		await execFileAsync("git", ["config", "user.name", "Installed CLI Smoke"], { cwd: workspace, timeout: 10_000 });
+		await execFileAsync("git", ["config", "user.email", "smoke@example.invalid"], { cwd: workspace, timeout: 10_000 });
+		expect(await backlog("instructions", "init-required")).toContain("backlog init");
+		await backlog(
+			"init",
+			"Installed smoke",
+			"--defaults",
+			"--integration-mode",
+			"cli",
+			"--agent-instructions",
+			"agents",
+			"--check-branches",
+			"false",
+			"--include-remote",
+			"false",
+		);
+		expect(await Bun.file(join(workspace, "AGENTS.md")).text()).toContain("backlog instructions overview");
+		expect(await backlog("instructions", "overview")).toContain("backlog instructions task-creation");
+		for (const guide of ["task-creation", "task-execution", "task-finalization"]) {
+			expect(await backlog("instructions", guide)).toContain("backlog task");
+		}
+
+		await backlog("milestone", "add", "Release Alpha", "--description", "Installed milestone scope");
+		const milestones = await backlog("milestone", "list", "--plain");
+		const milestoneId = milestones.match(/^\s+(m-\d+): Release Alpha /m)?.[1];
+		if (!milestoneId) throw new Error(`Created milestone missing from CLI list: ${milestones}`);
+		expect(milestones).toContain("Installed milestone scope");
+		await backlog(
+			"task",
+			"create",
+			"Installed task",
+			"--description",
+			"Original task description",
+			"--milestone",
+			milestoneId,
+			"--ac",
+			"Installed workflow works",
+			"--plain",
+		);
+		const tasks = JSON.parse(await backlog("task", "list", "--json")).tasks;
+		expect(tasks).toHaveLength(1);
+		const taskId = tasks[0].id;
+		expect(JSON.parse(await backlog("task", "view", taskId, "--json")).task.description).toBe(
+			"Original task description",
+		);
+		await backlog(
+			"task",
+			"edit",
+			taskId,
+			"--title",
+			"Edited installed task",
+			"--description",
+			"Edited task description",
+			"--status",
+			"In Progress",
+			"--check-ac",
+			"1",
+		);
+		await backlog("milestone", "rename", milestoneId, "Release Beta");
+		const renamedMilestones = await backlog("milestone", "list", "--plain");
+		expect(renamedMilestones).toContain(`${milestoneId}: Release Beta`);
+		expect(renamedMilestones).not.toContain("Release Alpha");
+		const task = JSON.parse(await backlog("task", "view", taskId, "--json")).task;
+		expect(task).toMatchObject({
+			id: taskId,
+			title: "Edited installed task",
+			description: "Edited task description",
+			status: "In Progress",
+			milestone: milestoneId,
+		});
+		expect(task.acceptanceCriteria).toEqual([{ index: 1, text: "Installed workflow works", checked: true }]);
+
+		const createdDoc = await backlog("doc", "create", "Installed guide", "--type", "guide", "--plain");
+		const docId = createdDoc.match(/Created document (\S+)/)?.[1];
+		if (!docId) throw new Error(`Document creation did not report an allocated ID: ${createdDoc}`);
+		expect(await backlog("doc", "list", "--plain")).toContain("Installed guide");
+		const content = "# Installed workflow\n\nDocument content survives a separate CLI invocation.";
+		await backlog("doc", "update", docId, "--title", "Edited installed guide", "--content", content);
+		const document = await backlog("doc", "view", docId, "--plain");
+		expect(document).toContain("Edited installed guide");
+		expect(document).toContain(content);
+		const stdout = await backlog("--help");
 		expect(stdout).toContain("mini-backlog.md");
 		for (const command of ["init", "instructions", "browser"]) {
 			expect(stdout).toMatch(new RegExp(`^ {2}${command}\\b`, "m"));
 		}
 		expect(stdout).not.toMatch(/^ {2}(board|help)\b/m);
-		await expect(
-			execFileAsync("node", [join(install, "node_modules/mini-backlog.md/scripts/cli.cjs"), "board"], {
-				timeout: 10000,
-			}),
-		).rejects.toMatchObject({ code: 1 });
+		await expect(backlog("board")).rejects.toMatchObject({ code: 1 });
 		const pkg = await Bun.file(join(projectRoot, "package.json")).json();
 		const installedExecutable = join(
 			install,
