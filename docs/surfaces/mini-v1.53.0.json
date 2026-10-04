@@ -1,0 +1,2370 @@
+{
+	"identity": {
+		"cliVersion": "1.53.0",
+		"label": "mini-v1.53.0 baseline",
+		"mcpServer": {
+			"name": "backlog.md",
+			"version": "1.53.0"
+		},
+		"revision": "baf842ef6cadcd5a3197bde22cddea47d4a2bb1e"
+	},
+	"manifestVersion": 2,
+	"surface": {
+		"cli": [
+			{
+				"aliases": [],
+				"arguments": [],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": null,
+						"flags": ["--version", "-v"]
+					}
+				],
+				"path": []
+			},
+			{
+				"aliases": [],
+				"arguments": [],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": null,
+						"flags": ["--no-open"]
+					},
+					{
+						"argument": "<port>",
+						"flags": ["--port", "-p"]
+					}
+				],
+				"path": ["browser"]
+			},
+			{
+				"aliases": [],
+				"arguments": [],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				],
+				"path": ["doc"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["<title>"],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": "<path>",
+						"flags": ["--path", "-p"]
+					},
+					{
+						"argument": null,
+						"flags": ["--plain"]
+					},
+					{
+						"argument": "<type>",
+						"flags": ["--type", "-t"]
+					}
+				],
+				"path": ["doc", "create"]
+			},
+			{
+				"aliases": [],
+				"arguments": [],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": null,
+						"flags": ["--plain"]
+					}
+				],
+				"path": ["doc", "list"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["<query>"],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": "<number>",
+						"flags": ["--limit", "-l"]
+					}
+				],
+				"path": ["doc", "search"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["<docId>"],
+				"options": [
+					{
+						"argument": "<content>",
+						"flags": ["--content"]
+					},
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": "<path>",
+						"flags": ["--path", "-p"]
+					},
+					{
+						"argument": "<tags>",
+						"flags": ["--tags"]
+					},
+					{
+						"argument": "<title>",
+						"flags": ["--title"]
+					},
+					{
+						"argument": "<type>",
+						"flags": ["--type", "-t"]
+					}
+				],
+				"path": ["doc", "update"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["<docId>"],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": null,
+						"flags": ["--plain"]
+					}
+				],
+				"path": ["doc", "view"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["[projectName]"],
+				"options": [
+					{
+						"argument": "<instructions>",
+						"flags": ["--agent-instructions"]
+					},
+					{
+						"argument": "<boolean>",
+						"flags": ["--auto-open-browser"]
+					},
+					{
+						"argument": "<path>",
+						"flags": ["--backlog-dir"]
+					},
+					{
+						"argument": "<number>",
+						"flags": ["--branch-days"]
+					},
+					{
+						"argument": "<boolean>",
+						"flags": ["--bypass-git-hooks"]
+					},
+					{
+						"argument": "<boolean>",
+						"flags": ["--check-branches"]
+					},
+					{
+						"argument": "<location>",
+						"flags": ["--config-location"]
+					},
+					{
+						"argument": "<editor>",
+						"flags": ["--default-editor"]
+					},
+					{
+						"argument": null,
+						"flags": ["--defaults"]
+					},
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": "<boolean>",
+						"flags": ["--include-remote"]
+					},
+					{
+						"argument": "<boolean>",
+						"flags": ["--install-claude-agent"]
+					},
+					{
+						"argument": "<mode>",
+						"flags": ["--integration-mode"]
+					},
+					{
+						"argument": null,
+						"flags": ["--no-git"]
+					},
+					{
+						"argument": "<prefix>",
+						"flags": ["--task-prefix"]
+					},
+					{
+						"argument": "<number>",
+						"flags": ["--web-port"]
+					},
+					{
+						"argument": "<number>",
+						"flags": ["--zero-padded-ids"]
+					}
+				],
+				"path": ["init"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["[guide]"],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": null,
+						"flags": ["--list"]
+					}
+				],
+				"path": ["instructions"]
+			},
+			{
+				"aliases": [],
+				"arguments": [],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				],
+				"path": ["mcp"]
+			},
+			{
+				"aliases": [],
+				"arguments": [],
+				"options": [
+					{
+						"argument": "<path>",
+						"flags": ["--cwd"]
+					},
+					{
+						"argument": null,
+						"flags": ["--debug", "-d"]
+					},
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				],
+				"path": ["mcp", "start"]
+			},
+			{
+				"aliases": [],
+				"arguments": [],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				],
+				"path": ["milestone"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["<name>"],
+				"options": [
+					{
+						"argument": "<text>",
+						"flags": ["--description", "-d"]
+					},
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				],
+				"path": ["milestone", "add"]
+			},
+			{
+				"aliases": [],
+				"arguments": [],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": null,
+						"flags": ["--plain"]
+					},
+					{
+						"argument": null,
+						"flags": ["--show-completed"]
+					}
+				],
+				"path": ["milestone", "list"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["<name>"],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": "<milestone>",
+						"flags": ["--reassign-to"]
+					},
+					{
+						"argument": "<mode>",
+						"flags": ["--task-handling"]
+					}
+				],
+				"path": ["milestone", "remove"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["<from>", "<to>"],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": null,
+						"flags": ["--no-update-tasks"]
+					}
+				],
+				"path": ["milestone", "rename"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["[query]"],
+				"options": [
+					{
+						"argument": "<status>",
+						"flags": ["--exclude-status"]
+					},
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": null,
+						"flags": ["--json"]
+					},
+					{
+						"argument": "<number>",
+						"flags": ["--limit"]
+					},
+					{
+						"argument": null,
+						"flags": ["--plain"]
+					},
+					{
+						"argument": "<priority>",
+						"flags": ["--priority"]
+					},
+					{
+						"argument": "<status>",
+						"flags": ["--status"]
+					},
+					{
+						"argument": "<type>",
+						"flags": ["--task-type"]
+					},
+					{
+						"argument": "<type>",
+						"flags": ["--type"]
+					}
+				],
+				"path": ["search"]
+			},
+			{
+				"aliases": [],
+				"arguments": [],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				],
+				"path": ["task"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["<taskId>"],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					}
+				],
+				"path": ["task", "complete"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["<title>"],
+				"options": [
+					{
+						"argument": "<criteria>",
+						"flags": ["--ac"]
+					},
+					{
+						"argument": "<criteria>",
+						"flags": ["--acceptance-criteria"]
+					},
+					{
+						"argument": "<assignees>",
+						"flags": ["--assignee", "-a"]
+					},
+					{
+						"argument": "<taskIds>",
+						"flags": ["--depends-on"]
+					},
+					{
+						"argument": "<text>",
+						"flags": ["--description", "-d"]
+					},
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": "<labels>",
+						"flags": ["--labels", "-l"]
+					},
+					{
+						"argument": "<milestone>",
+						"flags": ["--milestone", "-m"]
+					},
+					{
+						"argument": null,
+						"flags": ["--plain"]
+					},
+					{
+						"argument": "<priority>",
+						"flags": ["--priority"]
+					},
+					{
+						"argument": "<status>",
+						"flags": ["--status", "-s"]
+					},
+					{
+						"argument": "<type>",
+						"flags": ["--type"]
+					}
+				],
+				"path": ["task", "create"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["<taskIds...>"],
+				"options": [
+					{
+						"argument": "<criteria>",
+						"flags": ["--ac"]
+					},
+					{
+						"argument": "<criteria>",
+						"flags": ["--acceptance-criteria"]
+					},
+					{
+						"argument": "<labels>",
+						"flags": ["--add-label"]
+					},
+					{
+						"argument": "<assignees>",
+						"flags": ["--assignee", "-a"]
+					},
+					{
+						"argument": "<index>",
+						"flags": ["--check-ac"]
+					},
+					{
+						"argument": null,
+						"flags": ["--clear-ac"]
+					},
+					{
+						"argument": null,
+						"flags": ["--clear-deps"]
+					},
+					{
+						"argument": null,
+						"flags": ["--clear-labels"]
+					},
+					{
+						"argument": null,
+						"flags": ["--clear-milestone"]
+					},
+					{
+						"argument": "<text>",
+						"flags": ["--comment"]
+					},
+					{
+						"argument": "<author>",
+						"flags": ["--comment-author"]
+					},
+					{
+						"argument": "<taskIds>",
+						"flags": ["--depends-on"]
+					},
+					{
+						"argument": "<text>",
+						"flags": ["--description", "-d"]
+					},
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": "<labels>",
+						"flags": ["--label", "-l"]
+					},
+					{
+						"argument": "<milestone>",
+						"flags": ["--milestone", "-m"]
+					},
+					{
+						"argument": null,
+						"flags": ["--plain"]
+					},
+					{
+						"argument": "<priority>",
+						"flags": ["--priority"]
+					},
+					{
+						"argument": "<index>",
+						"flags": ["--remove-ac"]
+					},
+					{
+						"argument": "<labels>",
+						"flags": ["--remove-label"]
+					},
+					{
+						"argument": "<status>",
+						"flags": ["--status", "-s"]
+					},
+					{
+						"argument": "<title>",
+						"flags": ["--title", "-t"]
+					},
+					{
+						"argument": "<type>",
+						"flags": ["--type"]
+					},
+					{
+						"argument": "<index>",
+						"flags": ["--uncheck-ac"]
+					}
+				],
+				"path": ["task", "edit"]
+			},
+			{
+				"aliases": [],
+				"arguments": [],
+				"options": [
+					{
+						"argument": "<assignee>",
+						"flags": ["--assignee", "-a"]
+					},
+					{
+						"argument": "<status>",
+						"flags": ["--exclude-status"]
+					},
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": null,
+						"flags": ["--json"]
+					},
+					{
+						"argument": "<labels>",
+						"flags": ["--labels", "-l"]
+					},
+					{
+						"argument": "<number>",
+						"flags": ["--limit"]
+					},
+					{
+						"argument": "<milestone>",
+						"flags": ["--milestone", "-m"]
+					},
+					{
+						"argument": null,
+						"flags": ["--plain"]
+					},
+					{
+						"argument": "<priority>",
+						"flags": ["--priority"]
+					},
+					{
+						"argument": null,
+						"flags": ["--ready"]
+					},
+					{
+						"argument": "<query>",
+						"flags": ["--search"]
+					},
+					{
+						"argument": "<field>",
+						"flags": ["--sort"]
+					},
+					{
+						"argument": "<status>",
+						"flags": ["--status", "-s"]
+					},
+					{
+						"argument": "<type>",
+						"flags": ["--type"]
+					},
+					{
+						"argument": null,
+						"flags": ["--unassigned"]
+					},
+					{
+						"argument": null,
+						"flags": ["--watch"]
+					}
+				],
+				"path": ["task", "list"]
+			},
+			{
+				"aliases": [],
+				"arguments": ["<taskId>"],
+				"options": [
+					{
+						"argument": null,
+						"flags": ["--help", "-h"]
+					},
+					{
+						"argument": null,
+						"flags": ["--json"]
+					},
+					{
+						"argument": null,
+						"flags": ["--plain"]
+					}
+				],
+				"path": ["task", "view"]
+			}
+		],
+		"mcp": {
+			"prompts": [],
+			"resourceTemplates": [],
+			"resources": [],
+			"tools": [
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"title": "Create Document"
+					},
+					"description": "Create a Backlog.md document using the shared core document pipeline, with optional docs subdirectory path",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"content": {
+								"type": "string"
+							},
+							"path": {
+								"maxLength": 300,
+								"type": "string"
+							},
+							"tags": {
+								"items": {
+									"maxLength": 100,
+									"type": "string"
+								},
+								"maxItems": 50,
+								"type": "array"
+							},
+							"title": {
+								"maxLength": 200,
+								"minLength": 1,
+								"type": "string"
+							},
+							"type": {
+								"enum": ["readme", "guide", "specification", "other"],
+								"maxLength": 50,
+								"type": "string"
+							}
+						},
+						"required": ["title", "content"],
+						"type": "object"
+					},
+					"name": "document_create"
+				},
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"readOnlyHint": true,
+						"title": "List Documents"
+					},
+					"description": "List Backlog.md documents with optional substring filtering",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"search": {
+								"maxLength": 200,
+								"type": "string"
+							}
+						},
+						"required": [],
+						"type": "object"
+					},
+					"name": "document_list"
+				},
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"readOnlyHint": true,
+						"title": "Search Documents"
+					},
+					"description": "Search Backlog.md documents using the shared fuzzy index",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"limit": {
+								"maximum": 100,
+								"minimum": 1,
+								"type": "number"
+							},
+							"query": {
+								"maxLength": 200,
+								"minLength": 1,
+								"type": "string"
+							}
+						},
+						"required": ["query"],
+						"type": "object"
+					},
+					"name": "document_search"
+				},
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"title": "Update Document"
+					},
+					"description": "Update an existing Backlog.md document's content, optional title, metadata, and optional docs subdirectory path",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"content": {
+								"type": "string"
+							},
+							"id": {
+								"maxLength": 100,
+								"minLength": 1,
+								"type": "string"
+							},
+							"path": {
+								"maxLength": 300,
+								"type": "string"
+							},
+							"tags": {
+								"items": {
+									"maxLength": 100,
+									"type": "string"
+								},
+								"maxItems": 50,
+								"type": "array"
+							},
+							"title": {
+								"maxLength": 200,
+								"minLength": 1,
+								"type": "string"
+							},
+							"type": {
+								"enum": ["readme", "guide", "specification", "other"],
+								"maxLength": 50,
+								"type": "string"
+							}
+						},
+						"required": ["id", "content"],
+						"type": "object"
+					},
+					"name": "document_update"
+				},
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"readOnlyHint": true,
+						"title": "View Document"
+					},
+					"description": "View a Backlog.md document including metadata and markdown content",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"id": {
+								"maxLength": 100,
+								"minLength": 1,
+								"type": "string"
+							}
+						},
+						"required": ["id"],
+						"type": "object"
+					},
+					"name": "document_view"
+				},
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"title": "Add Milestone"
+					},
+					"description": "Add a milestone by creating a milestone file",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"description": {
+								"description": "Optional description for the milestone",
+								"maxLength": 2000,
+								"type": "string"
+							},
+							"name": {
+								"description": "Milestone name/title (trimmed; case-insensitive uniqueness)",
+								"maxLength": 100,
+								"minLength": 1,
+								"type": "string"
+							}
+						},
+						"required": ["name"],
+						"type": "object"
+					},
+					"name": "milestone_add"
+				},
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"readOnlyHint": true,
+						"title": "List Milestones"
+					},
+					"description": "List milestones from milestone files and task-only milestone values found on local tasks",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {},
+						"required": [],
+						"type": "object"
+					},
+					"name": "milestone_list"
+				},
+				{
+					"annotations": {
+						"destructiveHint": true,
+						"title": "Remove Milestone"
+					},
+					"description": "Remove an active milestone file and optionally clear/reassign tasks",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"name": {
+								"description": "Milestone name to remove (case-insensitive match)",
+								"maxLength": 100,
+								"minLength": 1,
+								"type": "string"
+							},
+							"reassignTo": {
+								"description": "Target milestone name when taskHandling is reassign (must exist as an active milestone file)",
+								"maxLength": 100,
+								"type": "string"
+							},
+							"taskHandling": {
+								"default": "clear",
+								"description": "What to do with local tasks currently set to this milestone: clear (default), keep, or reassign",
+								"enum": ["clear", "keep", "reassign"],
+								"type": "string"
+							}
+						},
+						"required": ["name"],
+						"type": "object"
+					},
+					"name": "milestone_remove"
+				},
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"title": "Rename Milestone"
+					},
+					"description": "Rename a milestone file and optionally update local tasks",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"from": {
+								"description": "Existing milestone name (case-insensitive match)",
+								"maxLength": 100,
+								"minLength": 1,
+								"type": "string"
+							},
+							"to": {
+								"description": "New milestone name (trimmed; case-insensitive uniqueness)",
+								"maxLength": 100,
+								"minLength": 1,
+								"type": "string"
+							},
+							"updateTasks": {
+								"default": true,
+								"description": "Whether to update local tasks that reference the milestone (default: true)",
+								"type": "boolean"
+							}
+						},
+						"required": ["from", "to"],
+						"type": "object"
+					},
+					"name": "milestone_rename"
+				},
+				{
+					"annotations": {
+						"destructiveHint": true,
+						"title": "Complete Task"
+					},
+					"description": "Complete a Backlog.md task (move it to the completed folder)",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"id": {
+								"maxLength": 50,
+								"minLength": 1,
+								"type": "string"
+							}
+						},
+						"required": ["id"],
+						"type": "object"
+					},
+					"name": "task_complete"
+				},
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"title": "Create Task"
+					},
+					"description": "Create a new task using Backlog.md",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"acceptanceCriteria": {
+								"items": {
+									"maxLength": 500,
+									"type": "string"
+								},
+								"type": "array"
+							},
+							"assignee": {
+								"description": "Optional assignees. When omitted, the project's configured defaultAssignee applies; pass an empty array to leave the task unassigned.",
+								"items": {
+									"maxLength": 100,
+									"type": "string"
+								},
+								"type": "array"
+							},
+							"dependencies": {
+								"items": {
+									"maxLength": 50,
+									"type": "string"
+								},
+								"type": "array"
+							},
+							"description": {
+								"maxLength": 10000,
+								"type": "string"
+							},
+							"labels": {
+								"items": {
+									"maxLength": 50,
+									"type": "string"
+								},
+								"type": "array"
+							},
+							"milestone": {
+								"description": "Optional milestone label (trimmed).",
+								"maxLength": 100,
+								"minLength": 1,
+								"type": "string"
+							},
+							"priority": {
+								"description": "Optional task priority (case-insensitive). Valid values: High, Medium, Low",
+								"enum": ["High", "Medium", "Low"],
+								"enumCaseInsensitive": true,
+								"maxLength": 50,
+								"type": "string"
+							},
+							"status": {
+								"default": "To Do",
+								"description": "Status value (case-insensitive). Valid values: Draft, To Do, In Progress, Done",
+								"enum": ["Draft", "To Do", "In Progress", "Done"],
+								"enumCaseInsensitive": true,
+								"enumNormalizeWhitespace": true,
+								"maxLength": 100,
+								"type": "string"
+							},
+							"title": {
+								"maxLength": 200,
+								"minLength": 1,
+								"type": "string"
+							},
+							"type": {
+								"description": "Optional task type (case-insensitive). Valid values: bug, feature, enhancement, task, chore, docs, spike",
+								"enum": ["bug", "feature", "enhancement", "task", "chore", "docs", "spike"],
+								"enumCaseInsensitive": true,
+								"maxLength": 50,
+								"type": "string"
+							}
+						},
+						"required": ["title"],
+						"type": "object"
+					},
+					"name": "task_create"
+				},
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"title": "Edit Task"
+					},
+					"description": "Edit task title, description, status, priority, type, milestone, labels, assignees, dependencies, comments, and acceptance criteria",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"acceptanceCriteriaAdd": {
+								"items": {
+									"maxLength": 500,
+									"type": "string"
+								},
+								"maxItems": 50,
+								"type": "array"
+							},
+							"acceptanceCriteriaCheck": {
+								"items": {
+									"minimum": 1,
+									"type": "number"
+								},
+								"maxItems": 50,
+								"type": "array"
+							},
+							"acceptanceCriteriaRemove": {
+								"items": {
+									"minimum": 1,
+									"type": "number"
+								},
+								"maxItems": 50,
+								"type": "array"
+							},
+							"acceptanceCriteriaSet": {
+								"items": {
+									"maxLength": 500,
+									"type": "string"
+								},
+								"maxItems": 50,
+								"type": "array"
+							},
+							"acceptanceCriteriaUncheck": {
+								"items": {
+									"minimum": 1,
+									"type": "number"
+								},
+								"maxItems": 50,
+								"type": "array"
+							},
+							"assignee": {
+								"description": "Replace all assignees. Pass an empty array to clear them.",
+								"items": {
+									"maxLength": 100,
+									"type": "string"
+								},
+								"type": "array"
+							},
+							"commentAuthor": {
+								"description": "Optional author label to store with appended comments.",
+								"maxLength": 100,
+								"type": "string"
+							},
+							"commentsAppend": {
+								"description": "Append comments to the task. Comment bodies may contain Markdown, but standalone '---' lines are reserved as comment delimiters.",
+								"items": {
+									"maxLength": 5000,
+									"type": "string"
+								},
+								"maxItems": 20,
+								"type": "array"
+							},
+							"dependencies": {
+								"items": {
+									"maxLength": 50,
+									"type": "string"
+								},
+								"type": "array"
+							},
+							"description": {
+								"maxLength": 10000,
+								"type": "string"
+							},
+							"id": {
+								"maxLength": 50,
+								"minLength": 1,
+								"type": "string"
+							},
+							"labels": {
+								"items": {
+									"maxLength": 50,
+									"type": "string"
+								},
+								"type": "array"
+							},
+							"milestone": {
+								"description": "Set milestone label (string) or clear it (null).",
+								"maxLength": 100,
+								"minLength": 1,
+								"type": "string"
+							},
+							"priority": {
+								"description": "Optional task priority (case-insensitive). Valid values: High, Medium, Low",
+								"enum": ["High", "Medium", "Low"],
+								"enumCaseInsensitive": true,
+								"maxLength": 50,
+								"type": "string"
+							},
+							"status": {
+								"default": "To Do",
+								"description": "Status value (case-insensitive). Valid values: Draft, To Do, In Progress, Done",
+								"enum": ["Draft", "To Do", "In Progress", "Done"],
+								"enumCaseInsensitive": true,
+								"enumNormalizeWhitespace": true,
+								"maxLength": 100,
+								"type": "string"
+							},
+							"title": {
+								"maxLength": 200,
+								"type": "string"
+							},
+							"type": {
+								"description": "Optional task type (case-insensitive). Valid values: bug, feature, enhancement, task, chore, docs, spike",
+								"enum": ["bug", "feature", "enhancement", "task", "chore", "docs", "spike"],
+								"enumCaseInsensitive": true,
+								"maxLength": 50,
+								"type": "string"
+							}
+						},
+						"required": ["id"],
+						"type": "object"
+					},
+					"name": "task_edit"
+				},
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"readOnlyHint": true,
+						"title": "List Tasks"
+					},
+					"description": "List tasks with optional status, type, assignee, unassigned, milestone, labels, search, ready, and limit filters",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"assignee": {
+								"maxLength": 100,
+								"type": "string"
+							},
+							"labels": {
+								"items": {
+									"maxLength": 50,
+									"type": "string"
+								},
+								"type": "array"
+							},
+							"limit": {
+								"maximum": 1000,
+								"minimum": 1,
+								"type": "number"
+							},
+							"milestone": {
+								"maxLength": 100,
+								"type": "string"
+							},
+							"ready": {
+								"description": "When true, filter tasks that are ready for work (all dependencies satisfied/completed).",
+								"type": "boolean"
+							},
+							"search": {
+								"maxLength": 200,
+								"type": "string"
+							},
+							"status": {
+								"maxLength": 100,
+								"type": "string"
+							},
+							"type": {
+								"description": "Filter tasks by one or more configured task types (OR semantics).",
+								"items": {
+									"description": "Optional task type (case-insensitive). Valid values: bug, feature, enhancement, task, chore, docs, spike",
+									"enum": ["bug", "feature", "enhancement", "task", "chore", "docs", "spike"],
+									"enumCaseInsensitive": true,
+									"maxLength": 50,
+									"type": "string"
+								},
+								"maxItems": 50,
+								"type": "array"
+							},
+							"unassigned": {
+								"description": "When true, only return tasks with no assignee. Cannot be combined with assignee.",
+								"type": "boolean"
+							}
+						},
+						"required": [],
+						"type": "object"
+					},
+					"name": "task_list"
+				},
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"readOnlyHint": true,
+						"title": "Search Tasks"
+					},
+					"description": "Search tasks by query, status, task type, and priority",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"limit": {
+								"maximum": 100,
+								"minimum": 1,
+								"type": "number"
+							},
+							"priority": {
+								"description": "Optional task priority (case-insensitive). Valid values: High, Medium, Low",
+								"enum": ["High", "Medium", "Low"],
+								"enumCaseInsensitive": true,
+								"maxLength": 50,
+								"type": "string"
+							},
+							"query": {
+								"maxLength": 200,
+								"type": "string"
+							},
+							"status": {
+								"maxLength": 100,
+								"type": "string"
+							},
+							"type": {
+								"description": "Filter tasks by one or more configured task types (OR semantics).",
+								"items": {
+									"description": "Optional task type (case-insensitive). Valid values: bug, feature, enhancement, task, chore, docs, spike",
+									"enum": ["bug", "feature", "enhancement", "task", "chore", "docs", "spike"],
+									"enumCaseInsensitive": true,
+									"maxLength": 50,
+									"type": "string"
+								},
+								"maxItems": 50,
+								"type": "array"
+							}
+						},
+						"required": [],
+						"type": "object"
+					},
+					"name": "task_search"
+				},
+				{
+					"annotations": {
+						"destructiveHint": false,
+						"readOnlyHint": true,
+						"title": "View Task"
+					},
+					"description": "View a Backlog.md task details",
+					"inputSchema": {
+						"additionalProperties": false,
+						"properties": {
+							"id": {
+								"maxLength": 50,
+								"minLength": 1,
+								"type": "string"
+							}
+						},
+						"required": ["id"],
+						"type": "object"
+					},
+					"name": "task_view"
+				}
+			]
+		},
+		"responses": {
+			"probes": {
+				"cli.doc.list.plain": {
+					"contentTypes": [],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["string"]
+						}
+					],
+					"labels": [],
+					"textForms": [[]]
+				},
+				"cli.doc.view.plain": {
+					"contentTypes": [],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["string"]
+						}
+					],
+					"labels": ["id", "tags", "title", "type"],
+					"textForms": [["id", "tags", "title", "type"], ["id", "title", "type"]]
+				},
+				"cli.milestone.list.plain": {
+					"contentTypes": [],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["string"]
+						}
+					],
+					"labels": ["Active milestones (count)", "Completed milestones (count)"],
+					"textForms": [["Active milestones (count)", "Completed milestones (count)"]]
+				},
+				"cli.search.json": {
+					"contentTypes": [],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/kind",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/results",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/results/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/results/*/data",
+							"types": ["object"]
+						},
+						{
+							"optional": true,
+							"path": "$/results/*/data/acceptanceCriteriaCompleted",
+							"types": ["number"]
+						},
+						{
+							"optional": true,
+							"path": "$/results/*/data/acceptanceCriteriaCount",
+							"types": ["number"]
+						},
+						{
+							"optional": true,
+							"path": "$/results/*/data/assignees",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/results/*/data/assignees/*",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/results/*/data/createdAt",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/results/*/data/id",
+							"types": ["string"]
+						},
+						{
+							"optional": true,
+							"path": "$/results/*/data/labels",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/results/*/data/labels/*",
+							"types": ["string"]
+						},
+						{
+							"optional": true,
+							"path": "$/results/*/data/milestone",
+							"types": ["null", "string"]
+						},
+						{
+							"optional": true,
+							"path": "$/results/*/data/path",
+							"types": ["string"]
+						},
+						{
+							"optional": true,
+							"path": "$/results/*/data/priority",
+							"types": ["null", "string"]
+						},
+						{
+							"optional": true,
+							"path": "$/results/*/data/status",
+							"types": ["string"]
+						},
+						{
+							"optional": true,
+							"path": "$/results/*/data/tags",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/results/*/data/tags/*",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/results/*/data/title",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/results/*/data/type",
+							"types": ["null", "string"]
+						},
+						{
+							"optional": false,
+							"path": "$/results/*/data/updatedAt",
+							"types": ["null", "string"]
+						},
+						{
+							"optional": false,
+							"path": "$/results/*/type",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/schemaVersion",
+							"types": ["number"]
+						}
+					],
+					"labels": [],
+					"textForms": []
+				},
+				"cli.task.create.plain": {
+					"contentTypes": [],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["string"]
+						}
+					],
+					"labels": ["Acceptance Criteria", "Created", "Description", "Status"],
+					"textForms": [["Acceptance Criteria", "Created", "Description", "Status"]]
+				},
+				"cli.task.list.json": {
+					"contentTypes": [],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/kind",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/schemaVersion",
+							"types": ["number"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/acceptanceCriteriaCompleted",
+							"types": ["number"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/acceptanceCriteriaCount",
+							"types": ["number"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/assignees",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/assignees/*",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/createdAt",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/id",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/labels",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/labels/*",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/milestone",
+							"types": ["null", "string"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/priority",
+							"types": ["null", "string"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/status",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/title",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/type",
+							"types": ["null", "string"]
+						},
+						{
+							"optional": false,
+							"path": "$/tasks/*/updatedAt",
+							"types": ["null", "string"]
+						}
+					],
+					"labels": [],
+					"textForms": []
+				},
+				"cli.task.view.json": {
+					"contentTypes": [],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/kind",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/schemaVersion",
+							"types": ["number"]
+						},
+						{
+							"optional": false,
+							"path": "$/task",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/acceptanceCriteria",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/acceptanceCriteria/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/acceptanceCriteria/*/checked",
+							"types": ["boolean"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/acceptanceCriteria/*/index",
+							"types": ["number"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/acceptanceCriteria/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/acceptanceCriteriaCompleted",
+							"types": ["number"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/acceptanceCriteriaCount",
+							"types": ["number"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/assignees",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/assignees/*",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/comments",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/comments/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/comments/*/author",
+							"types": ["null", "string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/comments/*/body",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/comments/*/createdAt",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/comments/*/index",
+							"types": ["number"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/createdAt",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/dependencies",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/dependencies/*",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/description",
+							"types": ["null", "string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/id",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/labels",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/labels/*",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/milestone",
+							"types": ["null", "string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/priority",
+							"types": ["null", "string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/status",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/title",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/type",
+							"types": ["null", "string"]
+						},
+						{
+							"optional": false,
+							"path": "$/task/updatedAt",
+							"types": ["null", "string"]
+						}
+					],
+					"labels": [],
+					"textForms": []
+				},
+				"cli.task.view.plain": {
+					"contentTypes": [],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["string"]
+						}
+					],
+					"labels": [
+						"Acceptance Criteria",
+						"Assignee",
+						"Comments",
+						"Created",
+						"Dependencies",
+						"Description",
+						"Labels",
+						"Milestone",
+						"Priority",
+						"Status",
+						"Type",
+						"Updated"
+					],
+					"textForms": [
+						[
+							"Acceptance Criteria",
+							"Assignee",
+							"Comments",
+							"Created",
+							"Dependencies",
+							"Description",
+							"Labels",
+							"Milestone",
+							"Priority",
+							"Status",
+							"Type",
+							"Updated"
+						],
+						["Acceptance Criteria", "Created", "Description", "Status"]
+					]
+				},
+				"mcp.document.create": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": ["Created", "Path", "Tags", "Type"],
+					"textForms": [["Created", "Path", "Tags", "Type"]]
+				},
+				"mcp.document.list": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": ["Documents"],
+					"textForms": [["Documents"], []]
+				},
+				"mcp.document.search": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": ["Documents"],
+					"textForms": [["Documents"]]
+				},
+				"mcp.document.update": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": ["Created", "Path", "Tags", "Type", "Updated"],
+					"textForms": [["Created", "Path", "Tags", "Type", "Updated"]]
+				},
+				"mcp.document.view": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": ["Created", "Path", "Tags", "Type", "Updated"],
+					"textForms": [["Created", "Path", "Tags", "Type", "Updated"], ["Created", "Path", "Tags", "Type"]]
+				},
+				"mcp.milestone.add": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": [],
+					"textForms": [[]]
+				},
+				"mcp.milestone.list": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": ["Hint", "Milestones (count)", "Milestones found on tasks without files (count)"],
+					"textForms": [["Hint", "Milestones (count)", "Milestones found on tasks without files (count)"]]
+				},
+				"mcp.milestone.remove": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": ["Cleared milestone for 1 local task"],
+					"textForms": [["Cleared milestone for 1 local task"]]
+				},
+				"mcp.milestone.rename": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": ["Updated 1 local task"],
+					"textForms": [["Updated 1 local task"]]
+				},
+				"mcp.task.complete": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": [
+						"Acceptance Criteria",
+						"Assignee",
+						"Comments",
+						"Created",
+						"Dependencies",
+						"Description",
+						"Labels",
+						"Priority",
+						"Status",
+						"Type",
+						"Updated"
+					],
+					"textForms": [
+						[
+							"Acceptance Criteria",
+							"Assignee",
+							"Comments",
+							"Created",
+							"Dependencies",
+							"Description",
+							"Labels",
+							"Priority",
+							"Status",
+							"Type",
+							"Updated"
+						]
+					]
+				},
+				"mcp.task.create": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": ["Acceptance Criteria", "Created", "Description", "Status"],
+					"textForms": [["Acceptance Criteria", "Created", "Description", "Status"]]
+				},
+				"mcp.task.edit": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": [
+						"Acceptance Criteria",
+						"Assignee",
+						"Comments",
+						"Created",
+						"Dependencies",
+						"Description",
+						"Labels",
+						"Milestone",
+						"Priority",
+						"Status",
+						"Type",
+						"Updated"
+					],
+					"textForms": [
+						[
+							"Acceptance Criteria",
+							"Assignee",
+							"Comments",
+							"Created",
+							"Dependencies",
+							"Description",
+							"Labels",
+							"Milestone",
+							"Priority",
+							"Status",
+							"Type",
+							"Updated"
+						],
+						[
+							"Acceptance Criteria",
+							"Assignee",
+							"Comments",
+							"Created",
+							"Dependencies",
+							"Description",
+							"Labels",
+							"Priority",
+							"Status",
+							"Type",
+							"Updated"
+						]
+					]
+				},
+				"mcp.task.list": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": ["To Do"],
+					"textForms": [["To Do"], []]
+				},
+				"mcp.task.search": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": ["Tasks"],
+					"textForms": [["Tasks"]]
+				},
+				"mcp.task.view": {
+					"contentTypes": ["text"],
+					"fields": [
+						{
+							"optional": false,
+							"path": "$",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content",
+							"types": ["array"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*",
+							"types": ["object"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/text",
+							"types": ["string"]
+						},
+						{
+							"optional": false,
+							"path": "$/content/*/type",
+							"types": ["string"]
+						}
+					],
+					"labels": [
+						"Acceptance Criteria",
+						"Assignee",
+						"Comments",
+						"Created",
+						"Dependencies",
+						"Description",
+						"Labels",
+						"Milestone",
+						"Priority",
+						"Status",
+						"Type",
+						"Updated"
+					],
+					"textForms": [
+						[
+							"Acceptance Criteria",
+							"Assignee",
+							"Comments",
+							"Created",
+							"Dependencies",
+							"Description",
+							"Labels",
+							"Milestone",
+							"Priority",
+							"Status",
+							"Type",
+							"Updated"
+						],
+						["Acceptance Criteria", "Created", "Description", "Status"]
+					]
+				}
+			},
+			"profileVersion": 1
+		}
+	}
+}

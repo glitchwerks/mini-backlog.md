@@ -18,7 +18,7 @@ const exec = promisify(execFile);
 const timeout = 16000;
 const smokeRoot = await mkdtemp(join(tmpdir(), "mini-backlog-smoke-"));
 
-/** Exercise the installed executable, including Nix's Bun wrapper, with bounded subprocesses. */
+/** Exercise the installed executable with bounded subprocesses. */
 async function run(...args: string[]): Promise<string> {
 	const result = await exec(executable, args, { cwd: smokeRoot, timeout });
 	assert.equal(removeKnownBunRuntimeWarning(result.stderr), "");

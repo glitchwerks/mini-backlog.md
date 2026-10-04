@@ -1,0 +1,121 @@
+{
+	"capturedAt": "2026-10-03",
+	"repository": "glitchwerks/mini-backlog.md",
+	"defaultBranch": "main",
+	"mainRevision": "1b369ba5557bcbb7d67c24fb920878d29d4f550d",
+	"selectedUpstreamRevision": "fd20f71493fb4eda44b021aa89f257956f17fb71",
+	"selectedUpstreamTag": "v1.53.0",
+	"selectedUpstreamIsAncestorOfMain": true,
+	"remoteBranches": [
+		{
+			"name": "codex/mini-surface-sync-discovery",
+			"revision": "baf842ef6cadcd5a3197bde22cddea47d4a2bb1e"
+		},
+		{
+			"name": "experiment/codex-integration",
+			"revision": "660cb98206660a43dfd6e52a8038fde50693074a"
+		},
+		{
+			"name": "main",
+			"revision": "1b369ba5557bcbb7d67c24fb920878d29d4f550d"
+		},
+		{
+			"name": "pr669/9-tz-board-polish",
+			"revision": "85d8d54082b8ff2d9f2ad75f24c0bd021a3ff7e9"
+		},
+		{
+			"name": "tasks/add-file-modification-field-in-tasks",
+			"revision": "0a1ccf8da75f5704f218195b77745fdb5a3e6093"
+		},
+		{
+			"name": "tasks/back-683-pie-progress",
+			"revision": "e656730daa460ce1dfc0577a2f430ae6425a33e6"
+		}
+	],
+	"openPullRequests": [],
+	"initiativePR": {
+		"baseRefName": "codex/mini-surface-sync",
+		"headRefName": "codex/mini-surface-sync-discovery",
+		"headRefOid": "baf842ef6cadcd5a3197bde22cddea47d4a2bb1e",
+		"mergedAt": null,
+		"state": "CLOSED",
+		"url": "https://github.com/glitchwerks/mini-backlog.md/pull/15"
+	},
+	"currentRuleset": {
+		"conditions": {
+			"ref_name": {
+				"exclude": [],
+				"include": ["~DEFAULT_BRANCH"]
+			}
+		},
+		"enforcement": "active",
+		"id": 15682536,
+		"name": "default",
+		"rules": [
+			{
+				"type": "deletion"
+			},
+			{
+				"type": "non_fast_forward"
+			},
+			{
+				"parameters": {
+					"allowed_merge_methods": ["merge", "squash", "rebase"],
+					"dismiss_stale_reviews_on_push": false,
+					"require_code_owner_review": false,
+					"require_extra_approval_for_unattributed_changes": true,
+					"require_last_push_approval": false,
+					"required_approving_review_count": 0,
+					"required_review_thread_resolution": false,
+					"required_reviewers": []
+				},
+				"type": "pull_request"
+			}
+		],
+		"source_type": "Organization"
+	},
+	"forkTagRefs": [
+		{
+			"ref": "refs/tags/mini-v1.52.0",
+			"object": {
+				"sha": "86c18988249d4f282ca3f15186b7bf8d49f3cac7",
+				"type": "commit",
+				"url": "https://api.github.com/repos/glitchwerks/mini-backlog.md/git/commits/86c18988249d4f282ca3f15186b7bf8d49f3cac7"
+			}
+		},
+		{
+			"ref": "refs/tags/mini-v1.53.0",
+			"object": {
+				"sha": "1b369ba5557bcbb7d67c24fb920878d29d4f550d",
+				"type": "commit",
+				"url": "https://api.github.com/repos/glitchwerks/mini-backlog.md/git/commits/1b369ba5557bcbb7d67c24fb920878d29d4f550d"
+			}
+		}
+	],
+	"worktreeInventory": [
+		"worktree I:/apps/mini-backlog.md",
+		"HEAD 1b369ba5557bcbb7d67c24fb920878d29d4f550d",
+		"branch refs/heads/main",
+		"",
+		"worktree I:/apps/mini-backlog.md/.worktrees/codex/mini-init-instructions-parity",
+		"HEAD ab98006766fcdd8291253dbb43a654cead40313f",
+		"branch refs/heads/codex/mini-init-instructions-parity",
+		"",
+		"worktree I:/apps/mini-backlog.md/.worktrees/codex/mini-surface-sync-discovery",
+		"HEAD 83f86e82f7dd08de8938504c3c8f997791ebd0e3",
+		"branch refs/heads/codex/mini-surface-sync-discovery",
+		"",
+		"worktree I:/apps/mini-backlog.md/.worktrees/codex/sync-upstream-v1.53.0",
+		"HEAD eba4620cd5b0ba6ad3bc2f7aa0bb4535a32579ea",
+		"branch refs/heads/codex/sync-upstream-v1.53.0",
+		"",
+		"worktree I:/apps/mini-backlog.md/.worktrees/upstream-v1.52.0-surface",
+		"HEAD 39912b864053dcdd1fafc458aacde43ffd616a0c",
+		"detached",
+		"",
+		"worktree I:/apps/mini-backlog.md/.worktrees/upstream-v1.53.0-surface",
+		"HEAD fd20f71493fb4eda44b021aa89f257956f17fb71",
+		"detached",
+		""
+	]
+}
