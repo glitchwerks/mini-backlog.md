@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@codex'
 created_date: '2026-10-03 17:19'
-updated_date: '2026-10-04 01:52'
+updated_date: '2026-10-04 12:01'
 labels: []
 dependencies:
   - BACK-697
@@ -60,4 +60,6 @@ PR #19 integrated capture, reviewed baseline and gate into main at 5e38dda1 with
 The user approved the dedicated upstream/mini layout. Fresh preflight preserves main 92fa4940, all remote refs and inherited organization ruleset 15682536 in docs/surfaces/branch-migration-preflight.json. No open PR needs retargeting. Administration follows the reviewed migration PR.
 
 Migration implementation verified: the new CI contract failed on missing mini branch trigger, then passed after adding mini. All 15 compiled-entry/local-install/source-distribution/package-contract tests passed (61 assertions). TypeScript and scoped CRLF-aware Biome passed. Direct source build and compiled CLI/browser smoke passed; runtime surface has zero drift. Backup, upstream and mini refs are created. Default and ruleset await current migration PR checks.
+
+PR #21 merged at 6982bb2175e6859c2646ddee8221f52299462961 after all six checks passed on reviewed head 4df32622 (run 37169389002, attempt 3); code/security and CodeRabbit reviews completed without actionable findings. Actual compiled runtime reports have zero drift on Linux, macOS and Windows. Default mini and repository ruleset 24454494 are now applied; inherited organization ruleset 15682536 is preserved. Effective branch rules match all six exact contexts/app 15368 with strict up-to-date checks and merge-commit-only PR integration. Main remains 92fa4940; upstream remains pristine fd20f714; all remote tag targets match preflight and both upstream and demonstration merge ancestry are retained. A subsequent PR verifies required-check enforcement before final closure. Timestamp flake #16 remains separate.
 <!-- SECTION:NOTES:END -->
