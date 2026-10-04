@@ -1,6 +1,6 @@
 # Mini branch migration proposal
 
-Parent: https://github.com/glitchwerks/mini-backlog.md/issues/14. Status: proposed; permanent upstream/mini branches, default-branch changes and ruleset activation remain unapplied. Runtime tooling and the reviewed baseline integrated into `main` through PR #19 at `5e38dda16be939bfb21872592c068680cef21a85`. Issue #14 explicitly requires a concrete migration decision first.
+Parent: https://github.com/glitchwerks/mini-backlog.md/issues/14. Status: approved by the user's dedicated-branches decision, recorded in issue #14. Backup `codex/pre-mini-migration-92fa4940`, clean `upstream` and permanent `mini` branches are created. Default-branch changes and ruleset activation follow the reviewed migration PR. Pre-migration main is `92fa4940c450a8476c50eb60cff9357a0d4f11fd`; its fresh inventory is `docs/surfaces/branch-migration-preflight.json`. Sources: PR #20; https://github.com/glitchwerks/mini-backlog.md/issues/14#issuecomment-5975491593.
 
 ## Decision to review
 

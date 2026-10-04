@@ -161,9 +161,9 @@ backlog.md/
 
 ### Synchronization review
 
-Use [the runtime capture procedure](docs/runtime-surface-capture.md) to capture real selected upstream builds and [the three comparisons](docs/surfaces/README.md) to review their difference from mini. On a temporary branch from the current mini integration branch, merge the selected upstream release and retain that merge commit when integrating the reviewed candidate. Run the compiled candidate check described in README and the existing tests before integration. This preserves the source ancestry used for later syncs (issue #13; PR #9).
+Use [the runtime capture procedure](docs/runtime-surface-capture.md) to capture real selected upstream builds and [the three comparisons](docs/surfaces/README.md) to review their difference from mini. Create an isolated worktree on a temporary `codex/sync-upstream-v<version>` branch from the latest `mini`. Merge the selected upstream release into that candidate and retain that merge commit when integrating its reviewed PR into `mini`. Run the compiled candidate check described in README and the existing tests before integration. Update the permanent `upstream` mirror separately with a fast-forward to the selected pristine upstream commit; never merge mini changes into that mirror. `main` retains pre-migration history. This preserves the source ancestry used for later syncs (issues #13/#14; PR #9).
 
-CI's compile jobs run `scripts/check-mini-surface.ts` on the binaries they build and upload candidate snapshots and comparison reports, including on drift. The check fails on changes without modifying the baseline. Baseline changes require an explicit reviewed PR. The current default-branch ruleset does not require CI status checks; runtime failure is visible in CI but administrator enforcement remains part of the branch proposal in #14.
+CI's compile jobs run `scripts/check-mini-surface.ts` on the binaries they build and upload candidate snapshots and comparison reports, including on drift. The check fails on changes without modifying the baseline. Baseline changes require an explicit reviewed PR. Require all six checks before merging into `mini`: the three platform compile/smoke/runtime checks and three platform test jobs. The repository-scoped ruleset payload is committed in `docs/surfaces/required-checks-ruleset.json`; issue #14 records its activation and rollback. Existing organization rules remain in effect. CI runs for PRs, `mini` and compatibility `main` updates, and fork-specific source tags.
 
 ### Source release
 
@@ -173,7 +173,7 @@ or attach prebuilt binaries to GitHub releases.
 1. Synchronize an upstream release and retain its exact `package.json` version.
    Never increment the fork beyond its upstream base.
 2. Merge the synchronization and restricted-surface changes into the fork's
-   `main` branch.
+   `mini` branch through a reviewed PR with a retained merge commit.
 3. Validate a fork-specific tag whose version exactly matches `package.json`:
    ```bash
    bun scripts/validate-mini-tag.ts mini-v<major.minor.patch>

@@ -7,7 +7,7 @@
 Install Git, Bun 1.3.14 or newer, and Node.js with npm. Clone this fork, then build and install its local binary. These commands work in PowerShell, Git Bash, and Unix shells; run each line separately:
 
 ```bash
-git clone https://github.com/glitchwerks/mini-backlog.md.git
+git clone --branch mini https://github.com/glitchwerks/mini-backlog.md.git
 cd mini-backlog.md
 bun install --frozen-lockfile --ignore-scripts
 bun run build
@@ -100,7 +100,7 @@ Compare snapshots with `bun scripts/compare-surfaces.ts --before baseline.json -
 
 Check a compiled mini candidate in one command: `bun scripts/check-mini-surface.ts --binary dist/backlog.exe --label mini-candidate --revision <source-commit> --output .tmp/surfaces/candidate`. Use `dist/backlog` on Linux/macOS. The check initializes disposable projects, compares discovery and representative responses against `docs/surfaces/mini-v1.53.0.json`, saves the candidate plus JSON/Markdown reports, and fails on drift. `--baseline` selects another explicitly reviewed baseline. CI runs this check against each compiled mini binary and uploads the review artifacts; it never accepts a baseline change automatically.
 
-Prepare syncs on a temporary branch from mini's current integration branch (`main` today), merge the selected upstream release into that branch, and resolve the restrictions there. Review upstream-to-upstream, upstream-to-mini and approved-mini-to-candidate reports alongside the existing behavioral tests. Merge the reviewed candidate while retaining upstream merge ancestry. A clean upstream mirror and permanent `mini` branch remain the proposal tracked in #14.
+`mini` is the default integration branch for this fork. `upstream` mirrors selected upstream releases without mini changes; `main` preserves the pre-migration history. Prepare syncs in an isolated worktree on a temporary branch from `mini`, merge the selected upstream release into that candidate, and resolve the restrictions there. Review upstream-to-upstream, upstream-to-mini and approved-mini-to-candidate reports alongside the existing behavioral tests. Target the reviewed PR at `mini` and use a merge commit to retain upstream ancestry. Advance the clean `upstream` mirror separately using only upstream fast-forward updates. The branch migration and rollback are recorded in #14.
 
 For development, `bun run check:types` checks TypeScript, `bun run check` checks formatting and lint, and `bun run test` runs the tests. CI bundles upstream regressions with `BACKLOG_BUILD_OUTDIR=<temporary-directory> bun scripts/build-test-cli.ts` and sets `BACKLOG_TEST_CLI_BUNDLE` to that directory's `full-cli-entry.js`. This test harness is not shipped. `bun run build` always builds mini. `bun scripts/smoke-compiled-build.ts <binary-path> <version>` exercises the same mini smoke used by CI. Development and installation use the Bun source build described above.
 

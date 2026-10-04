@@ -55,4 +55,28 @@ describe("source-only distribution", () => {
 		const workflow = await Bun.file(join(projectRoot, ".github/workflows/ci.yml")).text();
 		expect(workflow).toMatch(/push:\s*\r?\n(?:\s+.*\r?\n)*?\s+tags:\s*\[["']mini-v\*\.\*\.\*["']\]/);
 	});
+
+	it("runs every required merge check for mini and compatibility branch updates", async () => {
+		const workflow = Bun.YAML.parse(await Bun.file(join(projectRoot, ".github/workflows/ci.yml")).text()) as {
+			on: { push: { branches: string[]; paths?: string[]; "paths-ignore"?: string[] }; pull_request: unknown };
+			jobs: Record<string, { name: string; strategy: { matrix: { include: Array<Record<string, string>> } } }>;
+		};
+		const ruleset = await Bun.file(join(projectRoot, "docs/surfaces/required-checks-ruleset.json")).json();
+		const required = ruleset.rules
+			.find((rule: { type: string }) => rule.type === "required_status_checks")
+			.parameters.required_status_checks.map((check: { context: string }) => check.context);
+		const emitted = Object.values(workflow.jobs).flatMap((job) =>
+			job.strategy.matrix.include.map((row) =>
+				job.name.includes("${{")
+					? job.name.replace(/\$\{\{\s*matrix\.os\s*\}\}/g, row.os ?? "")
+					: `${job.name} (${Object.values(row).join(", ")})`,
+			),
+		);
+		expect(workflow.on.push.branches).toEqual(expect.arrayContaining(["main", "mini"]));
+		expect(workflow.on.push.paths).toBeUndefined();
+		expect(workflow.on.push["paths-ignore"]).toBeUndefined();
+		expect(workflow.on).toHaveProperty("pull_request");
+		expect(required.length).toBe(6);
+		expect(emitted.toSorted()).toEqual(required.toSorted());
+	});
 });
