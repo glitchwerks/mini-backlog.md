@@ -56,9 +56,12 @@ describe("source-only distribution", () => {
 		expect(workflow).toMatch(/push:\s*\r?\n(?:\s+.*\r?\n)*?\s+tags:\s*\[["']mini-v\*\.\*\.\*["']\]/);
 	});
 
-	it("runs every required merge check for mini and compatibility branch updates", async () => {
+	it("runs every required merge check for unfiltered PRs and integration branch updates", async () => {
 		const workflow = Bun.YAML.parse(await Bun.file(join(projectRoot, ".github/workflows/ci.yml")).text()) as {
-			on: { push: { branches: string[]; paths?: string[]; "paths-ignore"?: string[] }; pull_request: unknown };
+			on: {
+				push: { branches: string[]; paths?: string[]; "paths-ignore"?: string[] };
+				pull_request: Record<string, unknown> | null;
+			};
 			jobs: Record<string, { name: string; strategy: { matrix: { include: Array<Record<string, string>> } } }>;
 		};
 		const ruleset = await Bun.file(join(projectRoot, "docs/surfaces/required-checks-ruleset.json")).json();
@@ -76,6 +79,9 @@ describe("source-only distribution", () => {
 		expect(workflow.on.push.paths).toBeUndefined();
 		expect(workflow.on.push["paths-ignore"]).toBeUndefined();
 		expect(workflow.on).toHaveProperty("pull_request");
+		for (const filter of ["branches", "branches-ignore", "paths", "paths-ignore"]) {
+			expect(workflow.on.pull_request ?? {}).not.toHaveProperty(filter);
+		}
 		expect(required.length).toBe(6);
 		expect(emitted.toSorted()).toEqual(required.toSorted());
 	});
