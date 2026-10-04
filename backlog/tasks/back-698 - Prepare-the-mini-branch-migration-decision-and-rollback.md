@@ -1,11 +1,11 @@
 ---
 id: BACK-698
 title: Prepare the mini branch migration decision and rollback
-status: In Progress
+status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-03 17:19'
-updated_date: '2026-10-04 01:52'
+updated_date: '2026-10-04 12:04'
 labels: []
 dependencies:
   - BACK-697
@@ -24,22 +24,20 @@ Prepare the concrete branch layout, upstream-based candidate evidence, administr
 <!-- AC:BEGIN -->
 - [x] #1 An upstream-based isolated candidate preserves mini tree and runtime surface.
 - [x] #2 The proposal inventories branches, worktrees, PR bases, CI, installation and tags with rollback and verifiable sources.
-- [ ] #3 Repository administration is applied only after the concrete migration decision required by issue #14.
+- [x] #3 Repository administration is applied only after the concrete migration decision required by issue #14.
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 bunx tsc --noEmit passes when TypeScript touched
-- [ ] #2 bun run check . passes when formatting/linting touched
+- [x] #1 bunx tsc --noEmit passes when TypeScript touched
+- [x] #2 bun run check . passes when formatting/linting touched
 - [x] #3 bun test (or scoped test) passes
 <!-- DOD:END -->
 
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
-Inventory current refs and worktrees (PR #15 closure and main 1b369ba5), build an isolated candidate from upstream fd20f714 with the current mini implementation, verify equivalent runtime surface, then record additive upstream/mini/default/required-check migration and rollback in docs/. Leave main and tags intact until the decision required by #14.
-
-Apply the user-approved dedicated branches: record current refs and backup, create upstream and mini, review CI/install/sync/release changes against mini, then switch default, apply and verify the six-check ruleset, preserve all tags/main/ancestry, finalize records and retire the plan. Sources: #14 and PR #20.
+Completed: verify retained upstream-first candidate and reviewed mini baseline; preserve preflight/backup/main/tags; create pristine upstream and permanent mini; integrate CI/install/sync docs in PR #21; set default mini and repository ruleset 24454494; verify six exact required checks and merge ancestry on PR #22; record durable rollback in GitHub #14; close #14 and retire its completed plan. Sources: #14 final decision comment, PR #21, PR #22 and committed docs/surfaces evidence.
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -49,7 +47,7 @@ Prepared an additive branch/default/PR-base/CI/install/tag migration and rollbac
 
 Independent review found no actionable proposal, evidence, citation or ruleset schema errors. All seven proposed check contexts and GitHub Actions app 15368 were verified against PR #15 check-runs. Candidate snapshot equals the baseline; report identity matches the retained merge. The three clean temporary capture/demo worktrees were removed after explicit path and status checks; active and unrelated worktrees remain. The required-check payload is a review proposal, not an applied ruleset.
 
-Persistence audit after commit 9ccb5069: git ls-tree HEAD -- docs/surfaces verifies the inventory, proposed ruleset, upstream-based candidate snapshot and both reports; git ls-tree HEAD -- docs/superpowers/plans/2026-10-03-mini-branch-migration-plan.md verifies the proposal. All six required migration artifacts are committed. The earlier 18 capture/comparison/gate artifacts are also present in HEAD. git merge-base --is-ancestor bc1134f26c5226460c2cd5efd5d7875bbfbf2c6d HEAD succeeds. Deliverables reconcile with git diff main...HEAD --stat. Implementation branch is local and unpublished after baf842ef pending the PR #15 closure clarification.
+Persistence audit after commit 9ccb5069: git ls-tree HEAD -- docs/surfaces verifies the inventory, proposed ruleset, upstream-based candidate snapshot and both reports; the proposal was verified committed then; its durable decision is now GitHub issue #14 and PR #21. All six required migration artifacts are committed. The earlier 18 capture/comparison/gate artifacts are also present in HEAD. git merge-base --is-ancestor bc1134f26c5226460c2cd5efd5d7875bbfbf2c6d HEAD succeeds. Deliverables reconcile with git diff main...HEAD --stat. Implementation branch is local and unpublished after baf842ef pending the PR #15 closure clarification.
 
 The user approved restoring the initiative publication path. Primary branch codex/mini-surface-sync was restored at 1b369ba5 and replacement draft PR #17 opened; committed work was pushed to its existing source branch only after verifying the new PR remained open. The proposal now cites PR #17 and retains the original inventory as historical evidence. This approval does not apply the permanent upstream/mini/default/ruleset migration.
 
@@ -60,4 +58,14 @@ PR #19 integrated capture, reviewed baseline and gate into main at 5e38dda1 with
 The user approved the dedicated upstream/mini layout. Fresh preflight preserves main 92fa4940, all remote refs and inherited organization ruleset 15682536 in docs/surfaces/branch-migration-preflight.json. No open PR needs retargeting. Administration follows the reviewed migration PR.
 
 Migration implementation verified: the new CI contract failed on missing mini branch trigger, then passed after adding mini. All 15 compiled-entry/local-install/source-distribution/package-contract tests passed (61 assertions). TypeScript and scoped CRLF-aware Biome passed. Direct source build and compiled CLI/browser smoke passed; runtime surface has zero drift. Backup, upstream and mini refs are created. Default and ruleset await current migration PR checks.
+
+PR #21 merged at 6982bb2175e6859c2646ddee8221f52299462961 after all six checks passed on reviewed head 4df32622 (run 37169389002, attempt 3); code/security and CodeRabbit reviews completed without actionable findings. Actual compiled runtime reports have zero drift on Linux, macOS and Windows. Default mini and repository ruleset 24454494 are now applied; inherited organization ruleset 15682536 is preserved. Effective branch rules match all six exact contexts/app 15368 with strict up-to-date checks and merge-commit-only PR integration. Main remains 92fa4940; upstream remains pristine fd20f714; all remote tag targets match preflight and both upstream and demonstration merge ancestry are retained. A subsequent PR verifies required-check enforcement before final closure. Timestamp flake #16 remains separate.
+
+Final verification: issue #14 closed after effective-rule checks and PR #22 returned all six checks as required (CheckRun.isRequired true for each emitted context). Applied decision and rollback IDs are durable at https://github.com/glitchwerks/mini-backlog.md/issues/14#issuecomment-5979716407. BACK-698 acceptance criteria and DoD are verified by the prior retained candidate, reviewed migration PR #21 and its full Linux type/format/test/TUI jobs plus all three compiled platform/runtime jobs. The completed plan is retired only after its parent issue closes, with the committed reference redirected. PR #22 contains the final record and must pass its own required checks before merging. No code simplification is needed: one CI branch trigger and the existing ruleset provide the migration; no new product layers were added. The historical timestamp flake remains open in #16. Optional future PR-filter guard remains deferred.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Dedicated branches applied: mini is default, upstream is pristine fd20f714, main/backup remain 92fa4940, and tags/history are preserved. Repository ruleset 24454494 enforces six exact up-to-date GitHub Actions checks and merge-commit PRs; inherited ruleset 15682536 is unchanged. PR #21 passed all six jobs; Linux/macOS/Windows runtime reports show zero drift, 15 local source/package/install contracts passed, and CLI/browser smoke passed. PR #22 confirms all six emitted checks are required. Parent #14 is closed; durable rationale/rollback are on the issue and the completed plan is retired. #16 remains separately open.
+<!-- SECTION:FINAL_SUMMARY:END -->
