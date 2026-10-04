@@ -27,6 +27,7 @@ const PLATFORM_CONTRACT_FILES = [
 	"src/test/cli-launcher.test.ts",
 	"src/test/config-commands.test.ts",
 	"src/test/editor.test.ts",
+	"src/test/mini-compiled-entry.test.ts",
 	"src/test/offline-mode.test.ts",
 	"src/test/packaging-bin.test.ts",
 	"src/test/runtime-cwd.test.ts",

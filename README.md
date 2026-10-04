@@ -106,6 +106,8 @@ For development, `bun run check:types` checks TypeScript, `bun run check` checks
 
 Full CLI regression lists emit a shell-neutral `Next:` hint with the next `--skip` value. Rerun the original command, replacing or adding the paging option before any `--` separator and keeping all other arguments and their shell quoting. Mini continues to exclude `--max-count`, `--skip`, and `--count`.
 
+Run the installed CLI smoke with `bun test --timeout=10000 src/test/mini-compiled-entry.test.ts`. It builds and packs mini, installs the package offline into a temporary local prefix, and runs npm's generated `backlog` command in a disposable Git project. The workflow initializes Backlog, reads the shipped instructions, creates and edits a task, renames a milestone, and creates and updates a document, verifying results through CLI reads. CI runs it on Linux, macOS, and Windows. It leaves your global installation untouched.
+
 This fork synchronizes upstream changes from [MrLesk/Backlog.md](https://github.com/MrLesk/Backlog.md) while keeping the restricted public surface above. Its `package.json` version always matches the synchronized upstream version; the fork never increments beyond upstream.
 
 After an upstream version is synchronized and the restricted fork changes are merged, tag the fork commit as `mini-v<upstream-version>` (for example, `mini-v1.53.0`). Do not move or rewrite the inherited upstream `v<version>` tag. Run `bun scripts/validate-mini-tag.ts mini-v<upstream-version>` before pushing the fork tag. Fork tags run the normal source-build CI and produce no npm packages or prebuilt release binaries.
