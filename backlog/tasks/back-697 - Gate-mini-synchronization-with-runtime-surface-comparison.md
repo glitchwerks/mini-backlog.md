@@ -1,11 +1,11 @@
 ---
 id: BACK-697
 title: Gate mini synchronization with runtime surface comparison
-status: In Progress
+status: Done
 assignee:
   - '@codex'
 created_date: '2026-10-03 17:08'
-updated_date: '2026-10-03 23:55'
+updated_date: '2026-10-04 01:07'
 labels: []
 dependencies:
   - BACK-696
@@ -30,7 +30,7 @@ Implement the runtime surface sync review gate scoped by GitHub issue #13; GitHu
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 bunx tsc --noEmit passes when TypeScript touched
-- [ ] #2 bun run check . passes when formatting/linting touched
+- [x] #2 bun run check . passes when formatting/linting touched
 - [x] #3 bun test (or scoped test) passes
 <!-- DOD:END -->
 
@@ -48,4 +48,12 @@ The compiled-binary check and CI wiring are implemented and independently review
 Publication resumed with user approval. Replacement PR #17 targets the restored codex/mini-surface-sync branch and publishes fc0800b6. Run 37151883658 uploaded mini-runtime-surface artifacts for Linux, macOS and Windows. Compile-job outcomes are checked separately; remaining full-suite/Nix and repository ruleset enforcement still prevent final integration.
 
 Issue #18 retires the optional Nix lane by user decision. The updated #14 ruleset proposal requires six contexts (three compile/runtime checks and three unit jobs). Historical Nix evidence remains in #16; its active scope is Linux board-output investigation. Permanent ruleset activation remains pending.
+
+Final integration: PR #19 merged into main as 5e38dda16be939bfb21872592c068680cef21a85 and closed GitHub issue #13. Run 37165864478 on reviewed head 92529920 passed all six jobs, including Linux type/format checks, the full suite and interactive TUI regressions, and Linux/macOS/Windows compile, CLI/browser smoke and runtime-surface checks; all three runtime candidate/report artifacts were uploaded (https://github.com/glitchwerks/mini-backlog.md/actions/runs/37165864478). The cleanup-only PR #20 run 37166561548 on 3bdb3ad1 also passed all six jobs (https://github.com/glitchwerks/mini-backlog.md/actions/runs/37166561548). These results complete the remaining formatting DoD and supersede the earlier pending publication/integration entries. The prior compiled zero-drift and deliberate-drift rejection results remain the baseline-preservation evidence. Permanent branch/default/ruleset administration remains pending the separate user decision in #14; it is outside this completed gate task.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Integrated the compiled runtime-surface synchronization gate, preserved candidate/comparison artifacts and documented the three-comparison review flow through PR #19 (5e38dda16be939bfb21872592c068680cef21a85), closing #13. Verification: compiled zero drift and deliberate drift exit 1 with baseline unchanged, 56 focused tests passed (2 platform skips), and all six jobs passed in runs 37165864478 and 37166561548, including Linux formatting/types/full suite and three-platform compile/smoke/runtime checks. Permanent branch/default/ruleset administration remains a separate decision in #14.
+<!-- SECTION:FINAL_SUMMARY:END -->
