@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@codex'
 created_date: '2026-10-03 17:19'
-updated_date: '2026-10-03 23:55'
+updated_date: '2026-10-04 00:55'
 labels: []
 dependencies:
   - BACK-697
@@ -52,4 +52,6 @@ Persistence audit after commit 9ccb5069: git ls-tree HEAD -- docs/surfaces verif
 The user approved restoring the initiative publication path. Primary branch codex/mini-surface-sync was restored at 1b369ba5 and replacement draft PR #17 opened; committed work was pushed to its existing source branch only after verifying the new PR remained open. The proposal now cites PR #17 and retains the original inventory as historical evidence. This approval does not apply the permanent upstream/mini/default/ruleset migration.
 
 Issue #18 retires optional Nix packaging by user decision. The migration proposal and required-check payload now require six contexts. Historical Nix evidence remains in #16; no permanent branch/default/ruleset migration applied.
+
+PR #19 integrated capture, reviewed baseline and gate into main at 5e38dda1 with retained demonstration ancestry and all six CI jobs green. The next #14 branch/default/ruleset decision is requested separately. Re-inventory found organization ruleset 15682536 active, main still default, and permanent upstream/mini names unused; unrelated worktrees remain untouched. The proposal now cites integrated evidence rather than pending publication.
 <!-- SECTION:NOTES:END -->
