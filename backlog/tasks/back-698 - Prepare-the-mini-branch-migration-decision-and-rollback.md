@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@codex'
 created_date: '2026-10-03 17:19'
-updated_date: '2026-10-04 00:55'
+updated_date: '2026-10-04 01:52'
 labels: []
 dependencies:
   - BACK-697
@@ -38,6 +38,8 @@ Prepare the concrete branch layout, upstream-based candidate evidence, administr
 
 <!-- SECTION:PLAN:BEGIN -->
 Inventory current refs and worktrees (PR #15 closure and main 1b369ba5), build an isolated candidate from upstream fd20f714 with the current mini implementation, verify equivalent runtime surface, then record additive upstream/mini/default/required-check migration and rollback in docs/. Leave main and tags intact until the decision required by #14.
+
+Apply the user-approved dedicated branches: record current refs and backup, create upstream and mini, review CI/install/sync/release changes against mini, then switch default, apply and verify the six-check ruleset, preserve all tags/main/ancestry, finalize records and retire the plan. Sources: #14 and PR #20.
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -54,4 +56,8 @@ The user approved restoring the initiative publication path. Primary branch code
 Issue #18 retires optional Nix packaging by user decision. The migration proposal and required-check payload now require six contexts. Historical Nix evidence remains in #16; no permanent branch/default/ruleset migration applied.
 
 PR #19 integrated capture, reviewed baseline and gate into main at 5e38dda1 with retained demonstration ancestry and all six CI jobs green. The next #14 branch/default/ruleset decision is requested separately. Re-inventory found organization ruleset 15682536 active, main still default, and permanent upstream/mini names unused; unrelated worktrees remain untouched. The proposal now cites integrated evidence rather than pending publication.
+
+The user approved the dedicated upstream/mini layout. Fresh preflight preserves main 92fa4940, all remote refs and inherited organization ruleset 15682536 in docs/surfaces/branch-migration-preflight.json. No open PR needs retargeting. Administration follows the reviewed migration PR.
+
+Migration implementation verified: the new CI contract failed on missing mini branch trigger, then passed after adding mini. All 15 compiled-entry/local-install/source-distribution/package-contract tests passed (61 assertions). TypeScript and scoped CRLF-aware Biome passed. Direct source build and compiled CLI/browser smoke passed; runtime surface has zero drift. Backup, upstream and mini refs are created. Default and ruleset await current migration PR checks.
 <!-- SECTION:NOTES:END -->
