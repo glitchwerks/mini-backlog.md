@@ -20,19 +20,46 @@ function parseNpmPackOutput(output: string): Array<{ filename: string; files: Ar
 	throw new Error("npm pack did not emit a JSON array");
 }
 
-async function runNpm(cwd: string, ...args: string[]): Promise<string> {
-	const child = Bun.spawn(["npm", ...args], {
+async function runCommand(args: string[], cwd: string, timeout: number, env?: NodeJS.ProcessEnv) {
+	const child = Bun.spawn(args, {
 		cwd,
+		env,
+		detached: process.platform !== "win32",
 		stdout: "pipe",
 		stderr: "pipe",
-		timeout: 30_000,
-		killSignal: "SIGKILL",
 	});
-	const [stdout, stderr, exitCode] = await Promise.all([
-		new Response(child.stdout).text(),
-		new Response(child.stderr).text(),
-		child.exited,
-	]);
+	let timedOut = false;
+	const timer = setTimeout(async () => {
+		timedOut = true;
+		if (process.platform === "win32") {
+			// .cmd launchers leave Node descendants holding the output pipes open.
+			await execFileAsync("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
+				timeout: 5_000,
+				windowsHide: true,
+			}).catch(() => child.kill("SIGKILL"));
+		} else {
+			try {
+				process.kill(-child.pid, "SIGKILL");
+			} catch {
+				child.kill("SIGKILL");
+			}
+		}
+	}, timeout);
+	try {
+		const [stdout, stderr, exitCode] = await Promise.all([
+			new Response(child.stdout).text(),
+			new Response(child.stderr).text(),
+			child.exited,
+		]);
+		if (timedOut) throw new Error(`Command timed out after ${timeout}ms: ${args[0]}`);
+		return { stdout, stderr, exitCode };
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
+async function runNpm(cwd: string, ...args: string[]): Promise<string> {
+	const { stdout, stderr, exitCode } = await runCommand(["npm", ...args], cwd, 30_000);
 	expect(exitCode, `npm ${args[0]} failed: ${stderr}`).toBe(0);
 	return stdout;
 }
@@ -67,6 +94,36 @@ describe("compiled mini CLI entry", () => {
 
 	afterAll(async () => {
 		if (buildDirectory) await rm(buildDirectory, { recursive: true, force: true, maxRetries: 3 });
+	});
+
+	it("bounds hung smoke commands even when descendants hold the output pipes open", async () => {
+		const script = join(buildDirectory, "hanging-command.cjs");
+		const pidFile = join(buildDirectory, "hanging-child.pid");
+		await Bun.write(
+			script,
+			'const child = require("node:child_process").spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {stdio: "inherit"}); require("node:fs").writeFileSync(process.argv[2], String(child.pid)); setInterval(() => {}, 1000);',
+		);
+		let watchdog: ReturnType<typeof setTimeout> | undefined;
+		let terminated = false;
+		try {
+			await expect(
+				Promise.race([
+					runCommand(["node", script, pidFile], buildDirectory, 2_000),
+					new Promise((_, reject) => {
+						watchdog = setTimeout(() => reject(new Error("Descendant pipes did not close")), 7_000);
+					}),
+				]),
+			).rejects.toThrow("Command timed out after 2000ms");
+			terminated = true;
+			expect(await Bun.file(pidFile).exists()).toBe(true);
+		} finally {
+			clearTimeout(watchdog);
+			if (!terminated && (await Bun.file(pidFile).exists())) {
+				try {
+					process.kill(Number(await Bun.file(pidFile).text()), "SIGKILL");
+				} catch {}
+			}
+		}
 	});
 
 	it("executes the shipped entry and publishes restricted help", async () => {
@@ -145,11 +202,12 @@ describe("compiled mini CLI entry", () => {
 		const workspace = join(buildDirectory, "installed project");
 		await mkdir(workspace);
 		const env = { ...process.env, BACKLOG_CWD: workspace };
-		const launcher = join(install, "node_modules/mini-backlog.md/scripts/cli.cjs");
+		const launcher = join(install, "node_modules/.bin", process.platform === "win32" ? "backlog.cmd" : "backlog");
 		async function backlog(...args: string[]): Promise<string> {
-			const result = await execFileAsync("node", [launcher, ...args], { cwd: workspace, env, timeout: 10_000 });
-			expect(result.stderr, `backlog ${args.join(" ")}`).toBe("");
-			return result.stdout;
+			const { stdout, stderr, exitCode } = await runCommand([launcher, ...args], workspace, 10_000, env);
+			if (exitCode !== 0) throw new Error(`backlog ${args.join(" ")} exited ${exitCode}: ${stderr}`);
+			expect(stderr, `backlog ${args.join(" ")}`).toBe("");
+			return stdout;
 		}
 		await execFileAsync("git", ["init"], { cwd: workspace, timeout: 10_000 });
 		await execFileAsync("git", ["config", "user.name", "Installed CLI Smoke"], { cwd: workspace, timeout: 10_000 });
@@ -228,7 +286,7 @@ describe("compiled mini CLI entry", () => {
 		const docId = createdDoc.match(/Created document (\S+)/)?.[1];
 		if (!docId) throw new Error(`Document creation did not report an allocated ID: ${createdDoc}`);
 		expect(await backlog("doc", "list", "--plain")).toContain("Installed guide");
-		const content = "# Installed workflow\n\nDocument content survives a separate CLI invocation.";
+		const content = "Document content survives a separate CLI invocation with **Markdown** formatting.";
 		await backlog("doc", "update", docId, "--title", "Edited installed guide", "--content", content);
 		const document = await backlog("doc", "view", docId, "--plain");
 		expect(document).toContain("Edited installed guide");
@@ -239,7 +297,7 @@ describe("compiled mini CLI entry", () => {
 			expect(stdout).toMatch(new RegExp(`^ {2}${command}\\b`, "m"));
 		}
 		expect(stdout).not.toMatch(/^ {2}(board|help)\b/m);
-		await expect(backlog("board")).rejects.toMatchObject({ code: 1 });
+		await expect(backlog("board")).rejects.toThrow("exited 1: error:");
 		const pkg = await Bun.file(join(projectRoot, "package.json")).json();
 		const installedExecutable = join(
 			install,
